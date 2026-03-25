@@ -47,7 +47,10 @@ def setup_user_home_page(doc=None, method=None, user_email=None):
 	roles = set(frappe.get_roles(user_email) or [])
 	workspace = _resolve_home_workspace(roles)
 
-	if frappe.db.exists("Workspace", workspace):
+	# For page-based home (e.g. "app/mis_documentos_candidato"), skip workspace check
+	if workspace and workspace.startswith("app/"):
+		pass  # Home page redirect handled by apply_login_home_page_redirect
+	elif frappe.db.exists("Workspace", workspace):
 		frappe.db.set_value("User", user_email, "default_workspace", workspace, update_modified=False)
 
 	sync_user_access_profile(user_email)
