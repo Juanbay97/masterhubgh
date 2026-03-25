@@ -1,5 +1,3 @@
-name: hubgh
-
 services:
   mariadb:
     image: mariadb:10.6
