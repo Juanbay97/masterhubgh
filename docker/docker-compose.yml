@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   mariadb:
     image: mariadb:10.6
@@ -10,7 +12,7 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MARIADB_ROOT_PASSWORD:-frappe}"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 15
 
   redis-cache:
     image: redis:7-alpine
@@ -23,8 +25,12 @@ services:
     environment:
       SHELL: /bin/bash
     volumes:
-      - ../frappe-bench/apps:/home/frappe/frappe-bench/apps
-      - ../frappe-bench/sites:/home/frappe/frappe-bench/sites
+      # Bench completo persiste en un named volume (no en el repo)
+      - bench_data:/home/frappe/frappe-bench
+      # Solo nuestra app se monta desde el repo
+      - ../hubgh:/home/frappe/frappe-bench/apps/hubgh
+      # Sites persisten en named volume
+      - sites_data:/home/frappe/frappe-bench/sites
     depends_on:
       mariadb:
         condition: service_healthy
@@ -35,7 +41,26 @@ services:
     ports:
       - "80:8000"
     command: >
-      bash -lc "cd /home/frappe/frappe-bench && bench start"
+      bash -lc "
+      if [ ! -f /home/frappe/frappe-bench/Procfile ]; then
+        echo '==> Primera vez: inicializando bench con Frappe v15 (puede tardar 5-10 min)...'
+        cd /home/frappe
+        bench init \
+          --skip-redis-config-generation \
+          --frappe-branch version-15 \
+          frappe-bench
+        echo '==> Bench inicializado.'
+      fi
+      cd /home/frappe/frappe-bench
+      bench set-config -g db_host mariadb
+      bench set-config -g redis_cache redis://redis-cache:6379
+      bench set-config -g redis_queue redis://redis-queue:6379
+      bench set-config -g redis_socketio redis://redis-queue:6379
+      bench set-config -g webserver_port 8000
+      bench start
+      "
 
 volumes:
   mariadb_data:
+  bench_data:
+  sites_data:

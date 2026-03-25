@@ -3,6 +3,6 @@
   "db_name": "_YOUR_DB_NAME",
   "db_password": "YOUR_DB_PASSWORD",
   "db_type": "mariadb",
-  "developer_mode": 1,
+  "developer_mode": 0,
   "encryption_key": "GENERATE_WITH: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
 }
