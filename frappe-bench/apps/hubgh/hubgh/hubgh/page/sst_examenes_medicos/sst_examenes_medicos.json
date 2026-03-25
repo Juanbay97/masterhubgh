@@ -1,0 +1,23 @@
+{
+ "doctype": "Page",
+ "name": "sst_examenes_medicos",
+ "title": "SST - Exámenes Médicos",
+ "module": "Hubgh",
+ "standard": "Yes",
+ "page_name": "sst_examenes_medicos",
+ "icon": "health",
+ "roles": [
+  {
+   "role": "HR SST"
+  },
+  {
+   "role": "SST"
+  },
+  {
+   "role": "HR Selection"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+}

@@ -1,0 +1,56 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"sistema\",\"type\":\"header\",\"data\":{\"text\":\"Administración del Sistema\",\"col\":12}},{\"id\":\"config\",\"type\":\"header\",\"data\":{\"text\":\"Configuración\",\"col\":12}}]",
+ "creation": "2026-02-19 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "icon": "settings",
+ "is_hidden": 0,
+ "label": "HubGH Admin",
+ "links": [
+  {
+   "hidden": 0,
+   "icon": "users",
+   "label": "Usuarios y roles",
+   "link_to": "User",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "icon": "shield",
+   "label": "Gestión de permisos",
+   "link_to": "Role",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "icon": "layout",
+   "label": "Workspaces",
+   "link_to": "Workspace",
+   "link_type": "DocType",
+   "type": "Link"
+  }
+ ],
+ "module": "Hubgh",
+ "name": "HubGH Admin",
+ "public": 1,
+ "roles": [
+  {
+   "role": "System Manager"
+  }
+ ],
+ "sequence_id": 20,
+ "shortcuts": [
+  {
+   "color": "Red",
+   "format": "{} usuarios",
+   "label": "Usuarios",
+   "link_to": "User",
+   "type": "DocType"
+  }
+ ],
+ "title": "HubGH Admin"
+}

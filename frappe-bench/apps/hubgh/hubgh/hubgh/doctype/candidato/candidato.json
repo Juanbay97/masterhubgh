@@ -1,0 +1,495 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{numero_documento}",
+ "creation": "2026-01-28 21:07:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+  "field_order": [
+   "tipo_documento",
+   "numero_documento",
+   "nombres",
+   "apellidos",
+   "primer_apellido",
+   "segundo_apellido",
+   "fecha_nacimiento",
+   "fecha_expedicion",
+   "email",
+   "celular",
+   "telefono_fijo",
+   "contacto_emergencia_nombre",
+   "contacto_emergencia_telefono",
+   "genero",
+   "estado_civil",
+   "nivel_educativo_siesa",
+   "es_extranjero",
+   "prefijo_cuenta_extranjero",
+   "ciudad",
+   "localidad",
+   "localidad_otras",
+   "barrio",
+   "direccion",
+    "procedencia_pais",
+    "procedencia_departamento",
+    "procedencia_ciudad",
+    "pais_residencia_siesa",
+    "departamento_residencia_siesa",
+    "ciudad_residencia_siesa",
+   "numero_cuenta_bancaria",
+   "tipo_cuenta_bancaria",
+   "banco_siesa",
+   "eps_siesa",
+   "afp_siesa",
+   "cesantias_siesa",
+   "ccf_siesa",
+   "grupo_sanguineo",
+   "tiene_alergias",
+   "descripcion_alergias",
+   "personas_a_cargo",
+   "talla_camisa",
+   "talla_pantalon",
+   "numero_zapatos",
+   "talla_delantal",
+   "pdv_destino",
+   "cargo_postulado",
+   "estado_proceso",
+   "concepto_medico",
+   "fecha_envio_examen_medico",
+   "motivo_rechazo",
+   "fecha_tentativa_ingreso",
+   "user",
+   "persona",
+   "documentos",
+   "disponibilidad"
+  ],
+ "fields": [
+  {
+   "fieldname": "tipo_documento",
+   "fieldtype": "Select",
+   "label": "Tipo Documento",
+   "options": "Cedula\nPPT\nCedula de extranjeria\nPasaporte",
+   "reqd": 1
+  },
+  {
+   "fieldname": "numero_documento",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Número Documento",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "nombres",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombres",
+   "reqd": 1
+  },
+  {
+   "fieldname": "apellidos",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Apellidos",
+   "reqd": 0
+  },
+  {
+   "fieldname": "primer_apellido",
+   "fieldtype": "Data",
+   "label": "Primer Apellido",
+   "reqd": 1
+  },
+  {
+   "fieldname": "segundo_apellido",
+   "fieldtype": "Data",
+   "label": "Segundo Apellido",
+   "reqd": 0
+  },
+  {
+   "fieldname": "fecha_nacimiento",
+   "fieldtype": "Date",
+   "label": "Fecha Nacimiento"
+  },
+  {
+   "fieldname": "fecha_expedicion",
+   "fieldtype": "Date",
+   "label": "Fecha Expedición Documento"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "celular",
+   "fieldtype": "Data",
+   "label": "Celular"
+  },
+  {
+   "fieldname": "telefono_fijo",
+   "fieldtype": "Data",
+   "label": "Teléfono Fijo"
+  },
+  {
+   "fieldname": "contacto_emergencia_nombre",
+   "fieldtype": "Data",
+   "label": "Nombre Contacto de Emergencia"
+  },
+  {
+   "fieldname": "contacto_emergencia_telefono",
+   "fieldtype": "Data",
+   "label": "Teléfono Contacto de Emergencia"
+  },
+  {
+   "fieldname": "genero",
+   "fieldtype": "Select",
+   "label": "Género",
+   "options": "Masculino\nFemenino\nOtro"
+  },
+  {
+   "fieldname": "estado_civil",
+   "fieldtype": "Select",
+   "label": "Estado Civil",
+   "options": "Soltero\nCasado\nUnión Libre\nDivorciado\nViudo"
+  },
+  {
+   "fieldname": "nivel_educativo_siesa",
+   "fieldtype": "Data",
+   "label": "Nivel Educativo (Siesa)"
+  },
+  {
+   "default": "0",
+   "fieldname": "es_extranjero",
+   "fieldtype": "Check",
+   "label": "Es Extranjero"
+  },
+  {
+   "depends_on": "eval:doc.es_extranjero == 1",
+   "fieldname": "prefijo_cuenta_extranjero",
+   "fieldtype": "Data",
+   "label": "Prefijo Cuenta Extranjero"
+  },
+  {
+   "fieldname": "ciudad",
+   "fieldtype": "Select",
+   "label": "Ciudad",
+   "options": "Bogota\nMedellin\nCartagena",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.ciudad == 'Bogota'",
+   "fieldname": "localidad",
+   "fieldtype": "Select",
+   "label": "Localidad",
+   "options": "Antonio Nariño\nBarrios Unidos\nBosa\nChapinero\nCiudad Bolivar\nEngativa\nFontibon\nKennedy\nLa Candelaria\nLos Martires\nPuente Aranda\nRafael Uribe Uribe\nSan Cristobal\nSanta Fe\nSuba\nSumapaz\nTeusaquillo\nTunjuelito\nUsaquen\nUsme"
+  },
+  {
+   "depends_on": "eval:doc.ciudad != 'Bogota'",
+   "fieldname": "localidad_otras",
+   "fieldtype": "Data",
+   "label": "Localidad/Comuna"
+  },
+  {
+   "fieldname": "barrio",
+   "fieldtype": "Data",
+   "label": "Barrio"
+  },
+  {
+   "fieldname": "direccion",
+   "fieldtype": "Data",
+   "label": "Dirección",
+   "reqd": 1
+  },
+  {
+   "fieldname": "procedencia_pais",
+   "fieldtype": "Data",
+   "label": "Procedencia País"
+  },
+  {
+   "fieldname": "procedencia_departamento",
+   "fieldtype": "Data",
+   "label": "Procedencia Departamento"
+  },
+  {
+   "fieldname": "procedencia_ciudad",
+   "fieldtype": "Data",
+   "label": "Procedencia Ciudad"
+  },
+  {
+   "fieldname": "pais_residencia_siesa",
+   "fieldtype": "Data",
+   "label": "País Residencia (Siesa)"
+  },
+  {
+   "fieldname": "departamento_residencia_siesa",
+   "fieldtype": "Data",
+   "label": "Departamento Residencia (Siesa)"
+  },
+  {
+   "fieldname": "ciudad_residencia_siesa",
+   "fieldtype": "Data",
+   "label": "Ciudad Residencia (Siesa)"
+  },
+  {
+   "fieldname": "numero_cuenta_bancaria",
+   "fieldtype": "Data",
+   "label": "Número Cuenta Bancaria"
+  },
+  {
+   "fieldname": "tipo_cuenta_bancaria",
+   "fieldtype": "Select",
+   "label": "Tipo Cuenta Bancaria",
+   "options": "Ahorros\nCorriente\nTarjeta Prepago"
+  },
+  {
+   "fieldname": "banco_siesa",
+   "fieldtype": "Link",
+   "label": "Banco",
+   "options": "Banco Siesa"
+  },
+  {
+   "fieldname": "eps_siesa",
+   "fieldtype": "Link",
+   "label": "EPS",
+   "options": "Entidad EPS Siesa"
+  },
+  {
+   "fieldname": "afp_siesa",
+   "fieldtype": "Link",
+   "label": "Fondo Pensiones",
+   "options": "Entidad AFP Siesa"
+  },
+  {
+   "fieldname": "cesantias_siesa",
+   "fieldtype": "Link",
+   "label": "Cesantías",
+   "options": "Entidad Cesantias Siesa"
+  },
+  {
+   "fieldname": "ccf_siesa",
+   "fieldtype": "Link",
+   "label": "Caja Compensación",
+   "options": "Entidad CCF Siesa"
+  },
+  {
+   "fieldname": "grupo_sanguineo",
+   "fieldtype": "Select",
+   "label": "Grupo Sanguíneo",
+   "options": "\nO+\nO-\nA+\nA-\nB+\nB-\nAB+\nAB-"
+  },
+  {
+   "default": "0",
+   "fieldname": "tiene_alergias",
+   "fieldtype": "Check",
+   "label": "Tiene Alergias"
+  },
+  {
+   "depends_on": "eval:doc.tiene_alergias == 1",
+   "fieldname": "descripcion_alergias",
+   "fieldtype": "Small Text",
+   "label": "Descripción Alergias"
+  },
+  {
+   "fieldname": "personas_a_cargo",
+   "fieldtype": "Int",
+   "label": "Personas a Cargo"
+  },
+  {
+   "fieldname": "talla_camisa",
+   "fieldtype": "Select",
+   "label": "Talla Camisa",
+   "options": "\nXS\nS\nM\nL\nXL\nXXL"
+  },
+  {
+   "fieldname": "talla_pantalon",
+   "fieldtype": "Data",
+   "label": "Talla Pantalón"
+  },
+  {
+   "fieldname": "numero_zapatos",
+   "fieldtype": "Data",
+   "label": "Número Zapatos"
+  },
+  {
+   "fieldname": "talla_delantal",
+   "fieldtype": "Select",
+   "label": "Talla Delantal",
+   "options": "\nXS\nS\nM\nL\nXL\nXXL"
+  },
+  {
+   "fieldname": "pdv_destino",
+   "fieldtype": "Link",
+   "label": "PDV Destino",
+   "options": "Punto de Venta",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "cargo_postulado",
+   "fieldtype": "Link",
+   "label": "Cargo Postulado",
+   "options": "Cargo",
+   "permlevel": 1
+  },
+   {
+    "default": "En documentación",
+    "fieldname": "estado_proceso",
+    "fieldtype": "Select",
+    "label": "Estado Proceso",
+    "options": "En documentación\nEn examen médico\nEn afiliación\nListo para contratar\nContratado\nRechazado",
+    "permlevel": 1
+   },
+  {
+   "default": "Pendiente",
+   "fieldname": "concepto_medico",
+   "fieldtype": "Select",
+   "label": "Concepto Médico",
+   "options": "Pendiente\nFavorable\nDesfavorable\nAplazado",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "fecha_envio_examen_medico",
+   "fieldtype": "Date",
+   "label": "Fecha Envío Examen Médico",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "motivo_rechazo",
+   "fieldtype": "Small Text",
+   "label": "Motivo de Rechazo",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "fecha_tentativa_ingreso",
+   "fieldtype": "Date",
+   "label": "Fecha Tentativa Ingreso",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "Usuario",
+   "options": "User",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "persona",
+   "fieldtype": "Link",
+   "label": "Empleado",
+   "options": "Ficha Empleado",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "documentos",
+   "fieldtype": "Table",
+   "label": "Documentos",
+   "options": "Candidato Documento"
+  },
+   {
+    "fieldname": "disponibilidad",
+    "fieldtype": "Table",
+    "label": "Disponibilidad",
+    "options": "Candidato Disponibilidad",
+    "permlevel": 1
+   }
+  ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-28 21:07:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Candidato",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Selección",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "read": 1,
+   "role": "Candidato",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Selección",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "nombres"
+}

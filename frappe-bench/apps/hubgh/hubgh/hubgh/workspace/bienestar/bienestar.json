@@ -1,0 +1,81 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"bien-operacion\",\"type\":\"header\",\"data\":{\"text\":\"Operaci\u00f3n de bienestar\",\"col\":12}},{\"id\":\"bien-bandeja\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Bandeja de bienestar\",\"col\":4}},{\"id\":\"bien-prueba\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Evaluaciones de periodo de prueba\",\"col\":4}},{\"id\":\"bien-seg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Seguimientos de ingreso\",\"col\":4}},{\"id\":\"bien-alerta\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Alertas de bienestar\",\"col\":4}},{\"id\":\"bien-contexto\",\"type\":\"header\",\"data\":{\"text\":\"Seguimiento y contexto\",\"col\":12}},{\"id\":\"bien-comp\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Compromisos\",\"col\":4}},{\"id\":\"bien-lev\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Levantamientos por punto\",\"col\":4}},{\"id\":\"bien-persona360\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Persona 360\",\"col\":4}}]",
+ "creation": "2026-03-16 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "icon": "heart",
+ "is_hidden": 0,
+ "label": "Bienestar",
+ "links": [],
+ "module": "Hubgh",
+ "name": "Bienestar",
+ "public": 1,
+ "roles": [
+  {
+   "role": "HR Training & Wellbeing"
+  },
+  {
+   "role": "Gestión Humana"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "GH Gerente"
+  }
+ ],
+ "sequence_id": 16,
+ "shortcuts": [
+  {
+   "color": "Red",
+   "doc_view": "",
+   "label": "Bandeja de bienestar",
+   "link_to": "bienestar_bandeja",
+   "type": "Page"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "Evaluaciones de periodo de prueba",
+   "link_to": "Bienestar Evaluacion Periodo Prueba",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Seguimientos de ingreso",
+   "link_to": "Bienestar Seguimiento Ingreso",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "Alertas de bienestar",
+   "link_to": "Bienestar Alerta",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "List",
+   "label": "Compromisos",
+   "link_to": "Bienestar Compromiso",
+   "type": "DocType"
+  },
+  {
+   "color": "Teal",
+   "doc_view": "List",
+   "label": "Levantamientos por punto",
+   "link_to": "Bienestar Levantamiento Punto",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Persona 360",
+   "link_to": "persona_360",
+   "type": "Page"
+  }
+ ],
+ "title": "Bienestar"
+}

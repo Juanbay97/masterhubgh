@@ -1,0 +1,41 @@
+name: hubgh
+
+services:
+  mariadb:
+    image: mariadb:10.6
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-frappe}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  redis-cache:
+    image: redis:7-alpine
+
+  redis-queue:
+    image: redis:7-alpine
+
+  backend:
+    image: frappe/bench:latest
+    environment:
+      SHELL: /bin/bash
+      # DB/Redis config por env (sin bench set-config)
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      REDIS_CACHE: redis-cache:6379
+      REDIS_QUEUE: redis-queue:6379
+      REDIS_SOCKETIO: redis-queue:6379
+    volumes:
+      - ../apps:/home/frappe/frappe-bench/apps
+      - ../sites:/home/frappe/frappe-bench/sites
+    depends_on:
+      - mariadb
+      - redis-cache
+      - redis-queue
+    ports:
+      - "8001:8000"
+    command: >
+      bash -lc " cd /home/frappe/frappe-bench && bench start "
+
+volumes:
+  mariadb_data:

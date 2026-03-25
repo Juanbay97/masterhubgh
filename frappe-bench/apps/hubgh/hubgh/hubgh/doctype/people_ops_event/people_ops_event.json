@@ -1,0 +1,158 @@
+{
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "format:POE-{YYYY}-{#####}",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"event_key",
+		"persona",
+		"area",
+		"taxonomy",
+		"sensitivity",
+		"state",
+		"severity",
+		"source_doctype",
+		"source_name",
+		"refs_json",
+		"occurred_on",
+		"backbone_mode",
+		"contract_version",
+		"warning_message"
+	],
+	"fields": [
+		{
+			"fieldname": "event_key",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Event Key",
+			"reqd": 1,
+			"unique": 1
+		},
+		{
+			"fieldname": "persona",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Persona",
+			"options": "Ficha Empleado"
+		},
+		{
+			"default": "operacion",
+			"fieldname": "area",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Area",
+			"options": "seleccion\nrrll\nsst\nbienestar\ndocumental\noperacion\nnomina",
+			"reqd": 1
+		},
+		{
+			"fieldname": "taxonomy",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Taxonomy",
+			"reqd": 1
+		},
+		{
+			"default": "operational",
+			"fieldname": "sensitivity",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Sensitivity",
+			"options": "operational\ndocumental\ndisciplinary\nclinical\nfinancial",
+			"reqd": 1
+		},
+		{
+			"fieldname": "state",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "State"
+		},
+		{
+			"fieldname": "severity",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Severity"
+		},
+		{
+			"fieldname": "source_doctype",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Source DocType",
+			"reqd": 1
+		},
+		{
+			"fieldname": "source_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Source Name",
+			"reqd": 1
+		},
+		{
+			"fieldname": "refs_json",
+			"fieldtype": "Long Text",
+			"label": "Refs JSON"
+		},
+		{
+			"fieldname": "occurred_on",
+			"fieldtype": "Datetime",
+			"in_list_view": 1,
+			"label": "Occurred On",
+			"reqd": 1
+		},
+		{
+			"default": "warn",
+			"fieldname": "backbone_mode",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Backbone Mode",
+			"options": "off\nwarn\nenforce",
+			"reqd": 1
+		},
+		{
+			"default": "v1",
+			"fieldname": "contract_version",
+			"fieldtype": "Data",
+			"label": "Contract Version"
+		},
+		{
+			"fieldname": "warning_message",
+			"fieldtype": "Small Text",
+			"label": "Warning Message"
+		}
+	],
+	"grid_page_length": 50,
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"module": "Hubgh",
+	"name": "People Ops Event",
+	"naming_rule": "Expression",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Gestión Humana",
+			"select": 1,
+			"share": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"rows_threshold_for_grid_search": 20,
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}

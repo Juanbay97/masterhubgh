@@ -1,0 +1,97 @@
+.payroll-import-upload-redirect {
+	max-width: 1080px;
+	margin: 0 auto;
+}
+
+.payroll-upload-hero {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 12px;
+	flex-wrap: wrap;
+	background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+	border: 1px solid #dbe6f1;
+	border-radius: 12px;
+	padding: 16px;
+}
+
+.payroll-upload-kickers {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-bottom: 8px;
+}
+
+.payroll-upload-kickers span {
+	border-radius: 999px;
+	padding: 4px 10px;
+	background: #dbeafe;
+	color: #1d4ed8;
+	font-size: 11px;
+	font-weight: 700;
+}
+
+.payroll-upload-title {
+	margin: 0 0 6px;
+	font-size: 22px;
+	font-weight: 700;
+	color: #1f272e;
+}
+
+.payroll-upload-copy {
+	margin: 0;
+	max-width: 780px;
+	color: #64748b;
+	font-size: 13px;
+}
+
+.payroll-upload-hero-actions,
+.payroll-upload-links,
+.payroll-upload-fallback-actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.payroll-upload-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 12px;
+}
+
+.payroll-upload-card {
+	padding: 14px;
+	background: #fff;
+	border: 1px solid #d1d8dd;
+	border-radius: 12px;
+	box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.payroll-upload-card-title {
+	margin-bottom: 6px;
+	font-size: 14px;
+	font-weight: 700;
+	color: #1f2937;
+}
+
+@media (max-width: 768px) {
+	.payroll-upload-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.payroll-upload-title {
+		font-size: 18px;
+	}
+
+	.payroll-upload-hero-actions,
+	.payroll-upload-links,
+	.payroll-upload-fallback-actions {
+		width: 100%;
+	}
+
+	.payroll-upload-hero-actions .btn,
+	.payroll-upload-links .btn,
+	.payroll-upload-fallback-actions .btn {
+		flex: 1 1 100%;
+	}
+}

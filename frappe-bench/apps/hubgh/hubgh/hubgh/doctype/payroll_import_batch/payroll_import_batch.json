@@ -1,0 +1,215 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:PIB-{YYYY}-{MM}-{####}",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+  "field_order": [
+   "source_file",
+   "source_type",
+   "period",
+   "column_break_1",
+   "status",
+   "uploaded_by",
+   "uploaded_on",
+   "section_processing",
+   "total_rows",
+   "valid_rows",
+   "error_rows",
+   "column_break_2",
+   "processed_on",
+   "processing_log",
+   "section_approval",
+   "nomina_period",
+   "aprobado_tc_por",
+   "aprobado_tc_fecha",
+   "section_files",
+   "original_file",
+   "normalized_file"
+  ],
+ "fields": [
+  {
+   "fieldname": "source_file",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Archivo Fuente",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Tipo de Fuente",
+   "options": "Payroll Source Catalog",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Período",
+   "options": "Payroll Period Config"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pendiente",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+    "options": "Pendiente\nProcesando\nCompletado\nCompletado con errores\nCompletado con duplicados\nFallido\nConfirmado\nAprobado TC\nRechazado TC",
+   "read_only": 1
+  },
+  {
+   "fieldname": "uploaded_by",
+   "fieldtype": "Link",
+   "label": "Subido por",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "uploaded_on",
+   "fieldtype": "Datetime",
+   "label": "Fecha de Carga",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_processing",
+   "fieldtype": "Section Break",
+   "label": "Procesamiento"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_rows",
+   "fieldtype": "Int",
+   "label": "Total Filas",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "valid_rows",
+   "fieldtype": "Int",
+   "label": "Filas Válidas",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "error_rows",
+   "fieldtype": "Int",
+   "label": "Filas con Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "processed_on",
+   "fieldtype": "Datetime",
+   "label": "Fecha de Procesamiento",
+   "read_only": 1
+  },
+   {
+    "fieldname": "processing_log",
+    "fieldtype": "Code",
+    "label": "Log de Procesamiento",
+    "options": "JSON",
+    "read_only": 1
+   },
+   {
+    "fieldname": "section_approval",
+    "fieldtype": "Section Break",
+    "label": "Aprobación"
+   },
+   {
+    "fieldname": "nomina_period",
+    "fieldtype": "Data",
+    "label": "Período Nómina"
+   },
+   {
+    "fieldname": "aprobado_tc_por",
+    "fieldtype": "Link",
+    "label": "Aprobado TC Por",
+    "options": "User"
+   },
+   {
+    "fieldname": "aprobado_tc_fecha",
+    "fieldtype": "Datetime",
+    "label": "Fecha Aprobación TC"
+   },
+   {
+    "fieldname": "section_files",
+    "fieldtype": "Section Break",
+    "label": "Archivos"
+   },
+  {
+   "fieldname": "original_file",
+   "fieldtype": "Attach",
+   "label": "Archivo Original (copia)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "normalized_file",
+   "fieldtype": "Attach",
+   "label": "Archivo Normalizado",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "module": "Hubgh",
+ "name": "Payroll Import Batch",
+ "naming_rule": "Expression",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Operativo Nómina",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "TP Nómina",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,344 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:LIQ-{YYYY}-{####}",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "column_break_1",
+  "status",
+  "retirement_date",
+  "created_on",
+  "section_period",
+  "period_start",
+  "period_end",
+  "column_break_period",
+  "days_worked",
+  "base_salary",
+  "section_calculations",
+  "vacaciones_amount",
+  "cesantias_amount",
+  "column_break_calc",
+  "intereses_cesantias_amount",
+  "prima_amount",
+  "section_total",
+  "total_liquidacion",
+  "section_checklist",
+  "check_contabilidad",
+  "check_contabilidad_by",
+  "check_contabilidad_date",
+  "column_break_checks",
+  "check_sst",
+  "check_sst_by",
+  "check_sst_date",
+  "section_checklist2",
+  "check_rrll",
+  "check_rrll_by",
+  "check_rrll_date",
+  "column_break_checks2",
+  "check_nomina",
+  "check_nomina_by",
+  "check_nomina_date",
+  "section_notes",
+  "notes",
+  "calculation_detail"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Empleado",
+    "options": "Ficha Empleado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+    "label": "Nombre Empleado",
+    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Abierto",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Abierto\nEn Revisión\nAprobado\nCerrado\nCancelado"
+  },
+  {
+   "fieldname": "retirement_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Retiro"
+  },
+  {
+   "fieldname": "created_on",
+   "fieldtype": "Datetime",
+   "label": "Fecha Creación",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_period",
+   "fieldtype": "Section Break",
+   "label": "Período de Liquidación"
+  },
+  {
+   "fieldname": "period_start",
+   "fieldtype": "Date",
+   "label": "Fecha Inicio Período"
+  },
+  {
+   "fieldname": "period_end",
+   "fieldtype": "Date",
+   "label": "Fecha Fin Período"
+  },
+  {
+   "fieldname": "column_break_period",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "days_worked",
+   "fieldtype": "Int",
+   "label": "Días Trabajados",
+   "read_only": 1
+  },
+  {
+   "fieldname": "base_salary",
+   "fieldtype": "Currency",
+   "label": "Salario Base",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_calculations",
+   "fieldtype": "Section Break",
+   "label": "Cálculos de Liquidación"
+  },
+  {
+   "default": "0",
+   "fieldname": "vacaciones_amount",
+   "fieldtype": "Currency",
+   "label": "Vacaciones",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "cesantias_amount",
+   "fieldtype": "Currency",
+   "label": "Cesantías",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_calc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "intereses_cesantias_amount",
+   "fieldtype": "Currency",
+   "label": "Intereses Cesantías",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "prima_amount",
+   "fieldtype": "Currency",
+   "label": "Prima Servicios",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_total",
+   "fieldtype": "Section Break",
+   "label": "Total"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_liquidacion",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total Liquidación",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_checklist",
+   "fieldtype": "Section Break",
+   "label": "Checklist de Aprobación"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_contabilidad",
+   "fieldtype": "Check",
+   "label": "✓ Contabilidad"
+  },
+  {
+   "fieldname": "check_contabilidad_by",
+   "fieldtype": "Link",
+   "label": "Verificado por",
+   "options": "User",
+   "read_only": 1,
+   "depends_on": "check_contabilidad"
+  },
+  {
+   "fieldname": "check_contabilidad_date",
+   "fieldtype": "Datetime",
+   "label": "Fecha verificación",
+   "read_only": 1,
+   "depends_on": "check_contabilidad"
+  },
+  {
+   "fieldname": "column_break_checks",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_sst",
+   "fieldtype": "Check",
+   "label": "✓ SST"
+  },
+  {
+   "fieldname": "check_sst_by",
+   "fieldtype": "Link",
+   "label": "Verificado por",
+   "options": "User",
+   "read_only": 1,
+   "depends_on": "check_sst"
+  },
+  {
+   "fieldname": "check_sst_date",
+   "fieldtype": "Datetime",
+   "label": "Fecha verificación",
+   "read_only": 1,
+   "depends_on": "check_sst"
+  },
+  {
+   "fieldname": "section_checklist2",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_rrll",
+   "fieldtype": "Check",
+   "label": "✓ Relaciones Laborales"
+  },
+  {
+   "fieldname": "check_rrll_by",
+   "fieldtype": "Link",
+   "label": "Verificado por",
+   "options": "User",
+   "read_only": 1,
+   "depends_on": "check_rrll"
+  },
+  {
+   "fieldname": "check_rrll_date",
+   "fieldtype": "Datetime",
+   "label": "Fecha verificación",
+   "read_only": 1,
+   "depends_on": "check_rrll"
+  },
+  {
+   "fieldname": "column_break_checks2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_nomina",
+   "fieldtype": "Check",
+   "label": "✓ Nómina"
+  },
+  {
+   "fieldname": "check_nomina_by",
+   "fieldtype": "Link",
+   "label": "Verificado por",
+   "options": "User",
+   "read_only": 1,
+   "depends_on": "check_nomina"
+  },
+  {
+   "fieldname": "check_nomina_date",
+   "fieldtype": "Datetime",
+   "label": "Fecha verificación",
+   "read_only": 1,
+   "depends_on": "check_nomina"
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notas"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Observaciones"
+  },
+  {
+   "fieldname": "calculation_detail",
+   "fieldtype": "Code",
+   "label": "Detalle de Cálculo (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "module": "Hubgh",
+ "name": "Payroll Liquidation Case",
+ "naming_rule": "Expression",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Operativo Nómina"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TP Nómina"
+  },
+  {
+   "read": 1,
+   "role": "Contabilidad"
+  },
+  {
+   "read": 1,
+   "role": "SST"
+  },
+  {
+   "read": 1,
+   "role": "RRLL"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

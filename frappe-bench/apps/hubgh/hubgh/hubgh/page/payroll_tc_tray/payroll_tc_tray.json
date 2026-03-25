@@ -1,0 +1,20 @@
+{
+ "content": null,
+  "doctype": "Page",
+  "modified": "2026-03-18 20:00:00.000000",
+  "module": "Hubgh",
+   "name": "payroll_tc_tray",
+   "page_name": "payroll_tc_tray",
+  "roles": [
+   {
+    "role": "System Manager"
+   },
+   {
+    "role": "Gestión Humana"
+   },
+   {
+    "role": "Operativo Nómina"
+   }
+  ],
+  "title": "Bandeja operativa TC - Revisión inicial de novedades"
+  }

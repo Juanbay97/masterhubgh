@@ -1,0 +1,199 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:BEP-{YYYY}-{#####}",
+ "creation": "2026-03-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ficha_empleado",
+  "fecha_ingreso",
+  "punto_venta",
+  "fecha_evaluacion",
+  "estado",
+  "dictamen",
+  "puntaje_total",
+  "puntaje_maximo",
+  "score_global",
+  "porcentaje_resultado",
+  "respuestas_escala",
+  "respuestas_abiertas",
+  "requiere_escalamiento_rrll",
+  "gh_novedad",
+  "responsable_bienestar",
+  "observaciones"
+ ],
+ "fields": [
+  {
+   "fieldname": "ficha_empleado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Ficha Empleado",
+   "options": "Ficha Empleado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_ingreso",
+   "fieldtype": "Date",
+   "label": "Fecha Ingreso",
+   "read_only": 1
+  },
+  {
+   "fieldname": "punto_venta",
+   "fieldtype": "Link",
+   "label": "Punto de Venta",
+   "options": "Punto de Venta"
+  },
+  {
+   "fieldname": "fecha_evaluacion",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Evaluación",
+   "reqd": 1
+  },
+  {
+   "default": "Pendiente",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Pendiente\nEn gestión\nRealizada\nNo aprobada\nCerrada",
+   "reqd": 1
+  },
+  {
+   "default": "Pendiente",
+   "fieldname": "dictamen",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Dictamen",
+   "options": "PENDIENTE\nAPRUEBA\nNO APRUEBA",
+   "reqd": 1
+  },
+  {
+   "fieldname": "puntaje_total",
+   "fieldtype": "Float",
+   "label": "Puntaje Total",
+   "read_only": 1
+  },
+  {
+   "fieldname": "puntaje_maximo",
+   "fieldtype": "Float",
+   "label": "Puntaje Máximo",
+   "read_only": 1
+  },
+  {
+   "fieldname": "score_global",
+   "fieldtype": "Percent",
+   "label": "Score Global"
+  },
+  {
+   "fieldname": "porcentaje_resultado",
+   "fieldtype": "Percent",
+   "label": "Porcentaje Resultado"
+  },
+  {
+   "fieldname": "respuestas_escala",
+   "fieldtype": "Table",
+   "label": "Respuestas Escala",
+   "options": "Bienestar Respuesta Escala"
+  },
+  {
+   "fieldname": "respuestas_abiertas",
+   "fieldtype": "Table",
+   "label": "Respuestas Abiertas",
+   "options": "Bienestar Respuesta Abierta"
+  },
+  {
+   "default": "0",
+   "fieldname": "requiere_escalamiento_rrll",
+   "fieldtype": "Check",
+   "label": "Requiere Escalamiento RRLL"
+  },
+  {
+   "fieldname": "gh_novedad",
+   "fieldtype": "Link",
+   "label": "GH Novedad",
+   "options": "GH Novedad"
+  },
+  {
+   "fieldname": "responsable_bienestar",
+   "fieldtype": "Link",
+   "label": "Responsable Bienestar",
+   "options": "User"
+  },
+  {
+   "fieldname": "observaciones",
+   "fieldtype": "Small Text",
+   "label": "Observaciones"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Bienestar Evaluacion Periodo Prueba",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Training & Wellbeing",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Formación y Bienestar",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "share": 1,
+   "select": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

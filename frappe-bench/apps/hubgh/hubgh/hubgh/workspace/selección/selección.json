@@ -1,0 +1,74 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"0Eo8U_zmOc\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">SELECCI\u00d3N OPERATIVA</span>\",\"col\":12}},{\"id\":\"ITd9IQSSkG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Candidatos\",\"col\":4}},{\"id\":\"wA5VK0CBY8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Control documental de candidatos\",\"col\":4}},{\"id\":\"sstExMed\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gesti\u00f3n de ex\u00e1menes m\u00e9dicos\",\"col\":4}},{\"id\":\"candRej\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Candidatos rechazados\",\"col\":4}},{\"id\":\"fvYiUCulST\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cargos\",\"col\":4}},{\"id\":\"9KrwyYlkEJ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Documentos requeridos\",\"col\":4}}]",
+ "creation": "2026-01-28 17:25:33.849827",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "users",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Selecci\u00f3n",
+ "links": [],
+ "modified": "2026-02-16 11:27:07.847499",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Selecci\u00f3n",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Selecci\u00f3n"
+  }
+ ],
+ "sequence_id": 11.0,
+ "shortcuts": [
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Candidatos",
+   "link_to": "Candidato",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Control documental de candidatos",
+   "link_to": "seleccion_documentos",
+   "type": "Page"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "",
+   "label": "Gestión de exámenes médicos",
+   "link_to": "sst_examenes_medicos",
+   "type": "Page"
+  },
+  {
+   "color": "Red",
+   "doc_view": "",
+   "label": "Candidatos rechazados",
+   "link_to": "candidatos_rechazados",
+   "type": "Page"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "Cargos",
+   "link_to": "Cargo",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "List",
+   "label": "Documentos requeridos",
+   "link_to": "Documento Requerido",
+   "type": "DocType"
+  }
+ ],
+ "title": "Selecci\u00f3n"
+}

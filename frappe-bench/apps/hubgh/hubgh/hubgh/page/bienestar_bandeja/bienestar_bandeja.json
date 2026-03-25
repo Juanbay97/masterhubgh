@@ -1,0 +1,38 @@
+{
+ "content": null,
+ "creation": "2026-03-16 19:00:00",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-03-16 19:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "bienestar_bandeja",
+ "owner": "Administrator",
+ "page_name": "bienestar_bandeja",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Gestión Humana"
+  },
+  {
+   "role": "HR Training & Wellbeing"
+  },
+  {
+   "role": "Formación y Bienestar"
+  },
+  {
+   "role": "Formacion y Bienestar"
+  },
+  {
+   "role": "GH - RRLL"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Bandeja Bienestar"
+}

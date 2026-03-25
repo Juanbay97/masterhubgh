@@ -1,0 +1,23 @@
+{
+ "doctype": "Page",
+ "name": "reportes_siesa",
+ "title": "Reportes SIESA",
+ "module": "Hubgh",
+ "standard": "Yes",
+ "page_name": "reportes_siesa",
+ "icon": "file",
+ "roles": [
+  {
+   "role": "Gestión Humana"
+  },
+  {
+   "role": "Relaciones Laborales"
+  },
+  {
+   "role": "HR Labor Relations"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+}

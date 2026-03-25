@@ -1,0 +1,11 @@
+empleado,fecha_incidente,tipo_falta,descripcion,estado
+12345678,2023-06-15,Leve,Llegada tarde reiterada,Cerrado
+87654321,2023-08-20,Grave,Discusión con cliente,Cerrado
+11223344,2023-12-05,Leve,Uso incorrecto del uniforme,Abierto
+66778899,2024-01-10,Gravísima,Hurto de inventario,En Proceso
+22334455,2023-09-01,Leve,Ausencia injustificada corta,Cerrado
+55667788,2024-01-15,Grave,Incumplimiento de horario,Abierto
+11002233,2023-10-30,Leve,Desorden en puesto de trabajo,Cerrado
+99001122,2023-11-20,Grave,Uso de celular no permitido,Cerrado
+44556677,2024-01-05,Leve,Llegada tarde,Cerrado
+33445566,2023-12-15,Grave,Error grave en caja,En Proceso

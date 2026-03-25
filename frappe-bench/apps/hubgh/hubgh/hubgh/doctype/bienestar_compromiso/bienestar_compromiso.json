@@ -1,0 +1,225 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:BCO-{YYYY}-{#####}",
+ "creation": "2026-03-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+  "field_order": [
+   "ficha_empleado",
+   "tipo_origen_compromiso",
+   "origen_contexto",
+   "alerta",
+   "seguimiento_ingreso",
+   "evaluacion_periodo_prueba",
+   "levantamiento_punto",
+   "gh_novedad",
+   "fecha_compromiso",
+   "fecha_limite",
+   "estado",
+   "responsable_bienestar",
+   "resultado",
+   "punto_venta",
+   "sin_mejora",
+   "bitacora",
+   "fecha_cierre"
+  ],
+ "fields": [
+  {
+   "fieldname": "proceso_colaborador",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Proceso Colaborador",
+   "options": "Bienestar Proceso Colaborador"
+  },
+  {
+   "fieldname": "ficha_empleado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Ficha Empleado",
+   "options": "Ficha Empleado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "punto_venta",
+   "fieldtype": "Link",
+   "label": "Punto de Venta",
+   "options": "Punto de Venta"
+  },
+  {
+   "default": "Manual",
+   "fieldname": "tipo_origen_compromiso",
+   "fieldtype": "Select",
+   "label": "Tipo de origen",
+   "options": "Manual\nAlerta\nSeguimiento ingreso\nEvaluacion periodo prueba\nLevantamiento\nGH Novedad",
+   "reqd": 1
+  },
+  {
+   "fieldname": "origen_contexto",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Origen Contexto",
+   "options": "alerta\nseguimiento_ingreso\nevaluacion_periodo_prueba\nlevantamiento_punto\ngh_novedad",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.tipo_origen_compromiso=='Alerta'",
+   "fieldname": "alerta",
+   "fieldtype": "Link",
+   "label": "Alerta",
+   "options": "Bienestar Alerta"
+  },
+  {
+   "depends_on": "eval:doc.tipo_origen_compromiso=='Seguimiento ingreso'",
+   "description": "Se listan seguimientos de la ficha seleccionada y estados utiles para reducir codigos sin contexto.",
+   "fieldname": "seguimiento_ingreso",
+   "fieldtype": "Link",
+   "label": "Seguimiento Ingreso",
+   "options": "Bienestar Seguimiento Ingreso"
+  },
+  {
+   "depends_on": "eval:doc.tipo_origen_compromiso=='Evaluacion periodo prueba'",
+   "fieldname": "evaluacion_periodo_prueba",
+   "fieldtype": "Link",
+   "label": "Evaluación Periodo Prueba",
+   "options": "Bienestar Evaluacion Periodo Prueba"
+  },
+  {
+   "depends_on": "eval:doc.tipo_origen_compromiso=='Levantamiento'",
+   "fieldname": "levantamiento_punto",
+   "fieldtype": "Link",
+   "label": "Levantamiento Punto",
+   "options": "Bienestar Levantamiento Punto"
+  },
+  {
+   "depends_on": "eval:doc.tipo_origen_compromiso=='GH Novedad'",
+   "fieldname": "gh_novedad",
+   "fieldtype": "Link",
+   "label": "GH Novedad",
+   "options": "GH Novedad"
+  },
+  {
+   "default": "Today",
+   "fieldname": "fecha_compromiso",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Compromiso",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_limite",
+   "fieldtype": "Date",
+   "label": "Fecha Límite"
+  },
+  {
+   "default": "Activo",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Activo\nEn seguimiento\nCerrado\nEscalado RRLL",
+   "reqd": 1
+  },
+  {
+   "fieldname": "responsable_bienestar",
+   "fieldtype": "Link",
+   "label": "Responsable Bienestar",
+   "options": "User"
+  },
+  {
+   "fieldname": "resultado",
+   "fieldtype": "Small Text",
+   "label": "Resultado Inicial"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.estado=='En seguimiento' || doc.estado=='Escalado RRLL'",
+   "fieldname": "sin_mejora",
+   "fieldtype": "Check",
+   "label": "Sin Mejora"
+  },
+  {
+   "depends_on": "eval:doc.estado!='Activo'",
+   "fieldname": "bitacora",
+   "fieldtype": "Table",
+   "label": "Bitácora",
+   "options": "Bienestar Bitacora Caso"
+  },
+  {
+   "depends_on": "eval:doc.estado=='Cerrado' || doc.estado=='Escalado RRLL'",
+   "fieldname": "fecha_cierre",
+   "fieldtype": "Date",
+   "label": "Fecha Cierre"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Bienestar Compromiso",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Training & Wellbeing",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Formación y Bienestar",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "share": 1,
+   "select": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

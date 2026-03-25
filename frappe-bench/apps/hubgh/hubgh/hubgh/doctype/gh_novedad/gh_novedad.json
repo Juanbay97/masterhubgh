@@ -1,0 +1,134 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GHNOV-{YYYY}-{#####}",
+ "creation": "2026-02-17 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "persona",
+  "punto",
+  "tipo",
+  "fecha_inicio",
+  "fecha_fin",
+  "descripcion",
+  "evidencias",
+  "estado",
+  "cola_origen",
+  "cola_sugerida",
+  "cola_destino"
+ ],
+ "fields": [
+  {
+   "fieldname": "persona",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Persona",
+   "options": "Ficha Empleado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "punto",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Punto",
+   "options": "Punto de Venta"
+  },
+  {
+   "fieldname": "tipo",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tipo",
+   "options": "Suspensión\nTerminación\nAbandono de Cargo\nOtro",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "fecha_inicio",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Inicio",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_fin",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Fin"
+  },
+  {
+   "fieldname": "descripcion",
+   "fieldtype": "Small Text",
+   "label": "Descripción",
+   "reqd": 1
+  },
+  {
+   "description": "Adjunta varios archivos separados por coma o salto de línea",
+   "fieldname": "evidencias",
+   "fieldtype": "Small Text",
+   "label": "Evidencias"
+  },
+  {
+   "default": "Recibida",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Recibida\nEn gestión\nPendiente info\nCerrada"
+  },
+  {
+   "default": "GH-Bandeja General",
+   "fieldname": "cola_origen",
+   "fieldtype": "Select",
+   "label": "Cola Origen",
+   "options": "GH-Bandeja General\nGH-SST\nGH-RRLL",
+   "read_only": 1
+  },
+  {
+   "default": "GH-Bandeja General",
+   "fieldname": "cola_sugerida",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Cola Sugerida",
+   "options": "GH-Bandeja General\nGH-SST\nGH-RRLL",
+   "read_only": 1
+  },
+  {
+   "default": "GH-Bandeja General",
+   "fieldname": "cola_destino",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Cola Destino",
+   "options": "GH-Bandeja General\nGH-SST\nGH-RRLL",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-17 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "GH Novedad",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "tipo"
+}

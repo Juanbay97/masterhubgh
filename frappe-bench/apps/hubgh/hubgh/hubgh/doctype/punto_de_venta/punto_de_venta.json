@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{codigo}",
+ "creation": "2026-01-15 22:48:26.012431",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "nombre_pdv",
+  "codigo",
+  "ciudad",
+  "departamento",
+  "zona",
+  "planta_autorizada",
+  "activo"
+ ],
+ "fields": [
+  {
+   "fieldname": "nombre_pdv",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre del Punto",
+   "reqd": 1
+  },
+  {
+   "fieldname": "codigo",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "C\u00f3digo",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "ciudad",
+   "fieldtype": "Data",
+   "label": "Ciudad"
+  },
+  {
+   "fieldname": "departamento",
+   "fieldtype": "Data",
+   "label": "Departamento"
+  },
+  {
+   "default": "Centro",
+   "fieldname": "zona",
+   "fieldtype": "Select",
+   "label": "Zona",
+   "options": "Norte\nSur\nOriente\nOccidente\nCentro"
+  },
+  {
+   "default": "0",
+   "fieldname": "planta_autorizada",
+   "fieldtype": "Int",
+   "label": "Planta Autorizada"
+  },
+  {
+   "default": "1",
+   "fieldname": "activo",
+   "fieldtype": "Check",
+   "label": "Activo"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-19 16:15:31.714935",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Punto de Venta",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "title_field": "nombre_pdv",
+  "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gesti\u00f3n Humana",
+   "select": 1,
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

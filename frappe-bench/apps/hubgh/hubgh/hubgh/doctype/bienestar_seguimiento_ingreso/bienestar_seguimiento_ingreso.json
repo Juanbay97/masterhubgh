@@ -1,0 +1,193 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:BSI-{YYYY}-{#####}",
+ "creation": "2026-03-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+	"field_order": [
+	 "ficha_empleado",
+	 "fecha_ingreso",
+	 "punto_venta",
+  "tipo_seguimiento",
+  "momento_consolidacion",
+  "fecha_programada",
+  "fecha_realizacion",
+  "estado",
+  "responsable_bienestar",
+  "score_global",
+  "respuestas_escala",
+  "respuestas_abiertas",
+  "compromiso_generado",
+  "alerta_generada",
+  "observaciones"
+ ],
+ "fields": [
+	{
+	 "fieldname": "ficha_empleado",
+	 "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Ficha Empleado",
+	 "options": "Ficha Empleado",
+	 "reqd": 1
+	},
+	{
+	 "fieldname": "fecha_ingreso",
+	 "fieldtype": "Date",
+	 "label": "Fecha Ingreso",
+	 "read_only": 1
+	},
+  {
+   "fieldname": "punto_venta",
+   "fieldtype": "Link",
+   "label": "Punto de Venta",
+   "options": "Punto de Venta"
+  },
+  {
+   "fieldname": "tipo_seguimiento",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tipo Seguimiento",
+   "options": "5\n10\n30/45",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.tipo_seguimiento == '30/45'",
+   "fieldname": "momento_consolidacion",
+   "fieldtype": "Select",
+   "label": "Momento Consolidación",
+   "options": "30\n45"
+  },
+  {
+   "fieldname": "fecha_programada",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Programada",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_realizacion",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Realización"
+  },
+  {
+   "default": "Pendiente",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Pendiente\nEn gestión\nRealizado\nVencido\nCancelado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "responsable_bienestar",
+   "fieldtype": "Link",
+   "label": "Responsable Bienestar",
+   "options": "User"
+  },
+  {
+   "fieldname": "score_global",
+   "fieldtype": "Percent",
+   "label": "Score Global"
+  },
+  {
+   "fieldname": "respuestas_escala",
+   "fieldtype": "Table",
+   "label": "Respuestas Escala",
+   "options": "Bienestar Respuesta Escala"
+  },
+  {
+   "fieldname": "respuestas_abiertas",
+   "fieldtype": "Table",
+   "label": "Respuestas Abiertas",
+   "options": "Bienestar Respuesta Abierta"
+  },
+  {
+   "fieldname": "compromiso_generado",
+   "fieldtype": "Link",
+   "label": "Compromiso Generado",
+   "options": "Bienestar Compromiso"
+  },
+  {
+   "fieldname": "alerta_generada",
+   "fieldtype": "Link",
+   "label": "Alerta Generada",
+   "options": "Bienestar Alerta"
+  },
+  {
+   "fieldname": "observaciones",
+   "fieldtype": "Small Text",
+   "label": "Observaciones"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Bienestar Seguimiento Ingreso",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Training & Wellbeing",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Formación y Bienestar",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "share": 1,
+   "select": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

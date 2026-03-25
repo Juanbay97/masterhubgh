@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-02-09 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "role",
+  "user",
+  "can_view",
+  "can_edit",
+  "can_approve"
+ ],
+ "fields": [
+  {
+   "fieldname": "role",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Role",
+   "options": "Role"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "default": "1",
+   "fieldname": "can_view",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Can View"
+  },
+  {
+   "default": "0",
+   "fieldname": "can_edit",
+   "fieldtype": "Check",
+   "label": "Can Edit"
+  },
+  {
+   "default": "0",
+   "fieldname": "can_approve",
+   "fieldtype": "Check",
+   "label": "Can Approve"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-02-09 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Document Access",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

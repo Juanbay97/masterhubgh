@@ -1,0 +1,73 @@
+# ─── Frappe bench runtime ───────────────────────────────────────
+frappe-bench/logs/
+frappe-bench/config/*.lock
+frappe-bench/patches.txt
+frappe-bench/perms_output.txt
+frappe-bench/reset_pass.py
+frappe-bench/check_perms.py
+frappe-bench/Procfile
+frappe-bench/curso_calidad/
+
+# ─── Apps de terceros (framework y LMS) ─────────────────────────
+frappe-bench/apps/frappe/
+frappe-bench/apps/lms/
+
+# ─── Sitios Frappe (credenciales + PII de empleados) ────────────
+frappe-bench/sites/hubgh.test/
+frappe-bench/sites/assets/
+frappe-bench/sites/apps.json
+frappe-bench/sites/apps.txt
+frappe-bench/sites/*.lock
+frappe-bench/sites/*/site_config.json
+
+# ─── Entorno virtual Python ─────────────────────────────────────
+frappe-bench/.venv312/
+frappe-bench/.venv*/
+
+# ─── Python cache ───────────────────────────────────────────────
+**/__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# ─── Datos reales (PII — NUNCA al repo, Ley 1581) ───────────────
+data/raw/
+
+# ─── Documentos privados corporativos ───────────────────────────
+Archivos siesa/
+Docuemtnos bienestar/
+Documentos novedades de nomina/
+Logos home/
+
+# ─── Herramientas locales de AI ─────────────────────────────────
+.atl/
+.roo/
+.roomodes
+.engram/
+engram/
+plans/
+.claude/
+
+# ─── Logs raíz ──────────────────────────────────────────────────
+logs/
+
+# ─── Temporales y debug ─────────────────────────────────────────
+screenshots/
+bancos_debug.txt
+tmp_bancos.txt
+NUL
+*.session.sql
+AGENTS.md
+comandos servidor.txt
+
+# ─── Node ───────────────────────────────────────────────────────
+node_modules/
+
+# ─── OS y editores ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~

@@ -1,0 +1,45 @@
+{
+ "charts": [],
+ "content": "[{\"type\": \"header\", \"data\": {\"text\": \"FORMACIÓN Y BIENESTAR\", \"level\": 1, \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Carpeta Documental\", \"col\": 4}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tipos de Documento\", \"col\": 4}}]",
+ "creation": "2026-02-09 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "heart",
+ "indicator_color": "purple",
+ "is_hidden": 1,
+ "label": "Bienestar",
+ "links": [],
+ "module": "Hubgh",
+ "name": "Formación y Bienestar",
+ "number_cards": [],
+ "public": 0,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "HR Training & Wellbeing"
+  },
+  {
+   "role": "Formación y Bienestar"
+  }
+ ],
+ "sequence_id": 16.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Carpeta Documental",
+   "link_to": "carpeta_documental_empleado",
+   "type": "Page"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "List",
+   "label": "Tipos de Documento",
+   "link_to": "Document Type",
+   "type": "DocType"
+  }
+  ],
+ "title": "Bienestar"
+}

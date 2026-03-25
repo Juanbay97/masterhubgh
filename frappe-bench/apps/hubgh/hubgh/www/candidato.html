@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <link rel="icon" type="image/png" href="/assets/hubgh/images/logo-circular-black.png">
+    <link rel="shortcut icon" type="image/png" href="/assets/hubgh/images/logo-circular-black.png">
+    <title>HUBGH - Selección</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+        }
+        .home-logo {
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            display: inline-flex;
+            align-items: center;
+            font-size: 2.5rem;
+        }
+        .home-logo img {
+            width: 56px;
+            height: 56px;
+            object-fit: contain;
+        }
+        .step-content {
+            display: none;
+            opacity: 0;
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        .step-content.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        input, select {
+            border: 2px solid #e5e7eb;
+            transition: all 0.2s;
+            border-radius: 0.25rem;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #000000;
+            box-shadow: none;
+        }
+        .day-checkbox:checked + label {
+            background-color: #000000;
+            color: #ffffff;
+            border-color: #000000;
+        }
+        .day-checkbox:checked ~ .time-inputs {
+            display: grid;
+        }
+        h1, h2, h3 {
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .btn-home {
+            background-color: #000000;
+            color: #ffffff;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .btn-home:hover { background-color: #333333; }
+        .btn-home:active { transform: scale(0.98); }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <header class="w-full py-8 text-center bg-white">
+        <div class="home-logo select-none">
+            <img src="/assets/hubgh/images/logo-circular-black.png" alt="HubGH" />
+        </div>
+        <p class="text-xs font-bold tracking-[0.3em] mt-2 uppercase">Proceso de Selección</p>
+    </header>
+
+    <div class="w-full h-1 bg-gray-100">
+        <div id="progress-bar" class="h-full bg-black transition-all duration-500 ease-out" style="width: 16%"></div>
+    </div>
+
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="w-full max-w-xl bg-white p-6 md:p-10">
+            <form id="onboardingForm" onsubmit="return false;">
+                <div id="step-1" class="step-content active flex-col gap-6">
+                    <div class="text-center mb-4">
+                        <h1 class="text-3xl font-extrabold mb-2">Datos Personales</h1>
+                        <p class="text-gray-500 text-sm font-medium">INFORMACIÓN BÁSICA</p>
+                        <p class="text-xs mt-3 text-gray-500">
+                            ¿Ya tienes cuenta?
+                            <a href="/login" class="font-bold text-black underline underline-offset-2">Inicia sesión aquí</a>
+                        </p>
+                    </div>
+                    <div class="space-y-5">
+                        <div class="group">
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Nombre</label>
+                            <input type="text" id="nombre" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="Escribe tu nombre">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Primer Apellido</label>
+                                <input type="text" id="primer_apellido" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="Escribe tu primer apellido">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Segundo Apellido (Opcional)</label>
+                                <input type="text" id="segundo_apellido" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="Escribe tu segundo apellido">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Cédula</label>
+                            <input type="number" id="cedula" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="Número de documento">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Tipo Documento</label>
+                            <select id="tipo_documento" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium focus:bg-white appearance-none cursor-pointer">
+                                <option value="Cedula" selected>Cédula</option>
+                                <option value="Cedula de extranjeria">Cédula de extranjería</option>
+                                <option value="PPT">PPT</option>
+                                <option value="Pasaporte">Pasaporte</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Fecha Nacimiento</label>
+                                <input type="date" id="fecha_nacimiento" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Fecha Expedición</label>
+                                <input type="date" id="fecha_expedicion" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-2" class="step-content flex-col items-center text-center justify-center py-10">
+                    <h1 class="text-5xl md:text-6xl font-black mb-6">HOLA<br><span id="display-name" class="text-gray-400">CANDIDATO</span>.</h1>
+                    <div class="w-16 h-1 bg-black mb-8"></div>
+                    <p class="text-xl font-bold uppercase mb-2">YA CASI TERMINAMOS</p>
+                    <p class="text-gray-600 max-w-sm mx-auto">
+                        Estás a un paso de unirte al equipo. Queremos conocerte mejor para saber en qué punto podemos ubicarte.
+                    </p>
+                    <p class="text-xs font-bold mt-8 tracking-widest text-gray-400">RÁPIDO Y SENCILLO</p>
+                </div>
+
+                <div id="step-3" class="step-content flex-col gap-6">
+                    <div class="text-center mb-4">
+                        <h1 class="text-3xl font-extrabold mb-2">Contacto</h1>
+                        <p class="text-gray-500 text-sm font-medium">¿CÓMO TE UBICAMOS?</p>
+                    </div>
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Correo Electrónico</label>
+                            <input type="email" id="email" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="ejemplo@correo.com">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Celular / WhatsApp</label>
+                            <input type="tel" id="celular" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="300 123 4567">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Teléfono Fijo</label>
+                            <input type="tel" id="telefono_fijo" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="601 0000000">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Contacto Emergencia</label>
+                                <input type="text" id="contacto_emergencia_nombre" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="Nombre contacto">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Teléfono Emergencia</label>
+                                <input type="tel" id="contacto_emergencia_telefono" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="Teléfono contacto">
+                            </div>
+                        </div>
+                        <div class="border-l-4 border-black pl-4 py-2 mb-1 bg-gray-50">
+                            <p class="text-xs font-bold text-black uppercase mb-1">Procedencia</p>
+                            <p class="text-sm text-gray-700">Selecciona tu país de procedencia. Si eliges Venezuela, te pediremos el prefijo de cuenta.</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Procedencia País</label>
+                                <select id="procedencia_pais" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white appearance-none cursor-pointer">
+                                    <option value="" selected disabled>Selecciona país</option>
+                                </select>
+                            </div>
+                            <div id="procedencia-departamento-group">
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Procedencia Departamento</label>
+                                <select id="procedencia_departamento" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white appearance-none cursor-pointer">
+                                    <option value="" selected disabled>Selecciona departamento</option>
+                                </select>
+                            </div>
+                            <div id="procedencia-ciudad-group">
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Procedencia Municipio/Ciudad</label>
+                                <select id="procedencia_ciudad" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white appearance-none cursor-pointer">
+                                    <option value="" selected disabled>Selecciona ciudad</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                            <div id="prefijo-cuenta-container" class="hidden">
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Prefijo de Cuenta</label>
+                                <input type="text" id="prefijo_cuenta_extranjero" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="Tu cuenta debe tener un prefijo, indícalo aquí. Ej: 600">
+                                <p id="prefijo-cuenta-help" class="text-[11px] text-gray-500 mt-2">Este dato aplica cuando tu procedencia es Venezuela.</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">¿Cuál es tu banco?</label>
+                                <select id="banco_siesa" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white appearance-none cursor-pointer">
+                                    <option value="" selected disabled>Escoge tu banco</option>
+                                </select>
+                                <p id="banco-help" class="text-[11px] text-gray-500 mt-2"></p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Tipo Cuenta</label>
+                                <select id="tipo_cuenta_bancaria" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white appearance-none cursor-pointer">
+                                    <option value="Ahorros">Ahorros</option>
+                                    <option value="Corriente">Corriente</option>
+                                    <option value="Tarjeta Prepago">Tarjeta Prepago</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Número Cuenta</label>
+                                <input type="text" id="numero_cuenta_bancaria" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="Cuenta bancaria">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-4" class="step-content flex-col gap-6">
+                    <div class="text-center mb-4">
+                        <h1 class="text-3xl font-extrabold mb-2">Ubicación</h1>
+                        <p class="text-gray-500 text-sm font-medium">¿DÓNDE VIVES?</p>
+                    </div>
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Ciudad</label>
+                            <select id="ciudad" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium focus:bg-white appearance-none cursor-pointer">
+                                <option value="" disabled selected>Selecciona tu ciudad</option>
+                                <option value="Bogota">Bogotá</option>
+                                <option value="Medellin">Medellín</option>
+                                <option value="Cartagena">Cartagena</option>
+                                <option value="Barranquilla">Barranquilla</option>
+                            </select>
+                        </div>
+                        <div id="localidad-container" class="hidden">
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Localidad</label>
+                            <select id="localidad" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium focus:bg-white appearance-none cursor-pointer">
+                                <option value="" disabled selected>Selecciona tu localidad</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Dirección</label>
+                                <input type="text" id="direccion" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="Ej: Calle 85 # 15-20">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Barrio</label>
+                                <input type="text" id="barrio" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="Ej: Chicó">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-5" class="step-content flex-col gap-6">
+                    <div class="text-center mb-2">
+                        <h1 class="text-3xl font-extrabold mb-2">Disponibilidad</h1>
+                        <p class="text-gray-500 text-sm font-medium">¿QUÉ DÍAS Y HORAS PUEDES TRABAJAR?</p>
+                    </div>
+                    <div class="space-y-5">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Grupo Sanguíneo</label>
+                                <select id="grupo_sanguineo" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white appearance-none cursor-pointer">
+                                    <option value="" selected>Selecciona</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">¿Tienes Alergias?</label>
+                                <select id="tiene_alergias" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white appearance-none cursor-pointer">
+                                    <option value="0" selected>No</option>
+                                    <option value="1">Sí</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Personas a Cargo</label>
+                                <input type="number" min="0" id="personas_a_cargo" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="0">
+                            </div>
+                        </div>
+                        <div id="alergias-container" class="hidden">
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Descripción Alergias</label>
+                            <input type="text" id="descripcion_alergias" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="Indica alergias o restricciones">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Talla Camisa</label>
+                                <select id="talla_camisa" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white appearance-none cursor-pointer">
+                                    <option value="" selected>Selecciona</option>
+                                    <option value="XS">XS</option>
+                                    <option value="S">S</option>
+                                    <option value="M">M</option>
+                                    <option value="L">L</option>
+                                    <option value="XL">XL</option>
+                                    <option value="XXL">XXL</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Talla Delantal</label>
+                                <select id="talla_delantal" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white appearance-none cursor-pointer">
+                                    <option value="" selected>Selecciona</option>
+                                    <option value="XS">XS</option>
+                                    <option value="S">S</option>
+                                    <option value="M">M</option>
+                                    <option value="L">L</option>
+                                    <option value="XL">XL</option>
+                                    <option value="XXL">XXL</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Talla Pantalón</label>
+                                <input type="text" id="talla_pantalon" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="Ej: 30 / M">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Número Zapatos</label>
+                                <input type="text" id="numero_zapatos" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="Ej: 38">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-l-4 border-black pl-4 py-2 mb-4 bg-gray-50">
+                        <p class="text-xs font-bold text-black uppercase mb-1">IMPORTANTE:</p>
+                        <p class="text-sm text-gray-700">Selecciona el día y define tu hora de inicio y fin. Esto nos sirve para programar tus turnos.</p>
+                    </div>
+                    <div class="space-y-3" id="schedule-container"></div>
+                </div>
+
+                <div id="step-6" class="step-content flex-col items-center justify-center text-center py-10">
+                    <div class="home-logo select-none text-4xl mb-8">
+                        <img src="/assets/hubgh/images/logo-circular-black.png" alt="HubGH" />
+                    </div>
+                    <h1 class="text-4xl font-black text-black mb-4 uppercase">¡Listo!</h1>
+					<p id="success-message" class="text-gray-600 text-lg mb-3 font-medium">Recibimos tu información. Revisaremos tu perfil y te contactaremos muy pronto.</p>
+					<div id="credentials-box" class="hidden w-full max-w-md border border-gray-200 bg-gray-50 text-left p-4 rounded mb-4">
+						<p class="text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Credenciales iniciales</p>
+						<p class="text-sm text-gray-700 mb-1"><span class="font-bold">Usuario:</span> <span id="credential-user"></span></p>
+						<p class="text-sm text-gray-700 mb-2"><span class="font-bold">Contraseña temporal:</span> <span id="credential-password"></span></p>
+						<p class="text-xs text-gray-500">Por seguridad, en el primer ingreso el sistema te solicitará cambiar la contraseña.</p>
+					</div>
+					<p id="redirect-note" class="text-xs tracking-wide uppercase text-gray-400 mb-8"></p>
+					<button id="resetBtn" class="border-2 border-black px-8 py-3 text-black font-bold uppercase hover:bg-black hover:text-white transition-colors tracking-widest text-sm">
+						Volver al inicio
+					</button>
+					<a id="loginBtn" href="/login" class="hidden mt-4 inline-flex items-center justify-center border-2 border-black px-8 py-3 text-black font-bold uppercase hover:bg-black hover:text-white transition-colors tracking-widest text-sm">
+						Iniciar sesión
+					</a>
+				</div>
+                <input type="hidden" name="csrf_token" id="csrf_token" value="{{ csrf_token }}">
+            </form>
+        </div>
+    </main>
+
+    <footer id="nav-footer" class="bg-white p-6 border-t border-gray-100">
+        <div id="nav-buttons" class="max-w-xl mx-auto flex justify-between items-center">
+            <button id="prevBtn" class="hidden text-gray-400 hover:text-black font-bold uppercase text-xs tracking-widest transition-colors py-4 px-2">
+                ATRÁS
+            </button>
+            <button id="nextBtn" class="btn-home px-10 py-4 rounded shadow-lg w-full md:w-auto text-sm tracking-widest">
+                SIGUIENTE
+            </button>
+        </div>
+    </footer>
+<script>
+    let currentStep = 1;
+    const totalSteps = 6;
+    const availabilityData = {};
+    const STORAGE_KEY = "hubgh_onboarding_v3";
+    const data = loadDraft() || {};
+    let isSubmitting = false;
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const progressBar = document.getElementById('progress-bar');
+    const ciudadSelect = document.getElementById('ciudad');
+    const procedenciaPaisSelect = document.getElementById('procedencia_pais');
+    const procedenciaDepartamentoSelect = document.getElementById('procedencia_departamento');
+    const procedenciaCiudadSelect = document.getElementById('procedencia_ciudad');
+    const procedenciaDepartamentoGroup = document.getElementById('procedencia-departamento-group');
+    const procedenciaCiudadGroup = document.getElementById('procedencia-ciudad-group');
+    const prefijoCuentaContainer = document.getElementById('prefijo-cuenta-container');
+    const prefijoCuentaInput = document.getElementById('prefijo_cuenta_extranjero');
+    const prefijoCuentaHelp = document.getElementById('prefijo-cuenta-help');
+    const alergiasSelect = document.getElementById('tiene_alergias');
+    const alergiasContainer = document.getElementById('alergias-container');
+    const localidadContainer = document.getElementById('localidad-container');
+    const navButtonsContainer = document.getElementById('nav-buttons');
+    const scheduleContainer = document.getElementById('schedule-container');
+    const procedenciaCatalog = {
+        paises: [],
+        departamentos: [],
+        ciudades: [],
+    };
+    const localidadesBogota = [
+        "Antonio Nariño","Barrios Unidos","Bosa","Chapinero","Ciudad Bolivar","Engativa","Fontibon",
+        "Kennedy","La Candelaria","Los Martires","Puente Aranda","Rafael Uribe Uribe","San Cristobal",
+        "Santa Fe","Suba","Sumapaz","Teusaquillo","Tunjuelito","Usaquen","Usme"
+    ];
+    const days = [
+        { key: 'lunes', label: 'LUNES', name: 'Lunes' },
+        { key: 'martes', label: 'MARTES', name: 'Martes' },
+        { key: 'miercoles', label: 'MIÉRCOLES', name: 'Miércoles' },
+        { key: 'jueves', label: 'JUEVES', name: 'Jueves' },
+        { key: 'viernes', label: 'VIERNES', name: 'Viernes' },
+        { key: 'sabado', label: 'SÁBADO', name: 'Sábado' },
+        { key: 'domingo', label: 'DOMINGO', name: 'Domingo' }
+    ];
+
+    function saveDraft(obj) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); } catch(e) {}
+    }
+    function loadDraft() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+    }
+
+    function fillLocalidades() {
+        const select = document.getElementById('localidad');
+        if (!select) return;
+        select.innerHTML = '<option value="" disabled selected>Selecciona tu localidad</option>';
+        localidadesBogota.forEach(l => {
+            const opt = document.createElement('option');
+            opt.value = l;
+            opt.textContent = l;
+            select.appendChild(opt);
+        });
+    }
+
+    ciudadSelect.addEventListener('change', (e) => {
+        if (e.target.value === 'Bogota') {
+            localidadContainer.classList.remove('hidden');
+            localidadContainer.classList.add('block');
+            fillLocalidades();
+        } else {
+            localidadContainer.classList.add('hidden');
+            localidadContainer.classList.remove('block');
+        }
+    });
+
+    function toggleAlergiasContainer() {
+        if (!alergiasContainer || !alergiasSelect) return;
+        if ((alergiasSelect.value || '0') === '1') {
+            alergiasContainer.classList.remove('hidden');
+        } else {
+            alergiasContainer.classList.add('hidden');
+            const desc = document.getElementById('descripcion_alergias');
+            if (desc) desc.value = '';
+        }
+    }
+
+    if (alergiasSelect) {
+        alergiasSelect.addEventListener('change', toggleAlergiasContainer);
+    }
+
+    function renderSchedule() {
+        scheduleContainer.innerHTML = days.map(d => `
+            <div class="border border-gray-200 p-3 rounded hover:border-black transition-colors">
+                <input type="checkbox" id="check-${d.key}" class="peer hidden day-checkbox">
+                <label for="check-${d.key}" class="flex items-center justify-between cursor-pointer select-none">
+                    <span class="font-bold text-lg">${d.label}</span>
+                    <i class="fa-solid fa-plus peer-checked:hidden"></i>
+                    <i class="fa-solid fa-check hidden peer-checked:block text-white"></i>
+                </label>
+                <div class="time-inputs hidden grid-cols-2 gap-3 mt-3 animate-[fadeIn_0.3s_ease-out]">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Hora Inicio</label>
+                        <input type="time" id="start-${d.key}" class="w-full p-2 bg-white text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Hora Fin</label>
+                        <input type="time" id="end-${d.key}" class="w-full p-2 bg-white text-sm">
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function showStep(step) {
+        document.querySelectorAll('.step-content').forEach(el => {
+            el.classList.remove('active');
+            el.style.display = 'none';
+        });
+        const currentEl = document.getElementById(`step-${step}`);
+        currentEl.style.display = 'flex';
+        void currentEl.offsetWidth;
+        currentEl.classList.add('active');
+        const progress = ((step - 1) / (totalSteps - 1)) * 100;
+        progressBar.style.width = `${progress}%`;
+        if (step === 1) {
+            prevBtn.classList.add('hidden');
+            nextBtn.classList.add('w-full');
+        } else {
+            prevBtn.classList.remove('hidden');
+            nextBtn.classList.remove('w-full');
+        }
+        if (step === 2) {
+            nextBtn.innerHTML = 'CONTINUAR';
+        } else if (step === totalSteps - 1) {
+            nextBtn.innerHTML = 'FINALIZAR';
+        } else if (step === totalSteps) {
+            navButtonsContainer.style.display = 'none';
+            progressBar.parentElement.style.display = 'none';
+        } else {
+            nextBtn.innerHTML = 'SIGUIENTE';
+            navButtonsContainer.style.display = 'flex';
+            progressBar.parentElement.style.display = 'block';
+        }
+        fillFromDraft(step);
+    }
+
+    function normalizeSpaces(value) {
+        return String(value || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function splitLastNames(apellidos) {
+        const parts = normalizeSpaces(apellidos).split(' ').filter(Boolean);
+        if (!parts.length) return { primer: '', segundo: '' };
+        if (parts.length === 1) return { primer: parts[0], segundo: '' };
+        return { primer: parts[0], segundo: parts.slice(1).join(' ') };
+    }
+
+    function fillFromDraft(step) {
+        if (step === 1) {
+            document.getElementById('nombre').value = data.nombres || '';
+            const split = splitLastNames(data.apellidos || '');
+            document.getElementById('primer_apellido').value = data.primer_apellido || split.primer || '';
+            document.getElementById('segundo_apellido').value = data.segundo_apellido || split.segundo || '';
+            document.getElementById('cedula').value = data.numero_documento || '';
+            document.getElementById('tipo_documento').value = data.tipo_documento || 'Cedula';
+            document.getElementById('fecha_nacimiento').value = data.fecha_nacimiento || '';
+            document.getElementById('fecha_expedicion').value = data.fecha_expedicion || '';
+        }
+        if (step === 3) {
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('celular').value = data.celular || '';
+            document.getElementById('telefono_fijo').value = data.telefono_fijo || '';
+            document.getElementById('contacto_emergencia_nombre').value = data.contacto_emergencia_nombre || '';
+            document.getElementById('contacto_emergencia_telefono').value = data.contacto_emergencia_telefono || '';
+            setProcedenciaSelection(data.procedencia_pais || '', data.procedencia_departamento || '', data.procedencia_ciudad || '');
+            document.getElementById('prefijo_cuenta_extranjero').value = data.prefijo_cuenta_extranjero || '';
+            refreshForeignState();
+            document.getElementById('banco_siesa').value = data.banco_siesa || '';
+            document.getElementById('tipo_cuenta_bancaria').value = data.tipo_cuenta_bancaria || 'Ahorros';
+            document.getElementById('numero_cuenta_bancaria').value = data.numero_cuenta_bancaria || '';
+        }
+        if (step === 4) {
+            document.getElementById('ciudad').value = data.ciudad || '';
+            if (data.ciudad === 'Bogota') {
+                localidadContainer.classList.remove('hidden');
+                localidadContainer.classList.add('block');
+                fillLocalidades();
+                if (data.localidad) document.getElementById('localidad').value = data.localidad;
+            }
+            document.getElementById('direccion').value = data.direccion || '';
+            document.getElementById('barrio').value = data.barrio || '';
+        }
+        if (step === 5 && Array.isArray(data.disponibilidad)) {
+            document.getElementById('grupo_sanguineo').value = data.grupo_sanguineo || '';
+            document.getElementById('tiene_alergias').value = String(data.tiene_alergias || 0);
+            document.getElementById('descripcion_alergias').value = data.descripcion_alergias || '';
+            document.getElementById('personas_a_cargo').value = data.personas_a_cargo || '';
+            document.getElementById('talla_camisa').value = data.talla_camisa || '';
+            document.getElementById('talla_pantalon').value = data.talla_pantalon || '';
+            document.getElementById('numero_zapatos').value = data.numero_zapatos || '';
+            document.getElementById('talla_delantal').value = data.talla_delantal || '';
+            toggleAlergiasContainer();
+            data.disponibilidad.forEach((row) => {
+                const key = row.dia.toLowerCase().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u');
+                const cb = document.getElementById(`check-${key}`);
+                const start = document.getElementById(`start-${key}`);
+                const end = document.getElementById(`end-${key}`);
+                if (cb) cb.checked = true;
+                if (start) start.value = row.hora_inicio || '';
+                if (end) end.value = row.hora_fin || '';
+            });
+        } else if (step === 5) {
+            document.getElementById('grupo_sanguineo').value = data.grupo_sanguineo || '';
+            document.getElementById('tiene_alergias').value = String(data.tiene_alergias || 0);
+            document.getElementById('descripcion_alergias').value = data.descripcion_alergias || '';
+            document.getElementById('personas_a_cargo').value = data.personas_a_cargo || '';
+            document.getElementById('talla_camisa').value = data.talla_camisa || '';
+            document.getElementById('talla_pantalon').value = data.talla_pantalon || '';
+            document.getElementById('numero_zapatos').value = data.numero_zapatos || '';
+            document.getElementById('talla_delantal').value = data.talla_delantal || '';
+            toggleAlergiasContainer();
+        }
+    }
+
+    function procedenciaLabel(row) {
+        const code = String(row?.code || '').trim();
+        const name = String(row?.name || '').trim();
+        return name && name !== code ? `${name} - ${code}` : (name || code);
+    }
+
+    function setSelectOptions(selectEl, rows, placeholder) {
+        if (!selectEl) return;
+        const currentValue = String(selectEl.value || '');
+        selectEl.innerHTML = '';
+        const firstOpt = document.createElement('option');
+        firstOpt.value = '';
+        firstOpt.textContent = placeholder;
+        firstOpt.disabled = true;
+        firstOpt.selected = true;
+        selectEl.appendChild(firstOpt);
+
+        rows.forEach((row) => {
+            const option = document.createElement('option');
+            option.value = String(row.code || '').trim();
+            option.textContent = procedenciaLabel(row);
+            selectEl.appendChild(option);
+        });
+
+        if (currentValue && rows.some((row) => String(row.code || '').trim() === currentValue)) {
+            selectEl.value = currentValue;
+        }
+    }
+
+    function updateDepartamentosForPais() {
+        const selectedPais = String(procedenciaPaisSelect?.value || '');
+        refreshForeignState();
+        if (selectedPais === '850') {
+            setSelectOptions(procedenciaDepartamentoSelect, [], 'No aplica para Venezuela');
+            setSelectOptions(procedenciaCiudadSelect, [], 'No aplica para Venezuela');
+            if (procedenciaDepartamentoSelect) procedenciaDepartamentoSelect.value = '';
+            if (procedenciaCiudadSelect) procedenciaCiudadSelect.value = '';
+            return;
+        }
+        const departamentos = (procedenciaCatalog.departamentos || []).filter((row) => {
+            const rowPais = String(row.pais_codigo || row.pais || '').trim();
+            return !rowPais || !selectedPais || rowPais === selectedPais;
+        });
+        setSelectOptions(procedenciaDepartamentoSelect, departamentos, 'Selecciona departamento');
+        setSelectOptions(procedenciaCiudadSelect, [], 'Selecciona ciudad');
+    }
+
+    function updateCiudadesForDepartamento() {
+        const selectedPais = String(procedenciaPaisSelect?.value || '');
+        if (selectedPais === '850') {
+            setSelectOptions(procedenciaCiudadSelect, [], 'No aplica para Venezuela');
+            return;
+        }
+        const selectedDepartamento = String(procedenciaDepartamentoSelect?.value || '');
+        const ciudades = (procedenciaCatalog.ciudades || []).filter((row) => {
+            const dep = String(row.departamento_codigo || row.departamento || '').trim();
+            return !dep || !selectedDepartamento || dep === selectedDepartamento;
+        });
+        setSelectOptions(procedenciaCiudadSelect, ciudades, 'Selecciona ciudad');
+    }
+
+    function toggleProcedenciaLocationFields(selectedPais) {
+        const isColombia = selectedPais === '169';
+        if (procedenciaDepartamentoGroup) procedenciaDepartamentoGroup.classList.toggle('hidden', !isColombia);
+        if (procedenciaCiudadGroup) procedenciaCiudadGroup.classList.toggle('hidden', !isColombia);
+    }
+
+    function refreshForeignState() {
+        const selectedPais = String(procedenciaPaisSelect?.value || '');
+        const isForeign = selectedPais === '850';
+        data.es_extranjero = isForeign ? 1 : 0;
+        toggleProcedenciaLocationFields(selectedPais);
+        if (prefijoCuentaContainer) {
+            prefijoCuentaContainer.classList.toggle('hidden', !isForeign);
+        }
+        if (prefijoCuentaHelp) {
+            prefijoCuentaHelp.textContent = isForeign
+                ? 'Este dato aplica porque seleccionaste Venezuela.'
+                : 'Este dato solo aplica cuando la procedencia es Venezuela.';
+        }
+        if (!isForeign) {
+            if (prefijoCuentaInput) prefijoCuentaInput.value = 'NO APLICA';
+            data.prefijo_cuenta_extranjero = 'NO APLICA';
+        } else if ((prefijoCuentaInput?.value || '').trim().toUpperCase() === 'NO APLICA') {
+            prefijoCuentaInput.value = '';
+            data.prefijo_cuenta_extranjero = '';
+        }
+    }
+
+    function setProcedenciaSelection(paisCode, depCode, ciudadCode) {
+        if (paisCode && procedenciaPaisSelect) {
+            procedenciaPaisSelect.value = String(paisCode);
+        }
+        updateDepartamentosForPais();
+        if (depCode && procedenciaDepartamentoSelect) {
+            procedenciaDepartamentoSelect.value = String(depCode);
+        }
+        updateCiudadesForDepartamento();
+        if (ciudadCode && procedenciaCiudadSelect) {
+            procedenciaCiudadSelect.value = String(ciudadCode);
+        }
+    }
+
+    async function loadProcedenciaSiesaCatalog() {
+        setSelectOptions(procedenciaPaisSelect, [], 'Cargando países...');
+        setSelectOptions(procedenciaDepartamentoSelect, [], 'Selecciona país primero');
+        setSelectOptions(procedenciaCiudadSelect, [], 'Selecciona departamento primero');
+        try {
+            const response = await fetch('/api/method/hubgh.www.candidato.get_procedencia_siesa_catalog', {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (!response.ok) throw new Error('No se pudo cargar catálogo de procedencia.');
+            const payload = await response.json();
+            procedenciaCatalog.paises = Array.isArray(payload?.message?.paises) ? payload.message.paises : [];
+            procedenciaCatalog.departamentos = Array.isArray(payload?.message?.departamentos) ? payload.message.departamentos : [];
+            procedenciaCatalog.ciudades = Array.isArray(payload?.message?.ciudades) ? payload.message.ciudades : [];
+
+            procedenciaCatalog.paises = (procedenciaCatalog.paises || []).filter((row) => {
+                const code = String(row?.code || '').trim();
+                return code === '169' || code === '850';
+            });
+
+            setSelectOptions(procedenciaPaisSelect, procedenciaCatalog.paises, 'Selecciona país');
+            setSelectOptions(procedenciaDepartamentoSelect, [], 'Selecciona país primero');
+            setSelectOptions(procedenciaCiudadSelect, [], 'Selecciona departamento primero');
+
+            if (data.procedencia_pais || data.procedencia_departamento || data.procedencia_ciudad) {
+                setProcedenciaSelection(data.procedencia_pais || '', data.procedencia_departamento || '', data.procedencia_ciudad || '');
+            } else {
+                const colombia = (procedenciaCatalog.paises || []).find((row) => String(row.code || '').trim() === '169');
+                if (colombia && procedenciaPaisSelect) {
+                    procedenciaPaisSelect.value = '169';
+                    updateDepartamentosForPais();
+                }
+            }
+            refreshForeignState();
+        } catch (error) {
+            console.error('[onboarding][procedencia] error', error);
+            setSelectOptions(procedenciaPaisSelect, [], 'No fue posible cargar países');
+            setSelectOptions(procedenciaDepartamentoSelect, [], 'No fue posible cargar departamentos');
+            setSelectOptions(procedenciaCiudadSelect, [], 'No fue posible cargar ciudades');
+        }
+    }
+
+    function collectData(step) {
+        if (step === 1) {
+            data.nombres = normalizeSpaces(document.getElementById('nombre').value || '');
+            data.primer_apellido = normalizeSpaces(document.getElementById('primer_apellido').value || '');
+            data.segundo_apellido = normalizeSpaces(document.getElementById('segundo_apellido').value || '');
+            data.apellidos = [data.primer_apellido, data.segundo_apellido].filter(Boolean).join(' ');
+            document.getElementById('primer_apellido').value = data.primer_apellido;
+            document.getElementById('segundo_apellido').value = data.segundo_apellido;
+            data.numero_documento = (document.getElementById('cedula').value || '').trim();
+            data.tipo_documento = (document.getElementById('tipo_documento').value || 'Cedula').trim();
+            data.fecha_nacimiento = (document.getElementById('fecha_nacimiento').value || '').trim();
+            data.fecha_expedicion = (document.getElementById('fecha_expedicion').value || '').trim();
+        }
+        if (step === 3) {
+            data.email = (document.getElementById('email').value || '').trim();
+            data.celular = (document.getElementById('celular').value || '').trim();
+            data.telefono_fijo = (document.getElementById('telefono_fijo').value || '').trim();
+            data.contacto_emergencia_nombre = (document.getElementById('contacto_emergencia_nombre').value || '').trim();
+            data.contacto_emergencia_telefono = (document.getElementById('contacto_emergencia_telefono').value || '').trim();
+            data.procedencia_pais = (document.getElementById('procedencia_pais').value || '').trim();
+            data.procedencia_departamento = (document.getElementById('procedencia_departamento').value || '').trim();
+            data.procedencia_ciudad = (document.getElementById('procedencia_ciudad').value || '').trim();
+            data.prefijo_cuenta_extranjero = (document.getElementById('prefijo_cuenta_extranjero').value || '').trim();
+            refreshForeignState();
+            data.banco_siesa = (document.getElementById('banco_siesa').value || '').trim();
+            data.tipo_cuenta_bancaria = (document.getElementById('tipo_cuenta_bancaria').value || 'Ahorros').trim();
+            data.numero_cuenta_bancaria = (document.getElementById('numero_cuenta_bancaria').value || '').trim();
+        }
+        if (step === 4) {
+            data.ciudad = (document.getElementById('ciudad').value || '').trim();
+            data.direccion = (document.getElementById('direccion').value || '').trim();
+            data.barrio = (document.getElementById('barrio').value || '').trim();
+            const loc = document.getElementById('localidad');
+            data.localidad = loc ? (loc.value || '').trim() : '';
+            data.localidad_otras = '';
+        }
+        if (step === 5) {
+            data.grupo_sanguineo = (document.getElementById('grupo_sanguineo').value || '').trim();
+            data.tiene_alergias = (document.getElementById('tiene_alergias').value || '0') === '1' ? 1 : 0;
+            data.descripcion_alergias = data.tiene_alergias ? (document.getElementById('descripcion_alergias').value || '').trim() : '';
+            data.personas_a_cargo = (document.getElementById('personas_a_cargo').value || '').trim();
+            data.talla_camisa = (document.getElementById('talla_camisa').value || '').trim();
+            data.talla_pantalon = (document.getElementById('talla_pantalon').value || '').trim();
+            data.numero_zapatos = (document.getElementById('numero_zapatos').value || '').trim();
+            data.talla_delantal = (document.getElementById('talla_delantal').value || '').trim();
+        }
+        saveDraft(data);
+    }
+
+    function validateStep(step) {
+        let isValid = true;
+        const errors = [];
+        const currentEl = document.getElementById(`step-${step}`);
+        const inputs = currentEl.querySelectorAll('input:not([type="checkbox"]):not([type="time"]), select');
+        inputs.forEach(input => input.style.borderColor = '#e5e7eb');
+        if (step === 1) {
+            if (!checkVal('nombre')) { isValid = false; errors.push('nombre'); }
+            if (!checkVal('primer_apellido')) { isValid = false; errors.push('primer_apellido'); }
+            if (!checkVal('cedula')) { isValid = false; errors.push('cedula'); }
+            if (!checkVal('fecha_nacimiento')) { isValid = false; errors.push('fecha_nacimiento'); }
+        }
+        if (step === 3) {
+            const email = document.getElementById('email');
+            if (!email.value || !email.value.includes('@')) { errorVal(email); isValid = false; errors.push('email'); }
+            if (!checkVal('celular')) { isValid = false; errors.push('celular'); }
+            if (!checkVal('procedencia_pais')) { isValid = false; errors.push('procedencia_pais'); }
+            const selectedPais = document.getElementById('procedencia_pais').value;
+            if (selectedPais === '169') {
+                if (!checkVal('procedencia_departamento')) { isValid = false; errors.push('procedencia_departamento'); }
+                if (!checkVal('procedencia_ciudad')) { isValid = false; errors.push('procedencia_ciudad'); }
+            }
+            if (selectedPais === '850') {
+                if (!checkVal('prefijo_cuenta_extranjero')) { isValid = false; errors.push('prefijo_cuenta_extranjero'); }
+            }
+            if (!checkVal('banco_siesa')) { isValid = false; errors.push('banco_siesa'); }
+        }
+        if (step === 4) {
+            if (!checkVal('ciudad')) { isValid = false; errors.push('ciudad'); }
+            if (!checkVal('direccion')) { isValid = false; errors.push('direccion'); }
+            if (!checkVal('barrio')) { isValid = false; errors.push('barrio'); }
+            const ciudad = document.getElementById('ciudad').value;
+            if (ciudad === 'Bogota' && !document.getElementById('localidad').value) {
+                errorVal(document.getElementById('localidad')); isValid = false;
+                errors.push('localidad');
+            }
+        }
+		if (step === 5) {
+			const checkboxes = document.querySelectorAll('.day-checkbox:checked');
+			if (checkboxes.length === 0) {
+				alert("POR FAVOR SELECCIONA AL MENOS UN DÍA.");
+				isValid = false;
+				errors.push('disponibilidad');
+			} else {
+				const invalidDays = [];
+				checkboxes.forEach(checkbox => {
+					const dayName = checkbox.id.split('-')[1];
+					const label = days.find(d => d.key === dayName)?.name || dayName;
+					const startInput = document.getElementById(`start-${dayName}`);
+					const endInput = document.getElementById(`end-${dayName}`);
+					startInput.style.borderColor = '#e5e7eb';
+					endInput.style.borderColor = '#e5e7eb';
+					if (!startInput.value) { errorVal(startInput); isValid = false; }
+					if (!startInput.value) { errors.push(`start-${dayName}`); }
+					if (!endInput.value) { errorVal(endInput); isValid = false; errors.push(`end-${dayName}`); }
+					if (startInput.value && endInput.value && startInput.value >= endInput.value) {
+						errorVal(startInput);
+						errorVal(endInput);
+						invalidDays.push(label);
+						isValid = false;
+						errors.push(`invalid-range-${dayName}`);
+					}
+				});
+				if (!isValid) {
+					if (invalidDays.length) {
+						alert(`HOLA, AL PARECER HAY UN ERROR EN: ${invalidDays.join(', ')}. LA HORA INICIO DEBE SER MENOR QUE LA HORA FIN. POR FAVOR CORRIGE.`);
+					} else {
+						alert("POR FAVOR REVISA LAS HORAS: LA HORA INICIO DEBE SER MENOR QUE LA HORA FIN.");
+					}
+				}
+			}
+		}
+        if (!isValid) {
+            console.warn('[onboarding][validate] step_failed', {
+                step,
+                errors,
+                selected_procedencia_pais: document.getElementById('procedencia_pais')?.value || '',
+                selected_banco: document.getElementById('banco_siesa')?.value || ''
+            });
+        }
+        return isValid;
+    }
+
+    function checkVal(id) {
+        const el = document.getElementById(id);
+        if (!el.value) { errorVal(el); return false; }
+        return true;
+    }
+
+    function errorVal(el) {
+        el.style.borderColor = '#000000';
+        el.style.borderWidth = '2px';
+        el.classList.add('animate-pulse');
+        setTimeout(() => el.classList.remove('animate-pulse'), 500);
+    }
+
+    function collectAvailability() {
+        data.disponibilidad = [];
+        days.forEach((day) => {
+            const checkbox = document.getElementById(`check-${day.key}`);
+            if (checkbox.checked) {
+                data.disponibilidad.push({
+                    dia: day.name,
+                    hora_inicio: document.getElementById(`start-${day.key}`).value,
+                    hora_fin: document.getElementById(`end-${day.key}`).value
+                });
+            }
+        });
+        saveDraft(data);
+    }
+
+    async function submitCandidate() {
+        if (isSubmitting) return false;
+        setSubmittingState(true);
+        let saved = false;
+        try {
+            const payload = {
+                nombres: data.nombres,
+                apellidos: data.apellidos,
+                email: data.email,
+                celular: data.celular,
+                telefono_fijo: data.telefono_fijo,
+                tipo_documento: data.tipo_documento || 'Cedula',
+                numero_documento: data.numero_documento,
+                primer_apellido: data.primer_apellido,
+                segundo_apellido: data.segundo_apellido,
+                fecha_nacimiento: data.fecha_nacimiento,
+                fecha_expedicion: data.fecha_expedicion,
+                ciudad: data.ciudad,
+                localidad: data.localidad,
+                localidad_otras: data.localidad_otras,
+                barrio: data.barrio,
+                direccion: data.direccion,
+                procedencia_pais: data.procedencia_pais,
+                procedencia_departamento: data.procedencia_departamento,
+                procedencia_ciudad: data.procedencia_ciudad,
+                es_extranjero: data.es_extranjero || 0,
+                prefijo_cuenta_extranjero: data.prefijo_cuenta_extranjero,
+                contacto_emergencia_nombre: data.contacto_emergencia_nombre,
+                contacto_emergencia_telefono: data.contacto_emergencia_telefono,
+                banco_siesa: data.banco_siesa,
+                tipo_cuenta_bancaria: data.tipo_cuenta_bancaria,
+                numero_cuenta_bancaria: data.numero_cuenta_bancaria,
+                grupo_sanguineo: data.grupo_sanguineo,
+                tiene_alergias: data.tiene_alergias,
+                descripcion_alergias: data.descripcion_alergias,
+                talla_camisa: data.talla_camisa,
+                talla_pantalon: data.talla_pantalon,
+                numero_zapatos: data.numero_zapatos,
+                talla_delantal: data.talla_delantal,
+                personas_a_cargo: data.personas_a_cargo,
+                disponibilidad: data.disponibilidad || []
+            };
+            console.log('[onboarding][submit] banco payload', {
+                banco_siesa: payload.banco_siesa,
+                selected_text: document.getElementById('banco_siesa')?.selectedOptions?.[0]?.textContent || ''
+            });
+            const res = await callCreateCandidate(payload);
+            if (res && res.message && res.message.name) {
+                data._created_candidate = res.message.name;
+                data._login_user = res.message.login_user || data.numero_documento || '';
+                data._initial_password = res.message.initial_password || data.numero_documento || '';
+                data._password_must_be_changed = !!res.message.password_must_be_changed;
+                saveDraft(data);
+                saved = true;
+                return true;
+            }
+            alert("No se pudo registrar. El servidor no devolvió confirmación de creación.");
+            return false;
+        } catch (err) {
+            alert(humanizeErrorMessage(err?.message || "No se pudo registrar. Revisa los datos."));
+            return false;
+        } finally {
+            if (!saved) {
+                setSubmittingState(false);
+            }
+        }
+    }
+
+    function setSubmittingState(loading) {
+        isSubmitting = loading;
+        nextBtn.disabled = loading;
+        prevBtn.disabled = loading;
+        if (loading) {
+            nextBtn.innerHTML = 'ENVIANDO...';
+            nextBtn.classList.add('opacity-70', 'cursor-not-allowed');
+        } else {
+            nextBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+            showStep(currentStep);
+        }
+    }
+
+	async function callCreateCandidate(payload) {
+		await waitForFrappe(2000);
+		let csrfToken = getCsrfToken();
+		console.log('[onboarding][submit] request_context', {
+			origin: window.location.origin,
+			pathname: window.location.pathname,
+			endpoint: '/api/method/hubgh.www.candidato.create_candidate'
+		});
+		console.log('[onboarding][csrf] pre-submit', {
+			has_frappe_call: !!(typeof frappe !== 'undefined' && frappe.call),
+			has_csrf_token: !!csrfToken,
+			csrf_len: csrfToken ? String(csrfToken).length : 0
+		});
+		if (!csrfToken) {
+			console.warn('[onboarding][csrf] missing token before submit, trying refresh');
+			csrfToken = await refreshCsrfToken();
+		}
+		if (typeof frappe !== 'undefined' && frappe.call) {
+			console.log('[onboarding][submit] transport', { mode: 'frappe.call' });
+			return await frappe.call({
+				method: "hubgh.www.candidato.create_candidate",
+				args: { payload: JSON.stringify(payload) }
+			});
+		}
+		console.log('[onboarding][submit] transport', { mode: 'fetch' });
+
+		const doPost = async (token) => fetch('/api/method/hubgh.www.candidato.create_candidate', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-Requested-With': 'XMLHttpRequest',
+				'X-Frappe-CSRF-Token': token || ''
+			},
+			credentials: 'include',
+			body: JSON.stringify({
+				payload: JSON.stringify(payload),
+				csrf_token: token || ''
+			})
+		});
+
+		let response = await doPost(csrfToken);
+		if (response.status === 400 || response.status === 403) {
+			const refreshed = await refreshCsrfToken();
+			if (refreshed && refreshed !== csrfToken) {
+				console.warn('[onboarding][csrf] retry with refreshed token');
+				response = await doPost(refreshed);
+			}
+		}
+		if (response.status === 400 || response.status === 403) {
+			console.warn('[onboarding][csrf] request rejected', {
+				status: response.status,
+				statusText: response.statusText,
+				has_csrf_token: !!csrfToken
+			});
+		}
+		if (!response.ok) {
+			const message = await extractErrorMessage(response);
+			throw new Error(message || 'No se pudo registrar.');
+		}
+		return await response.json();
+	}
+
+	async function refreshCsrfToken() {
+		try {
+			const response = await fetch('/api/method/hubgh.www.candidato.get_onboarding_csrf_token', {
+				method: 'GET',
+				credentials: 'include',
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest'
+				}
+			});
+			if (!response.ok) return '';
+			const payload = await response.json();
+			const token = (payload?.message?.csrf_token || '').trim();
+			if (!token) return '';
+			window.csrf_token = token;
+			if (typeof frappe !== 'undefined') frappe.csrf_token = token;
+			const hidden = document.querySelector('#csrf_token') || document.querySelector('input[name="csrf_token"]');
+			if (hidden) hidden.value = token;
+			console.log('[onboarding][csrf] refreshed', { len: token.length });
+			return token;
+		} catch (e) {
+			console.warn('[onboarding][csrf] refresh failed', e);
+			return '';
+		}
+	}
+
+	async function extractErrorMessage(response) {
+		try {
+			const data = await response.json();
+			if (typeof data?.message === 'string' && data.message.trim()) {
+				return humanizeErrorMessage(data.message);
+			}
+			const messageFromServer = parseServerMessages(data?._server_messages);
+			if (messageFromServer) {
+				return humanizeErrorMessage(messageFromServer);
+			}
+			if (data?.exc_type && data?.exception) {
+				const normalized = `${data.exc_type}: ${String(data.exception).replace(/<[^>]*>/g, '').trim()}`;
+				return humanizeErrorMessage(normalized);
+			}
+			if (data?.exception) {
+				const match = data.exception.match(/ValidationError:\s*(.*)/i);
+				if (match && match[1]) {
+					return humanizeErrorMessage(match[1].replace(/<[^>]*>/g, '').trim());
+				}
+				return humanizeErrorMessage(data.exception);
+			}
+		} catch (e) {
+			const text = await response.text();
+			return humanizeErrorMessage(text || `${response.status} ${response.statusText}`);
+		}
+		return humanizeErrorMessage(`${response.status} ${response.statusText}`);
+	}
+
+	function parseServerMessages(raw) {
+		if (!raw) return '';
+		try {
+			const parsed = JSON.parse(raw);
+			if (Array.isArray(parsed) && parsed.length) {
+				const first = parsed[0];
+				const clean = typeof first === 'string' ? first.replace(/<[^>]*>/g, '').trim() : '';
+				return clean;
+			}
+		} catch (e) {
+			return String(raw);
+		}
+		return String(raw);
+	}
+
+	function humanizeErrorMessage(message) {
+		const text = String(message || '').replace(/<[^>]*>/g, '').trim();
+		if (/Banco Siesa|banco_siesa|Could not find.*Banco/i.test(text)) {
+			return 'El banco seleccionado no es válido. Debes elegir un banco de la lista SIESA.';
+		}
+		if (/Payload inválido|JSON malformado|formato no soportado|se esperaba un objeto JSON/i.test(text)) {
+			return 'No se pudo procesar el formulario por un problema de formato. Recarga la página e intenta de nuevo.';
+		}
+		if (/TooManyRequests|límite de intentos|rate limit/i.test(text)) {
+			return 'Has realizado demasiados intentos en poco tiempo. Espera un minuto y vuelve a intentar.';
+		}
+		if (/ya existe un candidato con ese n[úu]mero de documento|n[úu]mero de documento ya existe|DuplicateEntryError:.*(numero_documento|number document)|Duplicate name .*Candidato/i.test(text)) {
+			return 'El número de documento ya existe. Verifica e inténtalo de nuevo.';
+		}
+		if (/ya existe un candidato con ese correo|correo electr[oó]nico ya existe|DuplicateEntryError:.*email/i.test(text)) {
+			return 'El correo electrónico ya existe. Verifica e inténtalo de nuevo.';
+		}
+		if (/Duplicate|ya existe un candidato|correo electr[oó]nico/i.test(text)) {
+			return 'Ya existe un registro duplicado. Verifica documento y correo e inténtalo de nuevo.';
+		}
+		if (/403|forbidden|no tiene acceso/i.test(text)) {
+			return 'No tienes permisos para completar esta acción. Intenta nuevamente o contacta soporte.';
+		}
+		if (/400|bad request/i.test(text)) {
+			return 'El servidor rechazó la solicitud por datos inválidos o incompletos. Revisa el formulario e intenta de nuevo.';
+		}
+		return text || 'No se pudo registrar. Revisa los datos obligatorios e inténtalo nuevamente.';
+	}
+
+	async function loadBancosSiesa() {
+		const select = document.getElementById('banco_siesa');
+		const help = document.getElementById('banco-help');
+		if (!select) return;
+		console.log('[onboarding][bancos] init load');
+		select.innerHTML = '<option value="" selected disabled>Cargando bancos...</option>';
+		if (help) help.textContent = '';
+		try {
+			const response = await fetch('/api/method/hubgh.www.candidato.get_bancos_siesa', {
+				method: 'GET',
+				credentials: 'include'
+			});
+			console.log('[onboarding][bancos] status', response.status, response.statusText);
+			if (!response.ok) throw new Error('No se pudo cargar catálogo de bancos.');
+			const payload = await response.json();
+			const bancos = Array.isArray(payload?.message) ? payload.message : [];
+			console.log('[onboarding][bancos] payload', payload);
+			console.log('[onboarding][bancos] total', bancos.length);
+			if (!bancos.length) {
+				select.innerHTML = '<option value="" selected disabled>No hay bancos disponibles</option>';
+				if (help) help.textContent = 'No encontramos bancos cargados en el catálogo. Informa a Gestión Humana para habilitar la lista.';
+				return;
+			}
+			select.innerHTML = '<option value="" selected disabled>Selecciona tu banco</option>';
+			bancos.forEach((bank) => {
+				const opt = document.createElement('option');
+				opt.value = bank.name;
+				const code = String(bank.name || '').trim();
+				const label = String(bank.description || '').trim();
+				opt.textContent = label && label !== code ? `${label} - ${code}` : code;
+				select.appendChild(opt);
+			});
+			if (help) help.textContent = '';
+			if (data.banco_siesa) {
+				select.value = data.banco_siesa;
+			}
+		} catch (error) {
+			console.error('[onboarding][bancos] error', error);
+			select.innerHTML = '<option value="" selected disabled>No fue posible cargar bancos</option>';
+			if (help) help.textContent = 'No fue posible cargar la lista de bancos. Verifica conexión o configura el catálogo Banco Siesa.';
+		}
+	}
+
+	function setupFinalSuccess() {
+		const successMessage = document.getElementById('success-message');
+		const redirectNote = document.getElementById('redirect-note');
+		const loginButton = document.getElementById('loginBtn');
+		const credentialsBox = document.getElementById('credentials-box');
+		const credentialUser = document.getElementById('credential-user');
+		const credentialPassword = document.getElementById('credential-password');
+		const firstName = (data.nombres || '').split(' ')[0] || 'candidato';
+		successMessage.textContent = `Excelente ${firstName}, recibimos tu información correctamente. Estás un paso más cerca.`;
+		loginButton.classList.remove('hidden');
+		if (credentialsBox && credentialUser && credentialPassword) {
+			credentialUser.textContent = data._login_user || data.numero_documento || '';
+			credentialPassword.textContent = data._initial_password || data.numero_documento || '';
+			credentialsBox.classList.remove('hidden');
+		}
+		localStorage.removeItem(STORAGE_KEY);
+		redirectNote.textContent = 'Copia tus credenciales y luego usa el botón "Iniciar sesión" cuando estés listo.';
+	}
+
+    if (procedenciaPaisSelect) {
+        procedenciaPaisSelect.addEventListener('change', () => {
+            updateDepartamentosForPais();
+            refreshForeignState();
+        });
+    }
+    if (procedenciaDepartamentoSelect) {
+        procedenciaDepartamentoSelect.addEventListener('change', () => {
+            updateCiudadesForDepartamento();
+        });
+    }
+
+    function getCsrfToken() {
+        const fromFrappe = (typeof frappe !== 'undefined' && frappe.csrf_token) ? frappe.csrf_token : '';
+        const fromWindow = window.csrf_token || '';
+        const fromMeta = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const fromInput = document.querySelector('#csrf_token')?.value || document.querySelector('input[name="csrf_token"]')?.value || '';
+        const fromCookie = (document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/)?.[1] || '').trim();
+        const token = fromFrappe || fromWindow || fromMeta || fromInput || fromCookie || '';
+        console.log('[onboarding][csrf] source', {
+            from_frappe: !!fromFrappe,
+            from_window: !!fromWindow,
+            from_meta: !!fromMeta,
+            from_input: !!fromInput,
+            from_cookie: !!fromCookie,
+            selected_len: token ? String(token).length : 0
+        });
+        return token;
+    }
+
+    function waitForFrappe(timeoutMs) {
+        const start = Date.now();
+        return new Promise((resolve) => {
+            const timer = setInterval(() => {
+                if (typeof frappe !== 'undefined' && frappe.call) {
+                    clearInterval(timer);
+                    resolve(true);
+                } else if (Date.now() - start >= timeoutMs) {
+                    clearInterval(timer);
+                    resolve(false);
+                }
+            }, 50);
+        });
+    }
+
+    nextBtn.addEventListener('click', async () => {
+        collectData(currentStep);
+        if (validateStep(currentStep)) {
+            if (currentStep === 1) {
+                const nombre = document.getElementById('nombre').value;
+                const primerNombre = nombre.split(' ')[0];
+                document.getElementById('display-name').textContent = (primerNombre || 'CANDIDATO').toUpperCase();
+            }
+			if (currentStep === 5) {
+				collectAvailability();
+				const ok = await submitCandidate();
+				if (!ok) return;
+				setupFinalSuccess();
+			}
+            currentStep++;
+            showStep(currentStep);
+        } else {
+            console.warn('[onboarding][submit] blocked_before_request', { currentStep });
+        }
+    });
+
+    prevBtn.addEventListener('click', () => {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+    });
+
+    renderSchedule();
+    loadBancosSiesa();
+    loadProcedenciaSiesaCatalog();
+    toggleAlergiasContainer();
+    showStep(currentStep);
+</script>
+
+</body>
+</html>

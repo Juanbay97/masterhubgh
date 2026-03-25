@@ -1,0 +1,23 @@
+{
+ "doctype": "Page",
+ "name": "carpeta_documental_empleado",
+ "title": "Carpeta Documental Empleado",
+ "module": "Hubgh",
+ "standard": "Yes",
+ "page_name": "carpeta_documental_empleado",
+ "icon": "folder-open",
+ "roles": [
+  {
+   "role": "HR Labor Relations"
+  },
+  {
+   "role": "HR Training & Wellbeing"
+  },
+  {
+   "role": "HR SST"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+}

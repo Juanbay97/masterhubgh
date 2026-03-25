@@ -1,0 +1,113 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:codigo",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "codigo",
+  "novedad_type",
+  "descripcion",
+  "requiere_soporte",
+  "validador_default",
+  "sensitivity",
+  "status",
+  "source_aplica",
+  "order"
+ ],
+ "fields": [
+  {
+   "fieldname": "codigo",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Código",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "novedad_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre del Tipo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "descripcion",
+   "fieldtype": "Small Text",
+   "label": "Descripción"
+  },
+  {
+   "default": "0",
+   "fieldname": "requiere_soporte",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Requiere Soporte"
+  },
+  {
+   "fieldname": "validador_default",
+   "fieldtype": "Link",
+   "label": "Validador por Defecto",
+   "options": "User"
+  },
+  {
+   "default": "operational",
+   "fieldname": "sensitivity",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Sensibilidad",
+   "options": "operational\ndocumental\ndisciplinary\nclinical\nsst_clinical"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Draft\nActive\nDeprecated"
+  },
+  {
+   "fieldname": "source_aplica",
+   "fieldtype": "Small Text",
+   "label": "Aplica a Fuentes (separadas por coma)"
+  },
+  {
+   "fieldname": "order",
+   "fieldtype": "Int",
+   "label": "Orden de Presentación"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "module": "Hubgh",
+ "name": "Payroll Novedad Type",
+ "naming_rule": "By fieldname",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "select": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

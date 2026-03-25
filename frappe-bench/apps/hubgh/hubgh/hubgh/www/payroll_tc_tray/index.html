@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TC Tray - Revisión de Novedades</title>
+    
+    <!-- Frappe CSS -->
+    <link rel="stylesheet" href="/assets/css/frappe.css">
+    <link rel="stylesheet" href="/assets/css/desk.min.css">
+    
+    <style>
+        .tc-tray-container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header-section {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .filters-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .employee-card {
+            background: white;
+            border: 1px solid #e4e6ea;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: box-shadow 0.2s;
+        }
+        
+        .employee-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .employee-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .employee-name {
+            font-weight: 600;
+            color: #2e3a46;
+        }
+        
+        .employee-id {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .status-pendiente { background: #fff3cd; color: #856404; }
+        .status-revisado { background: #cce5ff; color: #0056b3; }  
+        .status-aprobado { background: #d4edda; color: #155724; }
+        .status-rechazado { background: #f8d7da; color: #721c24; }
+        
+        .novelty-summary {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+        }
+        
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .amount-total {
+            font-weight: 600;
+            color: #2e7d32;
+        }
+        
+        .lines-table {
+            width: 100%;
+            font-size: 0.85em;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+        
+        .lines-table th,
+        .lines-table td {
+            padding: 6px 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .lines-table th {
+            background: #f8f9fa;
+            font-weight: 500;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .btn-approve {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        
+        .btn-detail {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        
+        .bulk-actions {
+            background: #e9ecef;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .bulk-actions.show {
+            display: block;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+        
+        .checkbox-column {
+            width: 30px;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .filter-input {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        .refresh-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="tc-tray-container">
+        <!-- Header -->
+        <div class="header-section">
+            <h1>TC Tray - Revisión de Novedades</h1>
+            <button class="refresh-btn" onclick="loadTCTrayData()">
+                🔄 Actualizar
+            </button>
+        </div>
+        
+        <!-- Filters -->
+        <div class="filters-section">
+            <div class="filter-group">
+                <label>Empleado:</label>
+                <input type="text" id="employee-filter" class="filter-input" 
+                       placeholder="Nombre del empleado" onchange="applyFilters()">
+                
+                <label>Lote:</label>
+                <select id="batch-filter" class="filter-input" onchange="applyFilters()">
+                    <option value="">Todos los lotes</option>
+                </select>
+                
+                <label>Límite:</label>
+                <select id="limit-filter" class="filter-input" onchange="applyFilters()">
+                    <option value="50">50 empleados</option>
+                    <option value="100" selected>100 empleados</option>
+                    <option value="200">200 empleados</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Bulk Actions -->
+        <div id="bulk-actions" class="bulk-actions">
+            <strong>Acciones en lote:</strong>
+            <button class="btn-approve" onclick="bulkApprove()">
+                ✓ Aprobar Seleccionados
+            </button>
+            <button class="btn-reject" onclick="bulkReject()">
+                ✗ Rechazar Seleccionados
+            </button>
+            <span id="selected-count" style="margin-left: 10px; color: #6c757d;"></span>
+        </div>
+        
+        <!-- Loading/Error States -->
+        <div id="loading" class="loading-spinner">
+            Cargando datos de TC Tray...
+        </div>
+        
+        <div id="error" class="error-message" style="display: none;"></div>
+        
+        <!-- Main Content -->
+        <div id="content" style="display: none;">
+            <!-- Summary Stats -->
+            <div id="summary-stats" style="display: flex; gap: 20px; margin-bottom: 20px;">
+                <!-- Stats cards will be populated by JS -->
+            </div>
+            
+            <!-- Employee Cards -->
+            <div id="employee-list">
+                <!-- Employee cards will be populated by JS -->
+            </div>
+            
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <h3>No hay novedades pendientes para revisar</h3>
+                <p>Todas las líneas han sido procesadas o no hay importaciones activas.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comment Modal -->
+    <div id="comment-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 400px;">
+            <h4 id="modal-title">Agregar Comentario</h4>
+            <textarea id="modal-comment" rows="4" style="width: 100%; margin: 10px 0; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Comentarios opcionales..."></textarea>
+            <div style="text-align: right; margin-top: 15px;">
+                <button onclick="closeCommentModal()" style="margin-right: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px;">Cancelar</button>
+                <button id="modal-confirm" onclick="confirmAction()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frappe JS -->
+    <script src="/assets/js/frappe.js"></script>
+    <script src="/assets/js/desk.min.js"></script>
+    
+    <script>
+        // Global state
+        let currentData = null;
+        let selectedLines = new Set();
+        let pendingAction = null;
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTCTrayData();
+        });
+        
+        // Load TC Tray data from server
+        function loadTCTrayData() {
+            showLoading();
+            
+            const employeeFilter = document.getElementById('employee-filter').value;
+            const batchFilter = document.getElementById('batch-filter').value;
+            const limit = document.getElementById('limit-filter').value;
+            
+            frappe.call({
+                method: 'hubgh.hubgh.payroll_tc_tray.get_tc_tray_data',
+                args: {
+                    employee_filter: employeeFilter || null,
+                    batch_filter: batchFilter || null,
+                    limit: limit
+                },
+                callback: function(response) {
+                    hideLoading();
+                    
+                    if (response.message && response.message.status === 'success') {
+                        currentData = response.message;
+                        renderTCTray(currentData);
+                        populateBatchFilter(currentData.batch_summary);
+                    } else {
+                        showError(response.message?.message || 'Error cargando datos');
+                    }
+                },
+                error: function(error) {
+                    hideLoading();
+                    showError('Error de conexión: ' + error.message);
+                }
+            });
+        }
+        
+        // Render TC Tray UI
+        function renderTCTray(data) {
+            const content = document.getElementById('content');
+            const employeeList = document.getElementById('employee-list');
+            const summaryStats = document.getElementById('summary-stats');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (data.total_employees === 0) {
+                content.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            content.style.display = 'block';
+            
+            // Render summary stats
+            summaryStats.innerHTML = `
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e4e6ea; flex: 1;">
+                    <div style="font-size: 1.2em; font-weight: 600; color: #2e7d32;">${data.total_employees}</div>
+                    <div style="color: #6c757d;">Empleados</div>
+                </div>
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e4e6ea; flex: 1;">
+                    <div style="font-size: 1.2em; font-weight: 600; color: #dc3545;">${data.total_lines}</div>
+                    <div style="color: #6c757d;">Líneas Pendientes</div>
+                </div>
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e4e6ea; flex: 1;">
+                    <div style="font-size: 1.2em; font-weight: 600; color: #007bff;">${data.batch_summary.length}</div>
+                    <div style="color: #6c757d;">Lotes Activos</div>
+                </div>
+            `;
+            
+            // Render employee cards
+            employeeList.innerHTML = data.consolidated.map(employee => renderEmployeeCard(employee)).join('');
+            
+            // Update selected count
+            updateSelectedCount();
+        }
+        
+        // Render individual employee card
+        function renderEmployeeCard(employee) {
+            const statusClass = `status-${employee.overall_tc_status.toLowerCase()}`;
+            const totalAmount = formatCurrency(employee.total_amount);
+            
+            return `
+                <div class="employee-card" data-employee="${employee.employee_id}">
+                    <div class="employee-header">
+                        <div>
+                            <input type="checkbox" class="employee-checkbox" data-employee="${employee.employee_id}" 
+                                   onchange="toggleEmployeeSelection('${employee.employee_id}')">
+                            <span class="employee-name">${employee.employee_name}</span>
+                            <span class="employee-id">(${employee.employee_id})</span>
+                        </div>
+                        <span class="status-badge ${statusClass}">${employee.overall_tc_status}</span>
+                    </div>
+                    
+                    <div class="novelty-summary">
+                        <div class="summary-item">
+                            <span>📋</span>
+                            <span>${employee.line_count} líneas</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>🏢</span>
+                            <span>${employee.batches.join(', ')}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>📊</span>
+                            <span>${employee.novelty_types.join(', ')}</span>
+                        </div>
+                        <div class="summary-item amount-total">
+                            <span>💰</span>
+                            <span>${totalAmount}</span>
+                        </div>
+                    </div>
+                    
+                    <table class="lines-table">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-column">
+                                    <input type="checkbox" onchange="toggleAllEmployeeLines('${employee.employee_id}', this.checked)">
+                                </th>
+                                <th>Tipo</th>
+                                <th>Fecha</th>
+                                <th>Cantidad</th>
+                                <th>Monto</th>
+                                <th>Estado etapa TC</th>
+                                <th>Regla</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${employee.lines.map(line => renderLineRow(line)).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <div class="action-buttons">
+                        <button class="btn-approve" onclick="approveEmployee('${employee.employee_id}')">
+                            ✓ Aprobar Empleado
+                        </button>
+                        <button class="btn-reject" onclick="rejectEmployee('${employee.employee_id}')">
+                            ✗ Rechazar Empleado
+                        </button>
+                        <button class="btn-detail" onclick="showEmployeeDetail('${employee.employee_id}')">
+                            👁 Ver Detalle
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Render individual line row
+        function renderLineRow(line) {
+            const statusClass = `status-${(line.tc_status || 'pendiente').toLowerCase()}`;
+            const amount = formatCurrency(line.amount || 0);
+            const ruleText = line.rule_applied || '-';
+            
+            return `
+                <tr>
+                    <td class="checkbox-column">
+                        <input type="checkbox" class="line-checkbox" data-line="${line.name}" 
+                               onchange="toggleLineSelection('${line.name}')">
+                    </td>
+                    <td>${line.novedad_type || '-'}</td>
+                    <td>${line.novedad_date || '-'}</td>
+                    <td>${line.quantity || '-'}</td>
+                    <td>${amount}</td>
+                    <td><span class="status-badge ${statusClass}">${line.tc_status || 'Pendiente'}</span></td>
+                    <td style="font-size: 0.8em;">${ruleText}</td>
+                </tr>
+            `;
+        }
+        
+        // Selection management
+        function toggleEmployeeSelection(employeeId) {
+            const employee = currentData.consolidated.find(e => e.employee_id === employeeId);
+            if (!employee) return;
+            
+            const checkbox = document.querySelector(`.employee-checkbox[data-employee="${employeeId}"]`);
+            const isChecked = checkbox.checked;
+            
+            // Toggle all lines for this employee
+            employee.lines.forEach(line => {
+                if (isChecked) {
+                    selectedLines.add(line.name);
+                } else {
+                    selectedLines.delete(line.name);
+                }
+                
+                const lineCheckbox = document.querySelector(`.line-checkbox[data-line="${line.name}"]`);
+                if (lineCheckbox) lineCheckbox.checked = isChecked;
+            });
+            
+            updateSelectedCount();
+        }
+        
+        function toggleAllEmployeeLines(employeeId, checked) {
+            const employee = currentData.consolidated.find(e => e.employee_id === employeeId);
+            if (!employee) return;
+            
+            employee.lines.forEach(line => {
+                if (checked) {
+                    selectedLines.add(line.name);
+                } else {
+                    selectedLines.delete(line.name);
+                }
+                
+                const lineCheckbox = document.querySelector(`.line-checkbox[data-line="${line.name}"]`);
+                if (lineCheckbox) lineCheckbox.checked = checked;
+            });
+            
+            // Update employee checkbox
+            const empCheckbox = document.querySelector(`.employee-checkbox[data-employee="${employeeId}"]`);
+            if (empCheckbox) empCheckbox.checked = checked;
+            
+            updateSelectedCount();
+        }
+        
+        function toggleLineSelection(lineId) {
+            const checkbox = document.querySelector(`.line-checkbox[data-line="${lineId}"]`);
+            
+            if (checkbox.checked) {
+                selectedLines.add(lineId);
+            } else {
+                selectedLines.delete(lineId);
+            }
+            
+            updateSelectedCount();
+        }
+        
+        function updateSelectedCount() {
+            const count = selectedLines.size;
+            const bulkActions = document.getElementById('bulk-actions');
+            const selectedCount = document.getElementById('selected-count');
+            
+            if (count > 0) {
+                bulkActions.classList.add('show');
+                selectedCount.textContent = `${count} líneas seleccionadas`;
+            } else {
+                bulkActions.classList.remove('show');
+            }
+        }
+        
+        // Action handlers
+        function approveEmployee(employeeId) {
+            const employee = currentData.consolidated.find(e => e.employee_id === employeeId);
+            if (!employee) return;
+            
+            const lineIds = employee.lines.map(line => line.name);
+            showCommentModal('Aprobar Empleado', 'approve', lineIds);
+        }
+        
+        function rejectEmployee(employeeId) {
+            const employee = currentData.consolidated.find(e => e.employee_id === employeeId);
+            if (!employee) return;
+            
+            const lineIds = employee.lines.map(line => line.name);
+            showCommentModal('Rechazar Empleado', 'reject', lineIds);
+        }
+        
+        function bulkApprove() {
+            if (selectedLines.size === 0) return;
+            showCommentModal('Aprobación en Lote', 'approve', Array.from(selectedLines));
+        }
+        
+        function bulkReject() {
+            if (selectedLines.size === 0) return;
+            showCommentModal('Rechazo en Lote', 'reject', Array.from(selectedLines));
+        }
+        
+        function showCommentModal(title, action, lineIds) {
+            pendingAction = { action, lineIds };
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-comment').value = '';
+            document.getElementById('comment-modal').style.display = 'block';
+        }
+        
+        function closeCommentModal() {
+            document.getElementById('comment-modal').style.display = 'none';
+            pendingAction = null;
+        }
+        
+        function confirmAction() {
+            if (!pendingAction) return;
+            
+            const comments = document.getElementById('modal-comment').value;
+            const { action, lineIds } = pendingAction;
+            
+            closeCommentModal();
+            
+            const method = action === 'approve' ? 
+                'hubgh.hubgh.payroll_tc_tray.bulk_approve_tc' : 
+                'hubgh.hubgh.payroll_tc_tray.bulk_reject_tc';
+            
+            frappe.call({
+                method: method,
+                args: {
+                    line_ids: lineIds,
+                    comments: comments
+                },
+                callback: function(response) {
+                    if (response.message && response.message.status !== 'error') {
+                        frappe.show_alert({
+                            message: response.message.message,
+                            indicator: 'green'
+                        });
+                        selectedLines.clear();
+                        loadTCTrayData(); // Refresh data
+                    } else {
+                        frappe.show_alert({
+                            message: response.message?.message || 'Error en la operación',
+                            indicator: 'red'
+                        });
+                    }
+                }
+            });
+        }
+        
+        function showEmployeeDetail(employeeId) {
+            // Navigate to detailed employee view
+            window.open(`/app/payroll-import-line?employee_id=${employeeId}`, '_blank');
+        }
+        
+        // Filters
+        function applyFilters() {
+            loadTCTrayData();
+        }
+        
+        function populateBatchFilter(batches) {
+            const select = document.getElementById('batch-filter');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">Todos los lotes</option>' + 
+                batches.map(batch => 
+                    `<option value="${batch.batch}" ${batch.batch === currentValue ? 'selected' : ''}>${batch.batch}</option>`
+                ).join('');
+        }
+        
+        // UI helpers
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('content').style.display = 'none';
+        }
+        
+        function formatCurrency(amount) {
+            if (!amount) return '$0';
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0
+            }).format(amount);
+        }
+    </script>
+</body>
+</html>

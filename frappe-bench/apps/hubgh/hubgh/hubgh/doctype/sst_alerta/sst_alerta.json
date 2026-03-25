@@ -1,0 +1,171 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:SSTA-{YYYY}-{#####}",
+ "creation": "2026-02-10 16:10:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "novedad",
+  "empleado",
+  "punto_venta",
+  "fecha_programada",
+  "tipo_alerta",
+  "estado",
+  "asignado_a",
+  "mensaje",
+  "canal",
+  "atendida_en",
+  "ultima_notificacion",
+  "referencia_todo"
+ ],
+ "fields": [
+  {
+   "fieldname": "novedad",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Novedad SST",
+   "options": "Novedad SST",
+   "reqd": 1
+  },
+  {
+   "fieldname": "empleado",
+   "fieldtype": "Link",
+   "label": "Empleado",
+   "options": "Ficha Empleado"
+  },
+  {
+   "fieldname": "punto_venta",
+   "fieldtype": "Link",
+   "label": "Punto de Venta",
+   "options": "Punto de Venta"
+  },
+  {
+   "fieldname": "fecha_programada",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Programada",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tipo_alerta",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tipo Alerta",
+   "options": "Seguimiento\nExamen post incapacidad\nVencimiento recomendación médica\nSeguimiento aforado semestral\nOtro"
+  },
+  {
+   "default": "Pendiente",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Pendiente\nEnviada\nAtendida\nReprogramada\nCancelada"
+  },
+  {
+   "fieldname": "asignado_a",
+   "fieldtype": "Link",
+   "label": "Asignado a",
+   "options": "User"
+  },
+  {
+   "fieldname": "mensaje",
+   "fieldtype": "Small Text",
+   "label": "Mensaje"
+  },
+  {
+   "default": "In-app",
+   "fieldname": "canal",
+   "fieldtype": "Select",
+   "label": "Canal",
+   "options": "In-app\nEmail"
+  },
+  {
+   "fieldname": "atendida_en",
+   "fieldtype": "Datetime",
+   "label": "Atendida en"
+  },
+  {
+   "fieldname": "ultima_notificacion",
+   "fieldtype": "Date",
+   "label": "Última notificación"
+  },
+  {
+   "fieldname": "referencia_todo",
+   "fieldtype": "Link",
+   "label": "ToDo",
+   "options": "ToDo"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-10 16:10:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "SST Alerta",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "SST",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR SST",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "select": 1,
+   "share": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Relaciones Laborales",
+   "select": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

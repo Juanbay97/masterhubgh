@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Importador de nomina</title>
+	<style>
+		:root {
+			color-scheme: light;
+			--page-bg: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+			--surface: #ffffff;
+			--surface-soft: #f8fafc;
+			--surface-info: #eff6ff;
+			--surface-warning: #fff7ed;
+			--surface-success: #f0fdf4;
+			--border: #e2e8f0;
+			--border-strong: #cbd5e1;
+			--text: #1f2937;
+			--muted: #64748b;
+			--primary: #2563eb;
+			--primary-strong: #1d4ed8;
+			--success: #166534;
+			--warning: #9a3412;
+			--danger: #991b1b;
+			--shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+			--radius-xl: 20px;
+			--radius-lg: 16px;
+			--radius-md: 12px;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			font-family: "Segoe UI", Tahoma, sans-serif;
+			background: var(--page-bg);
+			color: var(--text);
+		}
+
+		a {
+			color: inherit;
+		}
+
+		h1,
+		h2,
+		h3,
+		p {
+			margin: 0;
+		}
+
+		.page-shell {
+			max-width: 1100px;
+			margin: 0 auto;
+			padding: 32px 20px 48px;
+			display: grid;
+			gap: 20px;
+		}
+
+		.intro-card,
+		.panel,
+		.preview-panel,
+		.success-panel,
+		.loading-card,
+		.empty-state,
+		.info-card,
+		.summary-card,
+		.field-explainer {
+			background: var(--surface);
+			border: 1px solid var(--border);
+			border-radius: var(--radius-xl);
+			box-shadow: var(--shadow);
+		}
+
+		.intro-card,
+		.panel,
+		.preview-panel,
+		.success-panel {
+			padding: 24px;
+		}
+
+		.intro-card {
+			display: grid;
+			gap: 18px;
+		}
+
+		.eyebrow,
+		.badge,
+		.status-chip,
+		.mini-pill,
+		.status-pill {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			border-radius: 999px;
+			font-size: 12px;
+			font-weight: 700;
+		}
+
+		.eyebrow {
+			padding: 6px 10px;
+			background: var(--surface-info);
+			color: var(--primary-strong);
+			letter-spacing: 0.04em;
+			text-transform: uppercase;
+			width: fit-content;
+		}
+
+		h1 {
+			font-size: clamp(28px, 4vw, 38px);
+			line-height: 1.1;
+		}
+
+		.intro-copy {
+			display: grid;
+			gap: 10px;
+		}
+
+		.intro-copy p,
+		.section-subtitle,
+		.helper-text,
+		.meta-note,
+		.table-hint,
+		.alert,
+		.empty-state p,
+		.info-card p,
+		.summary-caption {
+			color: var(--muted);
+			line-height: 1.5;
+		}
+
+		.explainer-grid,
+		.summary-grid {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 12px;
+		}
+
+		.field-explainer,
+		.summary-card,
+		.info-card,
+		.empty-state,
+		.loading-card {
+			padding: 18px;
+		}
+
+		.field-explainer {
+			background: var(--surface-soft);
+			box-shadow: none;
+			display: grid;
+			gap: 8px;
+		}
+
+		.field-explainer strong,
+		.summary-value {
+			font-size: 18px;
+			font-weight: 700;
+			color: var(--text);
+		}
+
+		.summary-card {
+			display: grid;
+			gap: 6px;
+			box-shadow: none;
+		}
+
+		.summary-value {
+			font-size: 30px;
+			line-height: 1;
+		}
+
+		.content-grid {
+			display: grid;
+			grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.8fr);
+			gap: 20px;
+		}
+
+		.panel-header,
+		.preview-header,
+		.success-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			gap: 16px;
+			margin-bottom: 18px;
+		}
+
+		.panel-title-block,
+		.preview-title-block,
+		.success-title-block {
+			display: grid;
+			gap: 6px;
+		}
+
+		.badge,
+		.status-chip,
+		.mini-pill,
+		.status-pill {
+			padding: 7px 11px;
+		}
+
+		.badge,
+		.status-chip,
+		.mini-pill {
+			background: var(--surface-info);
+			color: var(--primary-strong);
+		}
+
+		.form-grid {
+			display: grid;
+			grid-template-columns: repeat(12, minmax(0, 1fr));
+			gap: 16px;
+		}
+
+		.form-group {
+			display: grid;
+			gap: 8px;
+		}
+
+		.form-group-file {
+			grid-column: span 12;
+		}
+
+		.form-group-half {
+			grid-column: span 6;
+		}
+
+		label {
+			font-size: 14px;
+			font-weight: 700;
+			color: var(--text);
+		}
+
+		.field-copy {
+			display: grid;
+			gap: 4px;
+		}
+
+		.input-shell {
+			position: relative;
+		}
+
+		input,
+		select,
+		button,
+		.btn-link {
+			font: inherit;
+		}
+
+		input,
+		select {
+			width: 100%;
+			min-height: 52px;
+			padding: 14px 16px;
+			border-radius: var(--radius-md);
+			border: 1px solid var(--border-strong);
+			background: var(--surface);
+			color: var(--text);
+			transition: border-color 0.18s ease, box-shadow 0.18s ease;
+		}
+
+		input:focus,
+		select:focus {
+			outline: none;
+			border-color: #93c5fd;
+			box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+		}
+
+		.file-dropzone {
+			position: relative;
+			padding: 18px;
+			border: 1px dashed #93c5fd;
+			border-radius: var(--radius-lg);
+			background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+			display: grid;
+			gap: 12px;
+		}
+
+		.file-dropzone strong {
+			font-size: 16px;
+		}
+
+		.file-dropzone p {
+			color: var(--muted);
+		}
+
+		input[type="file"] {
+			padding: 12px 14px;
+			background: transparent;
+		}
+
+		input[type="file"]::file-selector-button {
+			margin-right: 12px;
+			padding: 10px 14px;
+			border: 0;
+			border-radius: 10px;
+			background: var(--surface-info);
+			color: var(--primary-strong);
+			font-weight: 700;
+			cursor: pointer;
+		}
+
+		.select-meta {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 12px;
+			font-size: 12px;
+			color: var(--muted);
+		}
+
+		.helper-text,
+		.meta-note {
+			font-size: 13px;
+		}
+
+		.form-actions,
+		.preview-actions,
+		.empty-state-actions {
+			display: flex;
+			gap: 12px;
+			flex-wrap: wrap;
+		}
+
+		.form-actions {
+			margin-top: 20px;
+		}
+
+		button,
+		.btn-link {
+			border: 0;
+			border-radius: 12px;
+			padding: 13px 18px;
+			font-weight: 700;
+			text-decoration: none;
+			cursor: pointer;
+			transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+		}
+
+		button:hover,
+		.btn-link:hover {
+			transform: translateY(-1px);
+		}
+
+		button:disabled {
+			cursor: not-allowed;
+			opacity: 0.6;
+			transform: none;
+			box-shadow: none;
+		}
+
+		.btn-primary {
+			background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+			color: #ffffff;
+			box-shadow: 0 16px 28px rgba(37, 99, 235, 0.18);
+		}
+
+		.btn-secondary {
+			background: var(--surface-soft);
+			color: var(--text);
+			border: 1px solid var(--border);
+		}
+
+		.btn-success {
+			background: linear-gradient(135deg, #22c55e, var(--success));
+			color: #ffffff;
+			box-shadow: 0 16px 28px rgba(34, 197, 94, 0.18);
+		}
+
+		.side-stack {
+			display: grid;
+			gap: 16px;
+		}
+
+		.info-card,
+		.empty-state,
+		.loading-card {
+			box-shadow: none;
+		}
+
+		.info-card {
+			background: var(--surface-soft);
+			display: grid;
+			gap: 10px;
+		}
+
+		.info-list {
+			list-style: none;
+			padding: 0;
+			margin: 0;
+			display: grid;
+			gap: 8px;
+		}
+
+		.info-list li {
+			display: flex;
+			gap: 8px;
+			align-items: flex-start;
+			color: var(--muted);
+		}
+
+		.info-list li::before {
+			content: "";
+			width: 8px;
+			height: 8px;
+			margin-top: 7px;
+			border-radius: 999px;
+			background: #60a5fa;
+			flex: 0 0 auto;
+		}
+
+		.empty-state {
+			display: grid;
+			gap: 10px;
+			background: var(--surface-warning);
+			border-style: dashed;
+		}
+
+		.empty-state strong {
+			font-size: 16px;
+		}
+
+		.empty-state code {
+			padding: 2px 6px;
+			border-radius: 8px;
+			background: rgba(15, 23, 42, 0.06);
+		}
+
+		.loading-card {
+			text-align: center;
+			background: var(--surface-soft);
+		}
+
+		.loading-orb {
+			width: 48px;
+			height: 48px;
+			margin: 0 auto 14px;
+			border-radius: 999px;
+			border: 4px solid rgba(37, 99, 235, 0.14);
+			border-top-color: var(--primary);
+			animation: spin 1s linear infinite;
+		}
+
+		.alert {
+			padding: 14px 16px;
+			margin-bottom: 16px;
+			border-radius: 14px;
+			border: 1px solid var(--border);
+		}
+
+		.alert strong {
+			display: block;
+			margin-bottom: 4px;
+			color: inherit;
+		}
+
+		.alert-info {
+			background: var(--surface-info);
+			border-color: #bfdbfe;
+			color: var(--primary-strong);
+		}
+
+		.alert-warning {
+			background: var(--surface-warning);
+			border-color: #fed7aa;
+			color: var(--warning);
+		}
+
+		.alert-error {
+			background: #fef2f2;
+			border-color: #fecaca;
+			color: var(--danger);
+		}
+
+		.alert-success {
+			background: var(--surface-success);
+			border-color: #86efac;
+			color: var(--success);
+		}
+
+		.table-shell {
+			border: 1px solid var(--border);
+			border-radius: 16px;
+			overflow: hidden;
+			background: var(--surface);
+		}
+
+		.table-scroll {
+			overflow: auto;
+			max-height: 420px;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			min-width: 820px;
+		}
+
+		th,
+		td {
+			padding: 14px 16px;
+			text-align: left;
+			border-bottom: 1px solid #ebf0f5;
+			vertical-align: top;
+		}
+
+		th {
+			position: sticky;
+			top: 0;
+			background: var(--surface-soft);
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+			color: var(--muted);
+			z-index: 1;
+		}
+
+		tbody tr:hover {
+			background: rgba(37, 99, 235, 0.03);
+		}
+
+		.preview-empty {
+			padding: 28px;
+			text-align: center;
+			color: var(--muted);
+		}
+
+		.status-valido,
+		.status-completado {
+			background: var(--surface-success);
+			color: var(--success);
+		}
+
+		.status-pendiente,
+		.status-completado-con-errores,
+		.status-completado-con-duplicados {
+			background: var(--surface-warning);
+			color: var(--warning);
+		}
+
+		.status-error,
+		.status-fallido,
+		.status-duplicado {
+			background: #fef2f2;
+			color: var(--danger);
+		}
+
+		.muted-note {
+			color: var(--muted);
+			font-size: 13px;
+		}
+
+		.hidden {
+			display: none !important;
+		}
+
+		@keyframes spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		@media (max-width: 960px) {
+			.content-grid,
+			.explainer-grid,
+			.summary-grid {
+				grid-template-columns: 1fr;
+			}
+
+			.form-group-half {
+				grid-column: span 12;
+			}
+
+			.panel-header,
+			.preview-header,
+			.success-header {
+				flex-direction: column;
+			}
+		}
+
+		@media (max-width: 640px) {
+			.page-shell {
+				padding: 20px 14px 32px;
+			}
+
+			.intro-card,
+			.panel,
+			.preview-panel,
+			.success-panel {
+				padding: 18px;
+			}
+
+			button,
+			.btn-link {
+				width: 100%;
+				justify-content: center;
+				text-align: center;
+			}
+
+			.select-meta {
+				flex-direction: column;
+				align-items: flex-start;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="page-shell">
+		<section class="intro-card">
+			<span class="eyebrow">Payroll HubGH</span>
+			<div class="intro-copy">
+				<h1>Importar novedades de nomina</h1>
+				<p>Carga el archivo, confirma el contexto del lote y revisa la vista previa antes de procesar. La interfaz prioriza claridad operativa y mantiene intacto el flujo actual de upload, preview y confirmacion.</p>
+			</div>
+			<div class="explainer-grid" aria-label="Explicacion de campos">
+				<article class="field-explainer">
+					<strong>Archivo</strong>
+					<p>Subi el Excel original de la fuente. El sistema intenta sugerir la fuente segun el nombre del archivo para reducir errores manuales.</p>
+				</article>
+				<article class="field-explainer">
+					<strong>Tipo de fuente</strong>
+					<p>Selecciona la fuente activa del catalogo oficial. Solo se muestran registros vigentes para no abrir caminos inconsistentes.</p>
+				</article>
+				<article class="field-explainer">
+					<strong>Periodo</strong>
+					<p>Define el periodo activo donde se registrara el lote. La opcion visible sale del catalogo actual y se valida antes de crear el batch.</p>
+				</article>
+			</div>
+		</section>
+
+		<div class="content-grid">
+			<section class="panel">
+				<div class="panel-header">
+					<div class="panel-title-block">
+						<span class="badge">Paso 1</span>
+						<h2>Cargar archivo y preparar lote</h2>
+						<p class="section-subtitle">Completa los tres campos, valida la disponibilidad de catalogos y luego genera la vista previa.</p>
+					</div>
+					<span id="formStatusChip" class="status-chip">Preparando formulario...</span>
+				</div>
+
+				<div id="alertContainer"></div>
+
+				<form id="uploadForm" novalidate>
+					<div class="form-grid">
+						<div class="form-group form-group-file">
+							<div class="field-copy">
+								<label for="sourceFile">Archivo de nomina</label>
+								<p class="helper-text">Adjunta el archivo en formato Excel. No hace falta renombrar columnas ni cambiar la estructura fuente.</p>
+							</div>
+							<div class="file-dropzone">
+								<div>
+									<strong>Area de carga</strong>
+									<p>Selecciona el archivo desde tu equipo para continuar con la vista previa.</p>
+								</div>
+								<div class="input-shell">
+									<input type="file" id="sourceFile" name="source_file" accept=".xlsx,.xls" required>
+								</div>
+								<p id="selectedFileName" class="meta-note">Todavia no seleccionaste ningun archivo.</p>
+							</div>
+						</div>
+
+						<div class="form-group form-group-half">
+							<div class="field-copy">
+								<label for="sourceType">Tipo de fuente</label>
+								<p class="helper-text">Origen operativo del archivo. Este combo se carga con fuentes activas del catalogo vigente.</p>
+							</div>
+							<div class="select-meta">
+								<span>Catalogo oficial</span>
+								<span id="sourceBadge" class="mini-pill">Sin datos</span>
+							</div>
+							<div class="input-shell">
+								<select id="sourceType" name="source_type" required>
+									<option value="">Seleccionar fuente...</option>
+								</select>
+							</div>
+							<p id="sourceHelper" class="helper-text">Se muestran solo fuentes activas del catalogo oficial.</p>
+						</div>
+
+						<div class="form-group form-group-half">
+							<div class="field-copy">
+								<label for="period">Periodo</label>
+								<p class="helper-text">Marco temporal del lote. El listado toma solo periodos activos disponibles en la API actual.</p>
+							</div>
+							<div class="select-meta">
+								<span>Periodos activos</span>
+								<span id="periodBadge" class="mini-pill">Sin datos</span>
+							</div>
+							<div class="input-shell">
+								<select id="period" name="period" required>
+									<option value="">Seleccionar periodo...</option>
+								</select>
+							</div>
+							<p id="periodHelper" class="helper-text">Se muestran solo periodos activos listos para recibir novedades.</p>
+						</div>
+					</div>
+
+					<div class="form-actions">
+						<button type="submit" id="previewBtn" class="btn-primary">Continuar con vista previa</button>
+						<a class="btn-link btn-secondary" href="/app/payroll-import-batch">Ver lotes existentes</a>
+					</div>
+				</form>
+			</section>
+
+			<aside class="side-stack">
+				<div class="info-card">
+					<h3>Disponibilidad actual</h3>
+					<ul class="info-list">
+						<li><strong id="sourcesAvailableCount">0</strong>&nbsp;fuentes activas <span id="sourcesAvailableNote">Cargando fuentes configuradas...</span></li>
+						<li><strong id="periodsAvailableCount">0</strong>&nbsp;periodos activos <span id="periodsAvailableNote">Cargando periodos disponibles...</span></li>
+						<li><strong id="formAvailabilityHeadline">...</strong>&nbsp;<span id="formAvailabilityNote">Validando catalogos obligatorios para la importacion.</span></li>
+					</ul>
+				</div>
+
+				<div id="sourceEmptyState" class="empty-state hidden">
+					<strong>Faltan fuentes activas</strong>
+					<p>No hay registros activos en <code>Payroll Source Catalog</code>. Sin eso no se puede identificar ni validar el origen del archivo.</p>
+					<p class="helper-text">Activa o crea al menos una fuente con <code>status = Active</code> para rehabilitar el combo <strong>Tipo de fuente</strong>.</p>
+					<div class="empty-state-actions">
+						<a id="sourceCatalogLink" class="btn-link btn-primary" href="/app/payroll-source-catalog">Abrir catalogo de fuentes</a>
+					</div>
+				</div>
+
+				<div id="periodEmptyState" class="empty-state hidden">
+					<strong>Faltan periodos activos</strong>
+					<p>No hay registros activos en <code>Payroll Period Config</code>. Activa o crea un periodo para habilitar la carga.</p>
+					<p class="helper-text">El combo <strong>Periodo</strong> toma <code>nombre_periodo</code>, <code>ano</code> y <code>mes</code> de los periodos con <code>status = Active</code>.</p>
+					<div class="empty-state-actions">
+						<a id="periodCatalogLink" class="btn-link btn-primary" href="/app/payroll-period-config">Abrir catalogo de periodos</a>
+					</div>
+				</div>
+
+				<div class="info-card">
+					<h3>Antes de procesar</h3>
+					<ul class="info-list">
+						<li>Confirma que el archivo corresponda al corte correcto.</li>
+						<li>Revisa la fuente sugerida si el nombre del archivo activa autoseleccion.</li>
+						<li>La conciliacion operativa sigue resolviendo contra <code>Ficha Empleado</code>.</li>
+					</ul>
+				</div>
+			</aside>
+		</div>
+
+		<div id="loadingState" class="loading-card hidden">
+			<div class="loading-orb"></div>
+			<h3>Procesando archivo</h3>
+			<p>Estamos subiendo el Excel, creando el lote y ejecutando la vista previa. No cierres esta ventana.</p>
+		</div>
+
+		<section id="previewSection" class="preview-panel hidden">
+			<div class="preview-header">
+				<div class="preview-title-block">
+					<span class="badge">Paso 2</span>
+					<h2>Revisar vista previa</h2>
+					<p id="previewMeta" class="table-hint">Revisa filas validas, errores y duplicados antes de confirmar la importacion.</p>
+				</div>
+				<span id="previewStatusChip" class="status-chip">Pendiente</span>
+			</div>
+
+			<div class="summary-grid">
+				<div class="summary-card">
+					<div class="summary-value" id="totalRows">0</div>
+					<div class="summary-caption">Filas detectadas</div>
+				</div>
+				<div class="summary-card">
+					<div class="summary-value" id="validRows">0</div>
+					<div class="summary-caption">Filas validas</div>
+				</div>
+				<div class="summary-card">
+					<div class="summary-value" id="errorRows">0</div>
+					<div class="summary-caption">Filas con error</div>
+				</div>
+				<div class="summary-card">
+					<div class="summary-value" id="duplicateRows">0</div>
+					<div class="summary-caption">Duplicados</div>
+				</div>
+			</div>
+
+			<div class="table-shell">
+				<div class="table-scroll">
+					<table>
+						<thead>
+							<tr>
+								<th>Fila</th>
+								<th>Estado</th>
+								<th>Identificador / Ficha Empleado</th>
+								<th>Tipo novedad</th>
+								<th>Cantidad</th>
+								<th>Fecha</th>
+								<th>Observaciones</th>
+							</tr>
+						</thead>
+						<tbody id="previewTableBody"></tbody>
+					</table>
+				</div>
+				<div id="previewEmptyState" class="preview-empty hidden">No hay filas para mostrar todavia.</div>
+			</div>
+
+			<div class="preview-actions" style="margin-top: 18px;">
+				<button type="button" id="commitBtn" class="btn-success" disabled>Confirmar importacion</button>
+				<button type="button" id="cancelBtn" class="btn-secondary">Cancelar lote</button>
+			</div>
+		</section>
+
+		<section id="successSection" class="success-panel hidden">
+			<div class="success-header">
+				<div class="success-title-block">
+					<span class="badge">Listo</span>
+					<h2>Importacion confirmada</h2>
+					<p>El lote quedo registrado y listo para continuar el flujo operativo de nomina.</p>
+				</div>
+			</div>
+			<div class="preview-actions">
+				<a href="/app/payroll-import-batch" class="btn-link btn-primary">Ver lotes de importacion</a>
+				<a href="/payroll_import_upload" class="btn-link btn-secondary">Cargar otro archivo</a>
+			</div>
+		</section>
+	</div>
+
+	<script src="/assets/js/frappe.min.js"></script>
+	<script src="payroll_import_upload.js"></script>
+</body>
+</html>

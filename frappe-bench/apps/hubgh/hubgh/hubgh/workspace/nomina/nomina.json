@@ -1,0 +1,139 @@
+{
+ "charts": [],
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"Operaci\u00f3n de n\u00f3mina\",\"level\":2,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cargar novedades\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Historial de cargas\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Revisi\u00f3n inicial (TC)\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Aprobaci\u00f3n final (TP)\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Casos de liquidaci\u00f3n\",\"col\":4}},{\"type\":\"header\",\"data\":{\"text\":\"Maestros y configuraci\u00f3n\",\"level\":3,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Tipos de novedad\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fuentes externas\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Reglas de n\u00f3mina\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Configuraci\u00f3n de per\u00edodos\",\"col\":4}},{\"type\":\"header\",\"data\":{\"text\":\"Entradas relacionadas\",\"level\":3,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Persona 360\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Punto 360\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gesti\u00f3n Humana\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Centro de gesti\u00f3n SST\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Relaciones Laborales\",\"col\":4}}]",
+ "creation": "2026-03-18",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "pay",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Nómina",
+ "links": [],
+ "modified": "2026-03-18",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Nómina",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Gestión Humana"
+  },
+  {
+   "role": "Operativo Nómina"
+  },
+  {
+   "role": "TP Nómina"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "sequence_id": 10.0,
+ "shortcuts": [
+  {
+   "color": "Green",
+   "doc_view": "",
+   "label": "Cargar novedades",
+   "link_to": "payroll_import_upload",
+   "type": "Page"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Historial de cargas",
+   "link_to": "Payroll Import Batch",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "Revisión inicial (TC)",
+   "link_to": "payroll_tc_tray",
+   "type": "Page"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "Aprobación final (TP)",
+   "link_to": "payroll_tp_tray",
+   "type": "Page"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "List",
+   "label": "Casos de liquidación",
+   "link_to": "Payroll Liquidation Case",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "List",
+   "label": "Tipos de novedad",
+   "link_to": "Payroll Novedad Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "label": "Fuentes externas",
+   "link_to": "Payroll Source Catalog",
+   "type": "DocType"
+  },
+  {
+   "color": "Gray",
+   "doc_view": "List",
+   "label": "Reglas de nómina",
+   "link_to": "Payroll Rule Catalog",
+   "type": "DocType"
+  },
+  {
+   "color": "Yellow",
+   "doc_view": "List",
+   "label": "Configuración de períodos",
+   "link_to": "Payroll Period Config",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Persona 360",
+   "link_to": "persona_360",
+   "type": "Page"
+  },
+  {
+   "color": "Green",
+   "doc_view": "",
+   "label": "Punto 360",
+   "link_to": "punto_360",
+   "type": "Page"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "",
+   "label": "Gestión Humana",
+   "link_to": "Gestión Humana",
+   "type": "Workspace"
+  },
+  {
+   "color": "Red",
+   "doc_view": "",
+   "label": "Centro de gestión SST",
+   "link_to": "sst_bandeja",
+   "type": "Page"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "",
+   "label": "Relaciones Laborales",
+   "link_to": "Relaciones Laborales",
+   "type": "Workspace"
+  }
+ ],
+ "title": "Nómina"
+}

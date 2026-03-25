@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:DIS-{YYYY}-{#####}",
+ "creation": "2026-01-15 22:48:35.921969",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+  "field_order": [
+   "empleado",
+   "fecha_incidente",
+   "tipo_falta",
+   "descripcion",
+   "estado",
+   "decision_final",
+   "fecha_cierre"
+  ],
+ "fields": [
+  {
+   "fieldname": "empleado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Empleado",
+   "options": "Ficha Empleado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_incidente",
+   "fieldtype": "Date",
+   "label": "Fecha Incidente",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tipo_falta",
+   "fieldtype": "Select",
+   "label": "Tipo Falta",
+   "options": "Leve\nGrave\nGrav\u00edsima"
+  },
+  {
+   "fieldname": "descripcion",
+   "fieldtype": "Text Editor",
+   "label": "Descripci\u00f3n"
+  },
+  {
+   "default": "Abierto",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "label": "Estado",
+   "options": "Abierto\nEn Proceso\nCerrado"
+  },
+  {
+   "depends_on": "eval:doc.estado=='Cerrado'",
+   "fieldname": "decision_final",
+   "fieldtype": "Select",
+   "label": "Decisión Final",
+   "options": "Archivo\nLlamado de Atención\nSuspensión\nTerminación"
+  },
+  {
+   "depends_on": "eval:doc.estado=='Cerrado'",
+   "fieldname": "fecha_cierre",
+   "fieldtype": "Date",
+   "label": "Fecha de Cierre"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-19 16:15:33.186184",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Caso Disciplinario",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gesti\u00f3n Humana",
+   "select": 1,
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

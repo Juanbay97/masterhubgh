@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "creation": "2026-03-16 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "categoria",
+  "pregunta",
+  "respuesta",
+  "nivel_riesgo"
+ ],
+ "fields": [
+  {
+   "fieldname": "categoria",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Categoría"
+  },
+  {
+   "fieldname": "pregunta",
+   "fieldtype": "Data",
+   "label": "Pregunta"
+  },
+  {
+   "fieldname": "respuesta",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Respuesta"
+  },
+  {
+   "default": "Medio",
+   "fieldname": "nivel_riesgo",
+   "fieldtype": "Select",
+   "label": "Nivel Riesgo",
+   "options": "Bajo\nMedio\nAlto"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-03-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Bienestar Respuesta Abierta",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
+

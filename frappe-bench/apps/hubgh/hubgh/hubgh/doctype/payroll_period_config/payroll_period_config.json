@@ -1,0 +1,112 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nombre_periodo",
+  "ano",
+  "mes",
+  "fecha_corte_inicio",
+  "fecha_corte_fin",
+  "status",
+  "total_dias",
+  "dias_laborales",
+  "observaciones"
+ ],
+ "fields": [
+  {
+   "fieldname": "nombre_periodo",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre del Período",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ano",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Año",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mes",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Mes (1-12)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_corte_inicio",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Corte Inicio",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_corte_fin",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Corte Fin",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Draft\nActive\nClosed"
+  },
+  {
+   "fieldname": "total_dias",
+   "fieldtype": "Int",
+   "label": "Total Días Período"
+  },
+  {
+   "fieldname": "dias_laborales",
+   "fieldtype": "Int",
+   "label": "Días Laborales (esperados)"
+  },
+  {
+   "fieldname": "observaciones",
+   "fieldtype": "Small Text",
+   "label": "Observaciones"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "module": "Hubgh",
+ "name": "Payroll Period Config",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

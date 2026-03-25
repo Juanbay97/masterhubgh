@@ -1,0 +1,222 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+  "field_order": [
+   "batch",
+   "row_number",
+   "status",
+   "column_break_1",
+   "employee_id",
+   "employee_name",
+   "section_novedad",
+   "novedad_type",
+   "novedad_date",
+   "quantity",
+   "amount",
+   "column_break_2",
+   "source_sheet",
+   "source_row_data",
+   "section_validation",
+   "validation_errors",
+   "matched_employee",
+   "section_workflow",
+   "tc_status",
+   "tp_status",
+   "rule_applied",
+   "rule_notes",
+   "dedup_hash"
+  ],
+ "fields": [
+  {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Lote",
+   "options": "Payroll Import Batch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "row_number",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Fila"
+  },
+  {
+   "default": "Pendiente",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Pendiente\nVálido\nError\nProcesado\nDuplicado"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "employee_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "ID Empleado (fuente)"
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Nombre Empleado (fuente)"
+  },
+  {
+   "fieldname": "section_novedad",
+   "fieldtype": "Section Break",
+   "label": "Novedad"
+  },
+  {
+   "fieldname": "novedad_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Tipo de Novedad",
+   "options": "Payroll Novedad Type"
+  },
+  {
+   "fieldname": "novedad_date",
+   "fieldtype": "Date",
+   "label": "Fecha Novedad"
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "label": "Cantidad (horas/días)"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Monto"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "source_sheet",
+   "fieldtype": "Data",
+   "label": "Hoja Origen"
+  },
+  {
+   "fieldname": "source_row_data",
+   "fieldtype": "Code",
+   "label": "Datos Originales (JSON)",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "section_validation",
+   "fieldtype": "Section Break",
+   "label": "Validación"
+  },
+  {
+   "fieldname": "validation_errors",
+   "fieldtype": "Small Text",
+   "label": "Errores de Validación"
+  },
+   {
+    "fieldname": "matched_employee",
+     "fieldtype": "Dynamic Link",
+     "label": "Ficha Empleado Resuelta",
+     "options": "matched_employee_doctype"
+    },
+     {
+      "fieldname": "matched_employee_doctype",
+      "fieldtype": "Link",
+      "hidden": 1,
+       "label": "DocType Persona Resuelta",
+      "options": "DocType",
+      "read_only": 1
+     },
+   {
+    "fieldname": "section_workflow",
+    "fieldtype": "Section Break",
+    "label": "Flujo por etapas operativas"
+   },
+   {
+    "fieldname": "tc_status",
+    "fieldtype": "Select",
+    "label": "Estado etapa TC",
+    "options": "Pendiente\nRevisado\nAprobado\nRechazado"
+   },
+   {
+    "fieldname": "tp_status",
+    "fieldtype": "Select",
+    "label": "Estado etapa TP",
+    "options": "Pendiente\nAprobado\nRechazado"
+   },
+   {
+    "fieldname": "rule_applied",
+    "fieldtype": "Data",
+    "label": "Regla Aplicada"
+   },
+   {
+    "fieldname": "rule_notes",
+    "fieldtype": "Small Text",
+    "label": "Notas de Regla"
+   },
+   {
+    "fieldname": "dedup_hash",
+    "fieldtype": "Data",
+    "label": "Hash Deduplicación",
+    "read_only": 1,
+    "hidden": 1
+   }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "module": "Hubgh",
+ "name": "Payroll Import Line",
+ "naming_rule": "Random",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "select": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Operativo Nómina",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "TP Nómina",
+   "select": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

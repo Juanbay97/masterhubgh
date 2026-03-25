@@ -1,0 +1,20 @@
+{
+ "doctype": "Page",
+ "name": "mis_documentos_candidato",
+ "title": "Mis Documentos",
+ "module": "Hubgh",
+ "standard": "Yes",
+ "page_name": "mis_documentos_candidato",
+ "icon": "folder-open",
+ "roles": [
+  {
+   "role": "Candidato"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "HR Selection"
+  }
+ ]
+}

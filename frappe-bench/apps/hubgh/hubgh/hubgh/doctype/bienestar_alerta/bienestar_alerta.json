@@ -1,0 +1,211 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:BAL-{YYYY}-{#####}",
+ "creation": "2026-03-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+  "field_order": [
+   "ficha_empleado",
+   "punto_venta",
+   "origen_contexto",
+   "seguimiento_ingreso",
+   "evaluacion_periodo_prueba",
+   "levantamiento_punto",
+  "gh_novedad",
+  "tipo_alerta",
+  "prioridad",
+  "fecha_alerta",
+  "estado",
+  "responsable_bienestar",
+  "descripcion",
+  "bitacora",
+  "fecha_cierre",
+  "motivo_cierre"
+ ],
+ "fields": [
+  {
+   "fieldname": "proceso_colaborador",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Proceso Colaborador",
+   "options": "Bienestar Proceso Colaborador"
+  },
+  {
+   "fieldname": "ficha_empleado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Ficha Empleado",
+   "options": "Ficha Empleado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "punto_venta",
+   "fieldtype": "Link",
+   "label": "Punto de Venta",
+   "options": "Punto de Venta"
+  },
+  {
+   "fieldname": "origen_contexto",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Origen Contexto",
+   "options": "seguimiento_ingreso\nevaluacion_periodo_prueba\nlevantamiento_punto\ngh_novedad",
+   "read_only": 1
+  },
+  {
+   "fieldname": "seguimiento_ingreso",
+   "fieldtype": "Link",
+   "label": "Seguimiento Ingreso",
+   "options": "Bienestar Seguimiento Ingreso"
+  },
+  {
+   "fieldname": "evaluacion_periodo_prueba",
+   "fieldtype": "Link",
+   "label": "Evaluación Periodo Prueba",
+   "options": "Bienestar Evaluacion Periodo Prueba"
+  },
+  {
+   "fieldname": "levantamiento_punto",
+   "fieldtype": "Link",
+   "label": "Levantamiento Punto",
+   "options": "Bienestar Levantamiento Punto"
+  },
+  {
+   "fieldname": "gh_novedad",
+   "fieldtype": "Link",
+   "label": "GH Novedad",
+   "options": "GH Novedad"
+  },
+  {
+   "fieldname": "tipo_alerta",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tipo Alerta",
+   "options": "Ingreso\nPeriodo de prueba\nLevantamiento de punto\nOtro",
+   "reqd": 1
+  },
+  {
+   "default": "Media",
+   "fieldname": "prioridad",
+   "fieldtype": "Select",
+   "label": "Prioridad",
+   "options": "Alta\nMedia\nBaja"
+  },
+  {
+   "default": "Today",
+   "fieldname": "fecha_alerta",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Alerta",
+   "reqd": 1
+  },
+  {
+   "default": "Abierta",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Abierta\nEn seguimiento\nEscalada\nCerrada",
+   "reqd": 1
+  },
+  {
+   "fieldname": "responsable_bienestar",
+   "fieldtype": "Link",
+   "label": "Responsable Bienestar",
+   "options": "User"
+  },
+  {
+   "fieldname": "descripcion",
+   "fieldtype": "Small Text",
+   "label": "Descripción",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bitacora",
+   "fieldtype": "Table",
+   "label": "Bitácora",
+   "options": "Bienestar Bitacora Caso"
+  },
+  {
+   "fieldname": "fecha_cierre",
+   "fieldtype": "Date",
+   "label": "Fecha Cierre"
+  },
+  {
+   "fieldname": "motivo_cierre",
+   "fieldtype": "Small Text",
+   "label": "Motivo Cierre"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Bienestar Alerta",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Training & Wellbeing",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Formación y Bienestar",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "share": 1,
+   "select": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,525 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:DC-{candidato}",
+ "creation": "2026-02-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "seccion_referencias",
+  "candidato",
+  "ficha_empleado",
+  "contrato",
+  "estado_datos",
+  "observaciones",
+  "seccion_personal",
+  "tipo_documento",
+  "numero_documento",
+  "nombres",
+  "primer_apellido",
+  "segundo_apellido",
+  "fecha_nacimiento",
+  "fecha_expedicion",
+  "genero",
+  "estado_civil",
+  "nivel_educativo_siesa",
+  "es_extranjero",
+  "prefijo_cuenta_extranjero",
+  "seccion_contacto",
+  "direccion",
+  "barrio",
+  "ciudad",
+  "procedencia_pais",
+  "procedencia_departamento",
+  "procedencia_ciudad",
+  "departamento_residencia_siesa",
+  "ciudad_residencia_siesa",
+  "pais_residencia_siesa",
+  "celular",
+  "email",
+  "seccion_bancaria",
+  "banco_siesa",
+  "tipo_cuenta_bancaria",
+  "numero_cuenta_bancaria",
+  "seccion_laboral",
+  "pdv_destino",
+  "cargo_postulado",
+  "fecha_tentativa_ingreso",
+  "fecha_ingreso",
+  "fecha_fin_contrato",
+  "tipo_contrato",
+  "numero_contrato",
+  "salario",
+  "horas_trabajadas_mes",
+  "centro_costos_siesa",
+  "unidad_negocio_siesa",
+  "grupo_empleados_siesa",
+  "centro_trabajo_siesa",
+  "tipo_cotizante_siesa",
+  "aplica_auxilio_transporte",
+  "tiene_sodexo",
+  "valor_sodexo",
+  "tiene_aux_rodamiento",
+  "valor_aux_rodamiento",
+  "seccion_seguridad_social",
+  "eps_siesa",
+  "afp_siesa",
+  "cesantias_siesa",
+  "ccf_siesa",
+  "arl_codigo_siesa",
+  "seccion_rrll_final",
+  "pais_nacimiento_siesa",
+  "departamento_nacimiento_siesa",
+  "ciudad_nacimiento_siesa",
+  "pais_expedicion_siesa",
+  "departamento_expedicion_siesa",
+  "ciudad_expedicion_siesa",
+  "telefono_contacto_siesa",
+  "seccion_auditoria",
+  "completado_por",
+  "fecha_completado"
+ ],
+ "fields": [
+  {
+   "fieldname": "seccion_referencias",
+   "fieldtype": "Section Break",
+   "label": "Referencias"
+  },
+  {
+   "fieldname": "candidato",
+   "fieldtype": "Link",
+   "label": "Candidato",
+   "options": "Candidato",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "ficha_empleado",
+   "fieldtype": "Link",
+   "label": "Ficha Empleado",
+   "options": "Ficha Empleado"
+  },
+  {
+   "fieldname": "contrato",
+   "fieldtype": "Link",
+   "label": "Contrato",
+   "options": "Contrato"
+  },
+  {
+   "default": "Incompleto",
+   "fieldname": "estado_datos",
+   "fieldtype": "Select",
+   "label": "Estado Datos",
+   "options": "Incompleto\nCompleto\nEnviado a SIESA",
+   "reqd": 1
+  },
+  {
+   "fieldname": "observaciones",
+   "fieldtype": "Small Text",
+   "label": "Observaciones"
+  },
+  {
+   "fieldname": "seccion_personal",
+   "fieldtype": "Section Break",
+   "label": "Datos Personales"
+  },
+  {
+   "fieldname": "tipo_documento",
+   "fieldtype": "Select",
+   "label": "Tipo Documento",
+   "options": "Cedula\nPPT\nCedula de extranjeria\nPasaporte"
+  },
+  {
+   "fieldname": "numero_documento",
+   "fieldtype": "Data",
+   "label": "Número Documento"
+  },
+  {
+   "fieldname": "nombres",
+   "fieldtype": "Data",
+   "label": "Nombres"
+  },
+  {
+   "fieldname": "primer_apellido",
+   "fieldtype": "Data",
+   "label": "Primer Apellido"
+  },
+  {
+   "fieldname": "segundo_apellido",
+   "fieldtype": "Data",
+   "label": "Segundo Apellido"
+  },
+  {
+   "fieldname": "fecha_nacimiento",
+   "fieldtype": "Date",
+   "label": "Fecha Nacimiento"
+  },
+  {
+   "fieldname": "fecha_expedicion",
+   "fieldtype": "Date",
+   "label": "Fecha Expedición"
+  },
+  {
+   "fieldname": "genero",
+   "fieldtype": "Select",
+   "label": "Género",
+   "options": "Masculino\nFemenino\nOtro"
+  },
+  {
+   "fieldname": "estado_civil",
+   "fieldtype": "Select",
+   "label": "Estado Civil",
+   "options": "Soltero\nCasado\nUnión Libre\nDivorciado\nViudo"
+  },
+  {
+   "fieldname": "nivel_educativo_siesa",
+   "fieldtype": "Data",
+   "label": "Nivel Educativo (Siesa)"
+  },
+  {
+   "default": "0",
+   "fieldname": "es_extranjero",
+   "fieldtype": "Check",
+   "label": "Es Extranjero"
+  },
+  {
+   "depends_on": "eval:doc.es_extranjero == 1",
+   "fieldname": "prefijo_cuenta_extranjero",
+   "fieldtype": "Data",
+   "label": "Prefijo Cuenta Extranjero"
+  },
+  {
+   "fieldname": "seccion_contacto",
+   "fieldtype": "Section Break",
+   "label": "Contacto"
+  },
+  {
+   "fieldname": "direccion",
+   "fieldtype": "Data",
+   "label": "Dirección"
+  },
+  {
+   "fieldname": "barrio",
+   "fieldtype": "Data",
+   "label": "Barrio"
+  },
+  {
+   "fieldname": "ciudad",
+   "fieldtype": "Data",
+   "label": "Ciudad"
+  },
+  {
+   "fieldname": "procedencia_pais",
+   "fieldtype": "Data",
+   "label": "Procedencia País"
+  },
+  {
+   "fieldname": "procedencia_departamento",
+   "fieldtype": "Data",
+   "label": "Procedencia Departamento"
+  },
+  {
+   "fieldname": "procedencia_ciudad",
+   "fieldtype": "Data",
+   "label": "Procedencia Ciudad"
+  },
+  {
+   "fieldname": "departamento_residencia_siesa",
+   "fieldtype": "Data",
+   "label": "Departamento Residencia (Siesa)"
+  },
+  {
+   "fieldname": "ciudad_residencia_siesa",
+   "fieldtype": "Data",
+   "label": "Ciudad Residencia (Siesa)"
+  },
+  {
+   "fieldname": "pais_residencia_siesa",
+   "fieldtype": "Data",
+   "label": "País Residencia (Siesa)"
+  },
+  {
+   "fieldname": "celular",
+   "fieldtype": "Data",
+   "label": "Celular"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "seccion_bancaria",
+   "fieldtype": "Section Break",
+   "label": "Datos Bancarios"
+  },
+  {
+   "fieldname": "banco_siesa",
+   "fieldtype": "Link",
+   "label": "Banco",
+   "options": "Banco Siesa"
+  },
+  {
+   "fieldname": "tipo_cuenta_bancaria",
+   "fieldtype": "Select",
+   "label": "Tipo Cuenta Bancaria",
+   "options": "Ahorros\nCorriente\nTarjeta Prepago"
+  },
+  {
+   "fieldname": "numero_cuenta_bancaria",
+   "fieldtype": "Data",
+   "label": "Número Cuenta Bancaria"
+  },
+  {
+   "fieldname": "seccion_laboral",
+   "fieldtype": "Section Break",
+   "label": "Datos Laborales"
+  },
+  {
+   "fieldname": "pdv_destino",
+   "fieldtype": "Link",
+   "label": "PDV Destino",
+   "options": "Punto de Venta"
+  },
+  {
+   "fieldname": "cargo_postulado",
+   "fieldtype": "Link",
+   "label": "Cargo",
+   "options": "Cargo"
+  },
+  {
+   "fieldname": "fecha_tentativa_ingreso",
+   "fieldtype": "Date",
+   "label": "Fecha Tentativa Ingreso"
+  },
+  {
+   "fieldname": "fecha_ingreso",
+   "fieldtype": "Date",
+   "label": "Fecha Ingreso"
+  },
+  {
+   "fieldname": "fecha_fin_contrato",
+   "fieldtype": "Date",
+   "label": "Fecha Fin Contrato"
+  },
+  {
+   "fieldname": "tipo_contrato",
+   "fieldtype": "Select",
+   "label": "Tipo Contrato",
+   "options": "Indefinido\nFijo\nAprendizaje Lectiva\nAprendizaje Productiva"
+  },
+  {
+   "default": "1",
+   "fieldname": "numero_contrato",
+   "fieldtype": "Int",
+   "label": "Número Contrato"
+  },
+  {
+   "fieldname": "salario",
+   "fieldtype": "Currency",
+   "label": "Salario"
+  },
+  {
+   "default": "220",
+   "fieldname": "horas_trabajadas_mes",
+   "fieldtype": "Float",
+   "label": "Horas Trabajadas Mes"
+  },
+  {
+   "fieldname": "centro_costos_siesa",
+   "fieldtype": "Link",
+   "label": "Centro Costos",
+   "options": "Centro Costos Siesa"
+  },
+  {
+   "fieldname": "unidad_negocio_siesa",
+   "fieldtype": "Link",
+   "label": "Unidad Negocio",
+   "options": "Unidad Negocio Siesa"
+  },
+  {
+   "fieldname": "grupo_empleados_siesa",
+   "fieldtype": "Link",
+   "label": "Grupo Empleados",
+   "options": "Grupo Empleados Siesa"
+  },
+  {
+   "fieldname": "centro_trabajo_siesa",
+   "fieldtype": "Link",
+   "label": "Centro Trabajo",
+   "options": "Centro Trabajo Siesa"
+  },
+  {
+   "fieldname": "tipo_cotizante_siesa",
+   "fieldtype": "Link",
+   "label": "Tipo Cotizante",
+   "options": "Tipo Cotizante Siesa"
+  },
+  {
+   "default": "3",
+   "fieldname": "aplica_auxilio_transporte",
+   "fieldtype": "Select",
+   "label": "Auxilio Transporte",
+   "options": "0\n1\n2\n3"
+  },
+  {
+   "default": "0",
+   "fieldname": "tiene_sodexo",
+   "fieldtype": "Check",
+   "label": "Tiene Sodexo"
+  },
+  {
+   "depends_on": "eval:doc.tiene_sodexo == 1",
+   "fieldname": "valor_sodexo",
+   "fieldtype": "Currency",
+   "label": "Valor Sodexo"
+  },
+  {
+   "default": "0",
+   "fieldname": "tiene_aux_rodamiento",
+   "fieldtype": "Check",
+   "label": "Tiene Aux. Rodamiento"
+  },
+  {
+   "depends_on": "eval:doc.tiene_aux_rodamiento == 1",
+   "fieldname": "valor_aux_rodamiento",
+   "fieldtype": "Currency",
+   "label": "Valor Aux. Rodamiento"
+  },
+  {
+   "fieldname": "seccion_seguridad_social",
+   "fieldtype": "Section Break",
+   "label": "Seguridad Social"
+  },
+  {
+   "fieldname": "eps_siesa",
+   "fieldtype": "Link",
+   "label": "EPS",
+   "options": "Entidad EPS Siesa"
+  },
+  {
+   "fieldname": "afp_siesa",
+   "fieldtype": "Link",
+   "label": "AFP",
+   "options": "Entidad AFP Siesa"
+  },
+  {
+   "fieldname": "cesantias_siesa",
+   "fieldtype": "Link",
+   "label": "Cesantías",
+   "options": "Entidad Cesantias Siesa"
+  },
+  {
+   "fieldname": "ccf_siesa",
+   "fieldtype": "Link",
+   "label": "Caja Compensación",
+   "options": "Entidad CCF Siesa"
+  },
+  {
+   "fieldname": "arl_codigo_siesa",
+   "fieldtype": "Data",
+   "label": "Código ARL Siesa"
+  },
+  {
+   "fieldname": "seccion_rrll_final",
+   "fieldtype": "Section Break",
+   "label": "Relaciones Laborales (Captura Final)"
+  },
+  {
+   "fieldname": "pais_nacimiento_siesa",
+   "fieldtype": "Data",
+   "label": "País Nacimiento (Siesa)"
+  },
+  {
+   "fieldname": "departamento_nacimiento_siesa",
+   "fieldtype": "Data",
+   "label": "Departamento Nacimiento (Siesa)"
+  },
+  {
+   "fieldname": "ciudad_nacimiento_siesa",
+   "fieldtype": "Data",
+   "label": "Ciudad Nacimiento (Siesa)"
+  },
+  {
+   "fieldname": "pais_expedicion_siesa",
+   "fieldtype": "Data",
+   "label": "País Expedición (Siesa)"
+  },
+  {
+   "fieldname": "departamento_expedicion_siesa",
+   "fieldtype": "Data",
+   "label": "Departamento Expedición (Siesa)"
+  },
+  {
+   "fieldname": "ciudad_expedicion_siesa",
+   "fieldtype": "Data",
+   "label": "Ciudad Expedición (Siesa)"
+  },
+  {
+   "fieldname": "telefono_contacto_siesa",
+   "fieldtype": "Data",
+   "label": "Teléfono Contacto (Siesa)"
+  },
+  {
+   "fieldname": "seccion_auditoria",
+   "fieldtype": "Section Break",
+   "label": "Auditoría"
+  },
+  {
+   "fieldname": "completado_por",
+   "fieldtype": "Link",
+   "label": "Completado Por",
+   "options": "User"
+  },
+  {
+   "fieldname": "fecha_completado",
+   "fieldtype": "Datetime",
+   "label": "Fecha Completado"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Datos Contratacion",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "HR Labor Relations",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "numero_documento",
+ "track_changes": 1
+}

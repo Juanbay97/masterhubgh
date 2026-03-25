@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-01-28 21:07:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "tipo_documento",
+  "requerido",
+  "archivo",
+  "estado_documento",
+  "motivo_rechazo",
+  "revisado_por",
+  "fecha_ultima_revision"
+ ],
+ "fields": [
+  {
+   "fieldname": "tipo_documento",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Tipo Documento",
+   "options": "Documento Requerido",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "requerido",
+   "fieldtype": "Check",
+   "label": "Requerido"
+  },
+  {
+   "fieldname": "archivo",
+   "fieldtype": "Attach",
+   "is_private": 1,
+   "label": "Archivo"
+  },
+  {
+   "default": "Pendiente",
+   "fieldname": "estado_documento",
+   "fieldtype": "Select",
+   "label": "Estado Documento",
+   "options": "Pendiente\nEn Revision\nAprobado\nRechazado"
+  },
+  {
+   "fieldname": "motivo_rechazo",
+   "fieldtype": "Small Text",
+   "label": "Motivo Rechazo",
+   "depends_on": "eval:doc.estado_documento === 'Rechazado'"
+  },
+  {
+   "fieldname": "revisado_por",
+   "fieldtype": "Link",
+   "label": "Revisado Por",
+   "options": "User"
+  },
+  {
+   "fieldname": "fecha_ultima_revision",
+   "fieldtype": "Datetime",
+   "label": "Fecha Última Revisión"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-01-28 21:07:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Candidato Documento",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,188 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:document_name",
+ "creation": "2026-02-09 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+  "field_order": [
+	   "document_name",
+	   "is_active",
+	   "candidate_uploads",
+	   "allows_multiple",
+	   "is_required_for_hiring",
+	   "is_optional",
+	   "applies_to",
+	   "requires_for_employee_folder",
+	   "has_expiry",
+	   "sort_order",
+	  "requires_approval",
+	  "allowed_areas",
+	  "allowed_roles_override",
+	  "legacy_documento_requerido"
+  ],
+ "fields": [
+  {
+   "fieldname": "document_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Document Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "default": "0",
+   "fieldname": "candidate_uploads",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Candidate Uploads"
+  },
+  {
+   "default": "0",
+   "fieldname": "allows_multiple",
+   "fieldtype": "Check",
+   "label": "Allows Multiple"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_required_for_hiring",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Required For Hiring"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_optional",
+   "fieldtype": "Check",
+   "label": "Is Optional"
+  },
+  {
+   "default": "Candidato",
+   "fieldname": "applies_to",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Applies To",
+   "options": "Candidato\nEmpleado\nAmbos",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "requires_for_employee_folder",
+   "fieldtype": "Check",
+   "label": "Requires For Employee Folder"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_expiry",
+   "fieldtype": "Check",
+   "label": "Has Expiry"
+  },
+  {
+   "default": "0",
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order"
+  },
+  {
+   "default": "0",
+   "fieldname": "requires_approval",
+   "fieldtype": "Check",
+   "label": "Requires Approval"
+  },
+  {
+   "fieldname": "allowed_areas",
+   "fieldtype": "Table",
+   "label": "Allowed Areas",
+   "options": "Document Type Area"
+  },
+  {
+   "fieldname": "allowed_roles_override",
+   "fieldtype": "Small Text",
+   "label": "Allowed Roles Override"
+  },
+  {
+   "fieldname": "legacy_documento_requerido",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Legacy Documento Requerido",
+   "options": "Documento Requerido",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-09 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Document Type",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Labor Relations",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Selection",
+   "select": 1,
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Training & Wellbeing",
+   "select": 1,
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR SST",
+   "select": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "document_name"
+}

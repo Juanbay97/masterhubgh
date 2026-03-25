@@ -1,0 +1,173 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{cedula}",
+ "creation": "2026-01-15 22:48:34.883259",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+  "field_order": [
+   "nombres",
+   "apellidos",
+   "cedula",
+   "candidato_origen",
+    "pdv",
+    "cargo",
+    "tipo_jornada",
+    "fecha_ingreso",
+   "estado",
+   "email",
+   "numero_cuenta_bancaria",
+   "tipo_cuenta_bancaria",
+   "banco_siesa",
+   "eps_siesa",
+   "afp_siesa",
+   "cesantias_siesa",
+   "ccf_siesa"
+  ],
+ "fields": [
+  {
+   "fieldname": "nombres",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombres",
+   "reqd": 1
+  },
+  {
+   "fieldname": "apellidos",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Apellidos",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cedula",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "C\u00e9dula",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "candidato_origen",
+   "fieldtype": "Link",
+   "label": "Candidato Origen",
+   "options": "Candidato"
+  },
+  {
+   "fieldname": "pdv",
+   "fieldtype": "Link",
+   "label": "Punto de Venta",
+   "options": "Punto de Venta",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cargo",
+   "fieldtype": "Data",
+   "label": "Cargo"
+  },
+  {
+   "fieldname": "tipo_jornada",
+   "fieldtype": "Select",
+   "label": "Tipo de Jornada",
+   "options": "\nTiempo Completo\nTiempo Parcial"
+  },
+  {
+   "fieldname": "fecha_ingreso",
+   "fieldtype": "Date",
+   "label": "Fecha Ingreso"
+  },
+   {
+    "default": "Activo",
+    "fieldname": "estado",
+    "fieldtype": "Select",
+    "label": "Estado",
+    "options": "Activo\nInactivo\nVacaciones\nIncapacitado\nLicencia\nSuspensi\u00f3n\nSeparaci\u00f3n del Cargo\nRecomendaci\u00f3n M\u00e9dica\nEmbarazo\nRetirado"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "numero_cuenta_bancaria",
+   "fieldtype": "Data",
+   "label": "Número Cuenta Bancaria"
+  },
+  {
+   "fieldname": "tipo_cuenta_bancaria",
+   "fieldtype": "Select",
+   "label": "Tipo Cuenta Bancaria",
+   "options": "Ahorros\nCorriente\nTarjeta Prepago"
+  },
+  {
+   "fieldname": "banco_siesa",
+   "fieldtype": "Link",
+   "label": "Banco",
+   "options": "Banco Siesa"
+  },
+  {
+   "fieldname": "eps_siesa",
+   "fieldtype": "Link",
+   "label": "EPS",
+   "options": "Entidad EPS Siesa"
+  },
+  {
+   "fieldname": "afp_siesa",
+   "fieldtype": "Link",
+   "label": "AFP",
+   "options": "Entidad AFP Siesa"
+  },
+  {
+   "fieldname": "cesantias_siesa",
+   "fieldtype": "Link",
+   "label": "Cesantías",
+   "options": "Entidad Cesantias Siesa"
+  },
+  {
+   "fieldname": "ccf_siesa",
+   "fieldtype": "Link",
+   "label": "Caja Compensación",
+   "options": "Entidad CCF Siesa"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-19 16:15:30.331139",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Ficha Empleado",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gesti\u00f3n Humana",
+   "select": 1,
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "nombres"
+}

@@ -1,0 +1,149 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:BPC-{YYYY}-{#####}",
+ "creation": "2026-03-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ficha_empleado",
+  "punto_venta",
+  "fecha_ingreso",
+  "estado",
+  "fecha_inicio_proceso",
+  "fecha_cierre_proceso",
+  "responsable_bienestar",
+  "gh_novedad",
+  "observaciones"
+ ],
+ "fields": [
+  {
+   "fieldname": "ficha_empleado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Ficha Empleado",
+   "options": "Ficha Empleado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "punto_venta",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Punto de Venta",
+   "options": "Punto de Venta"
+  },
+  {
+   "fieldname": "fecha_ingreso",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Ingreso",
+   "reqd": 1
+  },
+  {
+   "default": "Activo",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Activo\nEn seguimiento\nEscalado RRLL\nCerrado\nCancelado",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "fecha_inicio_proceso",
+   "fieldtype": "Date",
+   "label": "Fecha Inicio Proceso"
+  },
+  {
+   "fieldname": "fecha_cierre_proceso",
+   "fieldtype": "Date",
+   "label": "Fecha Cierre Proceso"
+  },
+  {
+   "fieldname": "responsable_bienestar",
+   "fieldtype": "Link",
+   "label": "Responsable Bienestar",
+   "options": "User"
+  },
+  {
+   "fieldname": "gh_novedad",
+   "fieldtype": "Link",
+   "label": "GH Novedad",
+   "options": "GH Novedad"
+  },
+  {
+   "fieldname": "observaciones",
+   "fieldtype": "Small Text",
+   "label": "Observaciones"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Bienestar Proceso Colaborador",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Training & Wellbeing",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Formación y Bienestar",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "share": 1,
+   "select": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,84 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"lms\",\"type\":\"header\",\"data\":{\"text\":\"Plataforma LMS\",\"col\":12}},{\"id\":\"gestion\",\"type\":\"header\",\"data\":{\"text\":\"Gestión de Cursos\",\"col\":12}},{\"id\":\"lms-cursos\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cursos\",\"col\":4}},{\"id\":\"lms-estudiantes\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Estudiantes\",\"col\":4}},{\"id\":\"lms-certificados\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Certificados\",\"col\":4}}]",
+ "creation": "2026-02-19 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "icon": "graduation-cap",
+ "is_hidden": 1,
+ "label": "Capacitación",
+ "links": [
+  {
+   "hidden": 0,
+   "icon": "book",
+   "label": "Ir al LMS",
+   "link_to": "/lms",
+   "link_type": "URL",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "icon": "book-open",
+   "label": "Gestionar cursos",
+   "link_to": "LMS Course",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "icon": "users",
+   "label": "Enrollamientos",
+   "link_to": "LMS Enrollment",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "icon": "award",
+   "label": "Certificados",
+   "link_to": "LMS Certificate",
+   "link_type": "DocType",
+   "type": "Link"
+  }
+ ],
+ "module": "Hubgh",
+ "name": "Capacitación",
+ "public": 0,
+ "roles": [
+  {
+   "role": "HR Training & Wellbeing"
+  },
+  {
+   "role": "Gestión Humana"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "sequence_id": 15,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "format": "{} cursos",
+   "label": "Cursos",
+   "link_to": "LMS Course",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "format": "{} enrollados",
+   "label": "Estudiantes",
+   "link_to": "LMS Enrollment",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "List",
+   "label": "Certificados",
+   "link_to": "LMS Certificate",
+   "type": "DocType"
+  }
+ ],
+ "title": "Capacitación"
+}

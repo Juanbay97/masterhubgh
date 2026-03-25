@@ -1,0 +1,495 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:NOV-{YYYY}-{#####}",
+ "creation": "2026-01-15 22:48:35.423423",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section_identificacion",
+  "empleado",
+  "punto_venta",
+  "es_incapacidad",
+  "tipo_novedad",
+  "categoria_novedad",
+  "estado",
+  "prioridad",
+  "section_resumen",
+  "titulo_resumen",
+  "descripcion_resumen",
+  "descripcion",
+  "section_accidente",
+  "es_accidente_trabajo",
+  "accidente_tuvo_incapacidad",
+  "fecha_accidente",
+  "causa_evento",
+  "causa_raiz",
+  "reportado_arl",
+  "section_incapacidad",
+  "origen_incapacidad",
+  "diagnostico_corto",
+  "evidencia_incapacidad",
+  "fecha_inicio",
+  "fecha_fin",
+  "dias_incapacidad",
+  "prorroga",
+  "prorrogas_incapacidad",
+  "section_recomendaciones",
+  "tiene_recomendaciones",
+  "recomendaciones_resumen",
+  "recomendaciones_detalle",
+  "section_radar",
+  "aforado_motivo",
+  "aforado_desde",
+  "fecha_proxima_alerta_aforado",
+  "categoria_seguimiento",
+  "en_radar",
+  "section_alertas",
+  "crear_alerta",
+  "tipo_alerta",
+  "frecuencia_alerta",
+  "dias_para_alerta",
+  "dias_alerta_post_incapacidad",
+  "proxima_alerta_fecha",
+  "alerta_activa",
+  "section_seguimientos",
+  "seguimientos",
+  "column_break_legacy",
+  "ref_doctype",
+  "ref_docname",
+  "impacta_estado",
+  "estado_destino"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_identificacion",
+   "fieldtype": "Section Break",
+   "label": "Identificación"
+  },
+  {
+   "fieldname": "empleado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Empleado",
+   "options": "Ficha Empleado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "punto_venta",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Punto de Venta",
+   "options": "Punto de Venta"
+  },
+  {
+   "default": "0",
+   "fieldname": "es_incapacidad",
+   "fieldtype": "Check",
+   "label": "¿Es incapacidad?"
+  },
+  {
+   "fieldname": "tipo_novedad",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tipo Novedad",
+   "options": "Seguimiento SST\nAccidente\nIncapacidad\nIncapacidad por enfermedad general\nRecomendación Médica\nAforado\nOtro",
+   "reqd": 1
+  },
+  {
+   "default": "SST",
+   "fieldname": "categoria_novedad",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Categoría",
+   "options": "SST\nRelaciones Laborales\nBienestar\nGeneral"
+  },
+  {
+   "default": "Abierta",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Abierta\nEn seguimiento\nCerrada"
+  },
+  {
+   "fieldname": "prioridad",
+   "fieldtype": "Select",
+   "label": "Prioridad",
+   "options": "Baja\nMedia\nAlta"
+  },
+  {
+   "fieldname": "section_resumen",
+   "fieldtype": "Section Break",
+   "label": "Resumen Ejecutivo"
+  },
+  {
+   "fieldname": "titulo_resumen",
+   "fieldtype": "Data",
+   "label": "Título Resumen"
+  },
+  {
+   "fieldname": "descripcion_resumen",
+   "fieldtype": "Small Text",
+   "label": "Descripción Resumen"
+  },
+  {
+   "fieldname": "descripcion",
+   "fieldtype": "Small Text",
+   "hidden": 1,
+   "label": "Descripción (legado)"
+  },
+  {
+   "depends_on": "eval:doc.tipo_novedad=='Accidente'",
+   "fieldname": "section_accidente",
+   "fieldtype": "Section Break",
+   "label": "Accidente"
+  },
+  {
+   "fieldname": "es_accidente_trabajo",
+   "fieldtype": "Check",
+   "label": "Es Accidente de Trabajo"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.tipo_novedad=='Accidente'",
+   "fieldname": "accidente_tuvo_incapacidad",
+   "fieldtype": "Check",
+   "label": "¿Hubo incapacidad?"
+  },
+  {
+   "depends_on": "eval:doc.tipo_novedad=='Accidente'",
+   "fieldname": "fecha_accidente",
+   "fieldtype": "Datetime",
+   "label": "Fecha Accidente"
+  },
+  {
+   "depends_on": "eval:doc.tipo_novedad=='Accidente'",
+   "fieldname": "causa_evento",
+   "fieldtype": "Select",
+   "label": "Causa Evento",
+   "options": "Condición insegura\nActo inseguro\nCausa fortuita"
+  },
+  {
+   "depends_on": "eval:doc.tipo_novedad=='Accidente'",
+   "fieldname": "causa_raiz",
+   "fieldtype": "Small Text",
+   "label": "Causa Raíz"
+  },
+  {
+   "depends_on": "eval:doc.tipo_novedad=='Accidente'",
+   "fieldname": "reportado_arl",
+   "fieldtype": "Check",
+   "label": "Reportado ARL"
+  },
+  {
+   "depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)",
+   "fieldname": "section_incapacidad",
+   "fieldtype": "Section Break",
+   "label": "Incapacidad"
+  },
+  {
+   "depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)",
+   "fieldname": "origen_incapacidad",
+   "fieldtype": "Select",
+   "label": "Origen Incapacidad",
+   "options": "Enfermedad General\nAccidente no laboral\nAccidente laboral"
+  },
+  {
+   "depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)",
+   "fieldname": "diagnostico_corto",
+   "fieldtype": "Data",
+   "label": "Diagnóstico corto"
+  },
+  {
+   "depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)",
+   "fieldname": "evidencia_incapacidad",
+   "fieldtype": "Attach",
+   "label": "Evidencia incapacidad"
+  },
+  {
+   "depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general','Recomendación Médica'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)",
+   "fieldname": "fecha_inicio",
+   "fieldtype": "Date",
+   "label": "Fecha Inicio",
+   "mandatory_depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general','Recomendación Médica'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)"
+  },
+  {
+   "depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general','Recomendación Médica'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)",
+   "fieldname": "fecha_fin",
+   "fieldtype": "Date",
+   "label": "Fecha Fin",
+   "mandatory_depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general','Recomendación Médica'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)"
+  },
+  {
+   "fieldname": "dias_incapacidad",
+   "fieldtype": "Int",
+   "label": "Días Incapacidad",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)",
+   "fieldname": "prorroga",
+   "fieldtype": "Check",
+   "label": "Prórroga"
+  },
+  {
+   "depends_on": "eval:(doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)) && doc.prorroga",
+   "fieldname": "prorrogas_incapacidad",
+   "fieldtype": "Table",
+   "label": "Prórrogas Incapacidad",
+   "options": "SST Seguimiento"
+  },
+  {
+   "depends_on": "eval:doc.tipo_novedad=='Recomendación Médica'",
+   "fieldname": "section_recomendaciones",
+   "fieldtype": "Section Break",
+   "label": "Recomendaciones"
+  },
+  {
+   "fieldname": "tiene_recomendaciones",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Tiene Recomendaciones"
+  },
+  {
+   "fieldname": "recomendaciones_resumen",
+   "fieldtype": "Small Text",
+   "hidden": 1,
+   "label": "Recomendaciones Resumen"
+  },
+  {
+   "fieldname": "recomendaciones_detalle",
+   "fieldtype": "Text",
+   "label": "Recomendaciones Detalle (Sensible)",
+   "permlevel": 1
+  },
+  {
+   "depends_on": "eval:doc.tipo_novedad=='Aforado'",
+   "fieldname": "section_radar",
+   "fieldtype": "Section Break",
+   "label": "Aforado / Seguimiento"
+  },
+  {
+   "depends_on": "eval:doc.tipo_novedad=='Aforado'",
+   "fieldname": "aforado_motivo",
+   "fieldtype": "Small Text",
+   "label": "Motivo aforado"
+  },
+  {
+   "depends_on": "eval:doc.tipo_novedad=='Aforado'",
+   "fieldname": "aforado_desde",
+   "fieldtype": "Date",
+   "label": "Aforado desde"
+  },
+  {
+   "fieldname": "fecha_proxima_alerta_aforado",
+   "fieldtype": "Date",
+   "label": "Próxima alerta aforado",
+   "read_only": 1
+  },
+  {
+   "fieldname": "categoria_seguimiento",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Categoría Seguimiento",
+   "options": "Gestante\nLactante\nCondición médica\nAT abierto\nIncapacidad larga\nPadre gestante\nOtro"
+  },
+  {
+   "fieldname": "en_radar",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "En Radar"
+  },
+  {
+   "fieldname": "section_alertas",
+   "fieldtype": "Section Break",
+   "label": "Alertas"
+  },
+  {
+   "fieldname": "crear_alerta",
+   "fieldtype": "Check",
+   "label": "Crear Alerta"
+  },
+  {
+   "depends_on": "eval:doc.crear_alerta",
+   "fieldname": "tipo_alerta",
+   "fieldtype": "Select",
+   "label": "Tipo Alerta",
+   "options": "Seguimiento\nExamen post incapacidad\nVencimiento recomendación médica\nSeguimiento aforado semestral\nOtro"
+  },
+  {
+   "default": "Única",
+   "depends_on": "eval:doc.crear_alerta",
+   "fieldname": "frecuencia_alerta",
+   "fieldtype": "Select",
+   "label": "Frecuencia Alerta",
+   "options": "Única\nRecurrente"
+  },
+  {
+   "default": "30",
+   "depends_on": "eval:doc.crear_alerta",
+   "fieldname": "dias_para_alerta",
+   "fieldtype": "Int",
+   "label": "Días para Alerta"
+  },
+  {
+   "default": "7",
+   "depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)",
+   "fieldname": "dias_alerta_post_incapacidad",
+   "fieldtype": "Int",
+   "label": "Días antes fin incapacidad (examen)"
+  },
+  {
+   "fieldname": "proxima_alerta_fecha",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Próxima Alerta Fecha"
+  },
+  {
+   "default": "1",
+   "fieldname": "alerta_activa",
+   "fieldtype": "Check",
+   "label": "Alerta Activa"
+  },
+  {
+   "fieldname": "section_seguimientos",
+   "fieldtype": "Section Break",
+   "label": "Seguimientos"
+  },
+  {
+   "fieldname": "seguimientos",
+   "fieldtype": "Table",
+   "label": "Seguimientos SST",
+   "options": "SST Seguimiento"
+  },
+  {
+   "fieldname": "column_break_legacy",
+   "fieldtype": "Column Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "ref_doctype",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Origen DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "ref_docname",
+   "fieldtype": "Dynamic Link",
+   "hidden": 1,
+   "label": "Origen Documento",
+   "options": "ref_doctype"
+  },
+  {
+   "default": 1,
+   "fieldname": "impacta_estado",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Impacta estado del empleado"
+  },
+  {
+   "depends_on": "eval:doc.impacta_estado",
+   "fieldname": "estado_destino",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Estado destino",
+   "options": "Vacaciones\nIncapacitado\nLicencia\nSuspensión\nSeparación del Cargo\nRecomendación Médica\nEmbarazo\nRetirado"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-10 16:16:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Novedad SST",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "SST",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR SST",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Relaciones Laborales",
+   "select": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Jefe_PDV",
+   "select": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "System Manager"
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "SST"
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "HR SST"
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

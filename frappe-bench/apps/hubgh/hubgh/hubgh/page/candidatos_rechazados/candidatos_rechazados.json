@@ -1,0 +1,23 @@
+{
+ "doctype": "Page",
+ "name": "candidatos_rechazados",
+ "title": "Candidatos Rechazados",
+ "module": "Hubgh",
+ "standard": "Yes",
+ "page_name": "candidatos_rechazados",
+ "icon": "close",
+ "roles": [
+  {
+   "role": "HR Selection"
+  },
+  {
+   "role": "Selección"
+  },
+  {
+   "role": "Gestión Humana"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+}

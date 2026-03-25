@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GHP-{YYYY}-{#####}",
+ "creation": "2026-02-17 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "titulo",
+  "cuerpo_corto",
+  "area",
+  "fecha_publicacion",
+  "vigencia_hasta",
+  "audiencia_roles",
+  "adjunto",
+  "publicado"
+ ],
+ "fields": [
+  {
+   "fieldname": "titulo",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Título",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cuerpo_corto",
+   "fieldtype": "Small Text",
+   "label": "Cuerpo Corto"
+  },
+  {
+   "fieldname": "area",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Área"
+  },
+  {
+   "default": "Today",
+   "fieldname": "fecha_publicacion",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Publicación"
+  },
+  {
+   "fieldname": "vigencia_hasta",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Vigencia Hasta"
+  },
+  {
+   "description": "Roles separados por coma o salto de línea",
+   "fieldname": "audiencia_roles",
+   "fieldtype": "Small Text",
+   "label": "Audiencia Roles"
+  },
+  {
+   "fieldname": "adjunto",
+   "fieldtype": "Attach",
+   "label": "Adjunto"
+  },
+  {
+   "default": "1",
+   "fieldname": "publicado",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Publicado"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-17 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "GH Post",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "fecha_publicacion",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "titulo"
+}
+

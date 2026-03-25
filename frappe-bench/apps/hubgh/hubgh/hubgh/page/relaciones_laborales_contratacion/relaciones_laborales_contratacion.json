@@ -1,0 +1,23 @@
+{
+ "doctype": "Page",
+ "name": "relaciones_laborales_contratacion",
+ "title": "Relaciones Laborales - Contratación",
+ "module": "Hubgh",
+ "standard": "Yes",
+ "page_name": "relaciones_laborales_contratacion",
+ "icon": "briefcase",
+ "roles": [
+  {
+   "role": "HR Labor Relations"
+  },
+  {
+   "role": "Relaciones Laborales"
+  },
+  {
+   "role": "Gestión Humana"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+}

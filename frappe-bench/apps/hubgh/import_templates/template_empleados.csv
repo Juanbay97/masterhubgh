@@ -1,0 +1,16 @@
+nombres,apellidos,cedula,pdv,cargo,fecha_ingreso,estado,email
+Juan,Perez,12345678,PDV-001,Vendedor,2023-01-15,Activo,juan.perez@example.com
+Maria,Gomez,87654321,PDV-001,Administrador,2022-05-10,Activo,maria.gomez@example.com
+Carlos,Lopez,11223344,PDV-002,Vendedor,2023-03-01,Activo,carlos.lopez@example.com
+Ana,Martinez,99887766,PDV-002,Auxiliar,2023-06-20,Vacaciones,ana.martinez@example.com
+Marta,Rodriguez,55443322,PDV-003,Vendedor,2023-02-15,Incapacitado,marta.rodriguez@example.com
+Pedro,Sanchez,66778899,PDV-003,Vendedor,2023-07-01,Activo,pedro.sanchez@example.com
+Lucia,Fernandez,44332211,PDV-004,Administrador,2021-11-20,Activo,lucia.fernandez@example.com
+Diego,Ramirez,77665544,PDV-004,Vendedor,2023-08-05,Inactivo,diego.ramirez@example.com
+Sofía,Torres,22334455,PDV-005,Vendedor,2023-04-12,Activo,sofia.torres@example.com
+Javier,Diaz,33445566,PDV-005,Auxiliar,2023-09-15,Activo,javier.diaz@example.com
+Valeria,Morales,88990011,PDV-001,Auxiliar,2023-10-01,Activo,valeria.morales@example.com
+Gabriel,Nuñez,55667788,PDV-002,Vendedor,2023-11-05,Activo,gabriel.nunez@example.com
+Camila,Herrera,11002233,PDV-003,Administrador,2022-02-14,Activo,camila.herrera@example.com
+Andres,Castro,99001122,PDV-004,Vendedor,2023-12-01,Activo,andres.castro@example.com
+Elena,Vargas,44556677,PDV-005,Vendedor,2023-05-20,Incapacitado,elena.vargas@example.com

@@ -1,0 +1,60 @@
+{
+ "charts": [],
+ "content": "[{\"type\": \"header\", \"data\": {\"text\": \"OPERACI\u00d3N\", \"level\": 1, \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Operaci\u00f3n Punto Lite\", \"col\": 4}}]",
+ "creation": "2026-01-21 10:20:59.332006",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "activity",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Operaci\u00f3n",
+ "links": [],
+ "modified": "2026-02-17 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Operaci\u00f3n",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Jefe_PDV"
+  },
+  {
+   "role": "Jefe de tienda"
+  },
+  {
+   "role": "Gesti\u00f3n Humana"
+  },
+  {
+   "role": "GH_Central"
+  },
+  {
+   "role": "GH - Bandeja General"
+  },
+  {
+   "role": "GH - SST"
+  },
+  {
+   "role": "GH - RRLL"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "sequence_id": 10.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Operación Punto Lite",
+   "link_to": "operacion_punto_lite",
+   "type": "Page"
+  }
+ ],
+ "title": "Operaci\u00f3n"
+}

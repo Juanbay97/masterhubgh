@@ -1,0 +1,20 @@
+{
+ "doctype": "Page",
+ "name": "seleccion_documentos",
+ "title": "Bandeja de Documentos - Selección",
+ "module": "Hubgh",
+ "standard": "Yes",
+ "page_name": "seleccion_documentos",
+ "icon": "file",
+ "roles": [
+  {
+   "role": "HR Selection"
+  },
+  {
+   "role": "Selección"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+}

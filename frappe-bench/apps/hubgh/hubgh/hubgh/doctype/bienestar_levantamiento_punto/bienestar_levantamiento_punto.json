@@ -1,0 +1,155 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:BLP-{YYYY}-{#####}",
+ "creation": "2026-03-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "punto_venta",
+  "fecha_levantamiento",
+  "estado",
+  "responsable_bienestar",
+  "score_global",
+  "cobertura_participacion",
+  "participantes",
+  "respuestas_abiertas",
+  "compromiso_relacionado",
+  "observaciones"
+ ],
+ "fields": [
+  {
+   "fieldname": "punto_venta",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Punto de Venta",
+   "options": "Punto de Venta",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_levantamiento",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Levantamiento",
+   "reqd": 1
+  },
+  {
+   "default": "Programado",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Programado\nEn gestión\nRealizado\nCerrado\nCancelado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "responsable_bienestar",
+   "fieldtype": "Link",
+   "label": "Responsable Bienestar",
+   "options": "User"
+  },
+  {
+   "fieldname": "score_global",
+   "fieldtype": "Percent",
+   "label": "Score Global"
+  },
+  {
+   "fieldname": "cobertura_participacion",
+   "fieldtype": "Percent",
+   "label": "Cobertura Participación"
+  },
+  {
+   "fieldname": "participantes",
+   "fieldtype": "Table",
+   "label": "Participantes",
+   "options": "Bienestar Participante Levantamiento"
+  },
+  {
+   "fieldname": "respuestas_abiertas",
+   "fieldtype": "Table",
+   "label": "Respuestas Abiertas",
+   "options": "Bienestar Respuesta Abierta"
+  },
+  {
+   "fieldname": "compromiso_relacionado",
+   "fieldtype": "Link",
+   "label": "Compromiso Relacionado",
+   "options": "Bienestar Compromiso"
+  },
+  {
+   "fieldname": "observaciones",
+   "fieldtype": "Small Text",
+   "label": "Observaciones"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Bienestar Levantamiento Punto",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Training & Wellbeing",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Formación y Bienestar",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "share": 1,
+   "select": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
+

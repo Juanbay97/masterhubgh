@@ -1,0 +1,126 @@
+{
+ "charts": [],
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"Operaci\u00f3n transversal\",\"level\":2,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Punto 360\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Persona 360\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Centro de datos\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Centro de gesti\u00f3n SST\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gesti\u00f3n de afiliaciones\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contrataci\u00f3n y formalizaci\u00f3n\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Reportes SIESA\",\"col\":4}},{\"type\":\"header\",\"data\":{\"text\":\"Registros y consulta\",\"level\":2,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Carpeta documental del empleado\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Registro de afiliaciones\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contratos\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Datos de contrataci\u00f3n\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Novedades SST\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Crear usuario\",\"col\":4}}]",
+ "creation": "2026-01-21 10:20:59.216182",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "users",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Gestión Humana",
+ "links": [],
+ "modified": "2026-01-26 16:54:41.583486",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Gestión Humana",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Gestión Humana"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "sequence_id": 3.0,
+ "shortcuts": [
+  {
+   "color": "Green",
+   "doc_view": "",
+   "label": "Punto 360",
+   "link_to": "punto_360",
+   "type": "Page"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Persona 360",
+   "link_to": "persona_360",
+   "type": "Page"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "",
+   "label": "Centro de datos",
+   "link_to": "centro_de_datos",
+   "type": "Page"
+  },
+  {
+   "color": "Red",
+   "doc_view": "",
+   "label": "Centro de gestión SST",
+   "link_to": "sst_bandeja",
+   "type": "Page"
+  },
+  {
+   "color": "Red",
+   "doc_view": "",
+   "label": "Gestión de afiliaciones",
+   "link_to": "bandeja_afiliaciones",
+   "type": "Page"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "",
+   "label": "Contratación y formalización",
+   "link_to": "bandeja_contratacion",
+   "type": "Page"
+  },
+  {
+   "color": "Teal",
+   "doc_view": "",
+   "label": "Reportes SIESA",
+   "link_to": "reportes_siesa",
+   "type": "Page"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Carpeta documental del empleado",
+   "link_to": "carpeta_documental_empleado",
+   "type": "Page"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "",
+   "label": "Registro de afiliaciones",
+   "link_to": "Afiliacion Seguridad Social",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Contratos",
+   "link_to": "Contrato",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "label": "Datos de contratación",
+   "link_to": "Datos Contratacion",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "",
+   "label": "Novedades SST",
+   "link_to": "Novedad SST",
+   "type": "DocType"
+  },
+  {
+   "color": "Gray",
+   "doc_view": "",
+   "label": "Crear usuario",
+   "link_to": "User",
+   "type": "DocType"
+  }
+ ],
+ "title": "Gestión Humana"
+}

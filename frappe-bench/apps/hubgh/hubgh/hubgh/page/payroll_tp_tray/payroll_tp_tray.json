@@ -1,0 +1,32 @@
+{
+ "content": null,
+ "creation": "2026-03-18 00:00:00",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-03-18 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "payroll_tp_tray",
+ "owner": "Administrator",
+ "page_name": "payroll_tp_tray",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Gestión Humana"
+  },
+  {
+   "role": "Operativo Nómina"
+  },
+  {
+   "role": "TP Nómina"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Bandeja operativa TP - Etapa final de prenómina"
+}

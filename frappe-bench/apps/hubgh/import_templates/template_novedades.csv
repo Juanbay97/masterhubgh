@@ -1,0 +1,11 @@
+empleado,tipo_novedad,fecha_inicio,fecha_fin,descripcion,estado
+12345678,Incapacidad,2024-01-10,2024-01-15,Gripe fuerte,Cerrado
+87654321,Permiso,2024-01-12,2024-01-12,Cita médica,Cerrado
+99887766,Vacaciones,2024-01-15,2024-01-30,Vacaciones anuales,Abierto
+55443322,Incapacidad,2024-01-14,2024-01-20,Esguince tobillo,Abierto
+77665544,Abandono,2024-01-05,2024-01-05,No se presentó a trabajar,Cerrado
+44556677,Incapacidad,2024-01-18,2024-01-22,Migraña,Abierto
+33445566,Licencia,2023-12-01,2023-12-05,Licencia por luto,Cerrado
+66778899,Permiso,2024-01-19,2024-01-19,Trámite personal,Abierto
+11223344,Vacaciones,2023-11-15,2023-11-30,Vacaciones anticipadas,Cerrado
+22334455,Incapacidad,2023-12-10,2023-12-12,Fiebre,Cerrado
