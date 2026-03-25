@@ -1,3 +1,5 @@
-first_name,email,role_profile_name
-Juan,juan@example.com,Empleado
-Maria,maria@example.com,Jefe_PDV
+email,first_name,last_name,rol
+juangh@empresa.com,Juan,García,Gestión Humana
+mariasst@empresa.com,María,López,HR SST
+pedrorrll@empresa.com,Pedro,Martínez,HR Labor Relations
+anaselecc@empresa.com,Ana,Rodríguez,HR Selection

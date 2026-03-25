@@ -1,2 +1,3 @@
-nombres,apellidos,cedula,pdv (nombre),cargo,email,fecha_ingreso
-Juan,Perez,1001,Punto Centro,Vendedor,juan@example.com,2024-01-01
+nombres,apellidos,cedula,pdv,cargo,email,fecha_ingreso,estado,tipo_jornada
+JUAN,PÉREZ,12345678,Home 01,ADMINISTRADOR PUNTO VENTA,juan@empresa.com,2024-01-15,Activo,Tiempo Completo
+MARIA,GÓMEZ,87654321,Home 02,AUXILIAR DE COCINA,maria@empresa.com,2024-03-01,Activo,Tiempo Completo
