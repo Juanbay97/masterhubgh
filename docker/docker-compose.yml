@@ -8,6 +8,11 @@ services:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-frappe}
     volumes:
       - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MARIADB_ROOT_PASSWORD:-frappe}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   redis-cache:
     image: redis:7-alpine
@@ -19,23 +24,20 @@ services:
     image: frappe/bench:latest
     environment:
       SHELL: /bin/bash
-      # DB/Redis config por env (sin bench set-config)
-      DB_HOST: mariadb
-      DB_PORT: "3306"
-      REDIS_CACHE: redis-cache:6379
-      REDIS_QUEUE: redis-queue:6379
-      REDIS_SOCKETIO: redis-queue:6379
     volumes:
-      - ../apps:/home/frappe/frappe-bench/apps
-      - ../sites:/home/frappe/frappe-bench/sites
+      - ../frappe-bench/apps:/home/frappe/frappe-bench/apps
+      - ../frappe-bench/sites:/home/frappe/frappe-bench/sites
     depends_on:
-      - mariadb
-      - redis-cache
-      - redis-queue
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
     ports:
-      - "8001:8000"
+      - "80:8000"
     command: >
-      bash -lc " cd /home/frappe/frappe-bench && bench start "
+      bash -lc "cd /home/frappe/frappe-bench && bench start"
 
 volumes:
   mariadb_data:
