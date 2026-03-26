@@ -22,6 +22,8 @@ services:
 
   backend:
     image: frappe/bench:latest
+    env_file:
+      - ../.env
     environment:
       SHELL: /bin/bash
     volumes:
@@ -29,6 +31,7 @@ services:
       - ../hubgh:/home/frappe/frappe-bench/apps/hubgh
       - sites_data:/home/frappe/frappe-bench/sites
       - ./entrypoint.sh:/entrypoint.sh
+      - ./create-site.sh:/create-site.sh
     depends_on:
       mariadb:
         condition: service_healthy

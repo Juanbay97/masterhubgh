@@ -1,21 +1,39 @@
 #!/bin/bash
+set -euo pipefail
 # Entrypoint del contenedor backend.
-# Se ejecuta cada vez que el contenedor arranca.
 
 BENCH_DIR="/home/frappe/frappe-bench"
 
 # ── Inicialización del bench (solo primera vez) ──────────────────────────────
-# Docker pre-crea el directorio (es un named volume), así que bench init
-# siempre ve una carpeta existente. --force bypasea ese chequeo.
-# Solo corremos init si Procfile no existe (bench incompleto o primera vez).
+# Docker pre-crea $BENCH_DIR como named volume antes de que este script corra,
+# así que bench init siempre ve un directorio existente y falla.
+# Solución: inicializar en /tmp (directorio limpio) y copiar al volume.
 if [ ! -f "$BENCH_DIR/Procfile" ]; then
-  echo "==> Inicializando bench con Frappe v15 (primera vez, ~10 min)..."
-  cd /home/frappe
+  echo "==> Inicializando bench (primera vez, ~10-15 min)..."
+
+  cd /tmp
+  rm -rf frappe-bench-tmp
+
   bench init \
     --skip-redis-config-generation \
     --frappe-branch version-15 \
-    --force \
-    frappe-bench
+    frappe-bench-tmp || { echo "ERROR: bench init falló"; exit 1; }
+
+  # Copiar al volume. apps/hubgh y sites ya están montados como sub-volumes:
+  # cp los ignora si no hay conflicto, y agrega los archivos del bench (frappe,
+  # Procfile, env/, etc.) sin pisar los mounts existentes.
+  cp -a frappe-bench-tmp/. "$BENCH_DIR/"
+  rm -rf frappe-bench-tmp
+
+  # ── Registrar app hubgh en el entorno Python del bench ───────────────────
+  # bench init crea apps.txt con solo "frappe". El app hubgh está bind-montada
+  # en apps/hubgh pero bench no la conoce hasta que se pip-instala y se agrega
+  # a apps.txt. Sin esto, "bench install-app hubgh" falla.
+  cd "$BENCH_DIR"
+  echo "==> Registrando app hubgh en el bench..."
+  ./env/bin/pip install -q -e apps/hubgh
+  echo "hubgh" >> apps.txt
+
   echo "==> Bench inicializado."
 fi
 

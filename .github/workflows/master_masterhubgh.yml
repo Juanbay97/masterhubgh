@@ -4,10 +4,10 @@
 
 name: Build and deploy Python app to Azure Web App - masterhubgh
 
+# WORKFLOW DESHABILITADO: este workflow era para Azure App Service (Python), lo
+# cual es incompatible con el despliegue real basado en Docker Compose + VM.
+# El despliegue se hace manualmente via SSH: ver Makefile en la raíz del repo.
 on:
-  push:
-    branches:
-      - master
   workflow_dispatch:
 
 jobs:
