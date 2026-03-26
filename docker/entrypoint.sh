@@ -11,6 +11,10 @@ BENCH_DIR="/home/frappe/frappe-bench"
 if [ ! -f "$BENCH_DIR/Procfile" ]; then
   echo "==> Inicializando bench (primera vez, ~10-15 min)..."
 
+  # El volumen bench_data es creado por Docker con owner root.
+  # Lo corregimos antes de intentar escribir como usuario frappe.
+  sudo chown -R frappe:frappe "$BENCH_DIR"
+
   cd /tmp
   rm -rf frappe-bench-tmp
 
