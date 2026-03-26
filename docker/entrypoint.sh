@@ -35,7 +35,7 @@ if [ ! -f "$BENCH_DIR/Procfile" ]; then
   # a apps.txt. Sin esto, "bench install-app hubgh" falla.
   cd "$BENCH_DIR"
   echo "==> Registrando app hubgh en el bench..."
-  ./env/bin/pip install -q -e apps/hubgh
+  ./env/bin/python -m pip install -q -e apps/hubgh
   echo "hubgh" >> apps.txt
 
   echo "==> Bench inicializado."
