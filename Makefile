@@ -37,7 +37,8 @@ init-site:
 
 ## Correr migraciones de DB (despues de actualizar codigo con cambios de schema)
 migrate:
-	$(COMPOSE) exec backend bash -c 		"cd /home/frappe/frappe-bench && bench --site $$${FRAPPE_SITE_NAME:-hubgh.local} migrate"
+	$(COMPOSE) exec backend bash -c \
+		"cd /home/frappe/frappe-bench && bench --site $${FRAPPE_SITE_NAME:-hubgh.local} migrate"
 
 ## Destruir TODO incluyendo volumes (CUIDADO: borra la base de datos)
 destroy:
