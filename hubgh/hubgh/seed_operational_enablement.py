@@ -2,6 +2,10 @@ import frappe
 
 
 def run():
+	# Fix pre-existing Form Tour records with NULL page_route that crash SessionBoot
+	frappe.db.sql(
+		"UPDATE `tabForm Tour` SET page_route = '[]' WHERE page_route IS NULL OR page_route = ''"
+	)
 	# LMS excluded from current scope — skip workspace setup that references missing DocTypes
 	# ensure_lms_single_entrypoint()
 	ensure_workflow_states_and_actions()
@@ -698,6 +702,8 @@ def _ensure_workspace_tour(title, workspace, steps):
 	doc.workspace_name = workspace
 	doc.track_steps = 1
 	doc.is_standard = 0
+	if not doc.page_route:
+		doc.page_route = "[]"
 
 	doc.set("steps", [])
 	for step_title, selector, description in steps:
