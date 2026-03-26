@@ -5,27 +5,22 @@
 BENCH_DIR="/home/frappe/frappe-bench"
 
 # ── Inicialización del bench (solo primera vez) ──────────────────────────────
-# El bench vive en un named volume. Si Procfile no existe, el bench
-# está incompleto o nunca se inicializó — hay que hacerlo ahora.
+# Docker pre-crea el directorio (es un named volume), así que bench init
+# siempre ve una carpeta existente. --force bypasea ese chequeo.
+# Solo corremos init si Procfile no existe (bench incompleto o primera vez).
 if [ ! -f "$BENCH_DIR/Procfile" ]; then
-  echo "==> Bench incompleto o no inicializado. Limpiando y arrancando de cero..."
-
-  # Vaciar la carpeta si quedó a medias (bench init falla si el dir existe y no está vacío)
-  if [ -d "$BENCH_DIR" ]; then
-    rm -rf "${BENCH_DIR:?}"/*
-  fi
-
-  echo "==> Inicializando bench con Frappe v15 (5-10 min la primera vez)..."
+  echo "==> Inicializando bench con Frappe v15 (primera vez, ~10 min)..."
   cd /home/frappe
   bench init \
     --skip-redis-config-generation \
     --frappe-branch version-15 \
+    --force \
     frappe-bench
   echo "==> Bench inicializado."
 fi
 
-# ── Configuración del bench ──────────────────────────────────────────────────
-# IMPORTANTE: bench set-config requiere ejecutarse DENTRO del bench dir.
+# ── Configuración ────────────────────────────────────────────────────────────
+# bench set-config requiere CWD dentro del bench dir.
 cd "$BENCH_DIR" || { echo "ERROR: no se pudo entrar a $BENCH_DIR"; exit 1; }
 
 bench set-config -g db_host mariadb
