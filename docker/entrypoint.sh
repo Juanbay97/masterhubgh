@@ -29,11 +29,13 @@ if [ ! -f "$BENCH_DIR/Procfile" ]; then
   cp -a frappe-bench-tmp/. "$BENCH_DIR/"
   rm -rf frappe-bench-tmp
 
-  # ── Registrar app hubgh en el entorno Python del bench ───────────────────
-  # bench init crea apps.txt con solo "frappe". El app hubgh está bind-montada
-  # en apps/hubgh pero bench no la conoce hasta que se pip-instala y se agrega
-  # a apps.txt. Sin esto, "bench install-app hubgh" falla.
+  # ── Reparar el venv y registrar hubgh ───────────────────────────────────
+  # bench init usa "pip install -e" con paths absolutos a /tmp/frappe-bench-tmp.
+  # Después del cp esos paths quedan rotos en los .pth del venv.
+  # Solución: reinstalar frappe (y hubgh) con los paths correctos del destino.
   cd "$BENCH_DIR"
+  echo "==> Reparando entorno Python (editable install paths post-cp)..."
+  ./env/bin/python -m pip install -q -e apps/frappe
   echo "==> Registrando app hubgh en el bench..."
   ./env/bin/python -m pip install -q -e apps/hubgh
   echo "hubgh" >> apps.txt
