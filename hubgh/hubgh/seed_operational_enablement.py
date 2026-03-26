@@ -478,46 +478,48 @@ def _ensure_number_card(name, doctype, filters):
 	if not frappe.db.exists("DocType", doctype):
 		return
 
-	doc = frappe.get_doc("Number Card", name) if frappe.db.exists("Number Card", name) else frappe.get_doc(
-		{"doctype": "Number Card", "name": name}
-	)
+	data = {
+		"label": name,
+		"type": "Document Type",
+		"document_type": doctype,
+		"function": "Count",
+		"is_public": 0,
+		"show_percentage_stats": 0,
+		"filters_json": frappe.as_json(filters),
+	}
 
-	doc.label = name
-	doc.type = "Document Type"
-	doc.document_type = doctype
-	doc.function = "Count"
-	doc.is_public = 0
-	doc.show_percentage_stats = 0
-	doc.filters_json = frappe.as_json(filters)
-
-	if doc.is_new():
-		doc.insert(ignore_permissions=True)
+	if frappe.db.exists("Number Card", name):
+		# db.set_value hace UPDATE directo sin el SELECT FOR UPDATE de save(),
+		# evitando DoesNotExistError cuando el doc está en estado inconsistente.
+		frappe.db.set_value("Number Card", name, data)
 	else:
-		doc.save(ignore_permissions=True)
+		frappe.get_doc({"doctype": "Number Card", "name": name, **data}).insert(
+			ignore_permissions=True
+		)
 
 
 def _ensure_chart_group_by(name, doctype, fieldname, chart_type):
 	if not frappe.db.exists("DocType", doctype):
 		return
 
-	doc = frappe.get_doc("Dashboard Chart", name) if frappe.db.exists("Dashboard Chart", name) else frappe.get_doc(
-		{"doctype": "Dashboard Chart", "name": name}
-	)
+	data = {
+		"chart_name": name,
+		"chart_type": "Group By",
+		"document_type": doctype,
+		"group_by_based_on": fieldname,
+		"group_by_type": "Count",
+		"number_of_groups": 10,
+		"type": chart_type,
+		"is_public": 0,
+		"filters_json": "[]",
+	}
 
-	doc.chart_name = name
-	doc.chart_type = "Group By"
-	doc.document_type = doctype
-	doc.group_by_based_on = fieldname
-	doc.group_by_type = "Count"
-	doc.number_of_groups = 10
-	doc.type = chart_type
-	doc.is_public = 0
-	doc.filters_json = "[]"
-
-	if doc.is_new():
-		doc.insert(ignore_permissions=True)
+	if frappe.db.exists("Dashboard Chart", name):
+		frappe.db.set_value("Dashboard Chart", name, data)
 	else:
-		doc.save(ignore_permissions=True)
+		frappe.get_doc({"doctype": "Dashboard Chart", "name": name, **data}).insert(
+			ignore_permissions=True
+		)
 
 
 def _attach_workspace_cards(workspace_name, cards, charts):
@@ -543,7 +545,8 @@ def _ensure_kanban(name, doctype, field_name, columns):
 	if not frappe.db.exists("DocType", doctype):
 		return
 
-	doc = frappe.get_doc("Kanban Board", name) if frappe.db.exists("Kanban Board", name) else frappe.get_doc(
+	exists = frappe.db.exists("Kanban Board", name)
+	doc = frappe.get_doc("Kanban Board", name) if exists else frappe.get_doc(
 		{"doctype": "Kanban Board", "kanban_board_name": name}
 	)
 
@@ -566,10 +569,13 @@ def _ensure_kanban(name, doctype, field_name, columns):
 			},
 		)
 
-	if doc.is_new():
+	try:
+		if doc.is_new():
+			doc.insert(ignore_permissions=True)
+		else:
+			doc.save(ignore_permissions=True)
+	except frappe.DoesNotExistError:
 		doc.insert(ignore_permissions=True)
-	else:
-		doc.save(ignore_permissions=True)
 
 
 def migrate_policies_to_help_articles():
