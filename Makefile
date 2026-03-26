@@ -1,7 +1,9 @@
 # HubGH -- Comandos de operacion Docker
 # Todos los comandos usan el .env de la raiz del repo.
+# Compatible con Docker Compose v1 (docker-compose) y v2 (docker compose).
 
-COMPOSE = docker compose -f docker/docker-compose.yml --env-file .env
+DOCKER_COMPOSE := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
+COMPOSE = $(DOCKER_COMPOSE) -f docker/docker-compose.yml --env-file .env
 
 .PHONY: up down restart logs shell init-site migrate ps destroy
 
