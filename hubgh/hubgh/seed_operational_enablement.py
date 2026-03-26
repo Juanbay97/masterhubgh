@@ -726,12 +726,18 @@ def _ensure_workspace_tour(title, workspace, steps):
 
 
 def _ensure_website_settings():
-	"""Establece branding de HubGH en Website Settings (login page y web)."""
-	frappe.db.set_value(
-		"Website Settings",
-		"Website Settings",
-		{
-			"app_name": "HubGH",
-			"brand_logo": "/assets/hubgh/images/logo-circular-black.png",
-		},
-	)
+	"""Establece branding de HubGH en Website Settings (login page y web).
+
+	Frappe v15 puede usar 'brand_logo' o 'app_logo_url' según la versión;
+	seteamos ambos para cubrir todos los casos. El hook app_logo_url en hooks.py
+	actúa como fallback a nivel de aplicación (sin depender de la DB).
+	"""
+	fields = {
+		"app_name": "HubGH",
+		"brand_logo": "/assets/hubgh/images/logo-circular-black.png",
+	}
+	# app_logo_url existe en algunos builds de Frappe v15; ignorar si no existe el campo
+	try:
+		frappe.db.set_value("Website Settings", "Website Settings", {**fields, "app_logo_url": "/assets/hubgh/images/logo-circular-black.png"})
+	except Exception:
+		frappe.db.set_value("Website Settings", "Website Settings", fields)
