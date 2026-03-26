@@ -33,16 +33,35 @@ if [ ! -f "$BENCH_DIR/Procfile" ]; then
   # bench init usa "pip install -e" con paths absolutos a /tmp/frappe-bench-tmp.
   # Después del cp esos paths quedan rotos en los .pth del venv.
   # Solución: reinstalar frappe y hubgh con los paths correctos del destino.
-  # También escribimos apps.txt explícitamente porque cp puede no haberlo
-  # copiado correctamente (frappe-bench-tmp/apps.txt a veces no se genera).
   cd "$BENCH_DIR"
   echo "==> Reparando entorno Python (editable install paths post-cp)..."
   ./env/bin/python -m pip install -q -e apps/frappe
   echo "==> Registrando app hubgh en el bench..."
   ./env/bin/python -m pip install -q -e apps/hubgh
-  # Escribir apps.txt explícitamente (no depender del cp)
+
+  # Frappe v15 lee el registro de apps desde sites/apps.txt y sites/apps.json
+  # (NO desde el apps.txt raíz del bench). Los actualizamos explícitamente.
   printf "frappe\nhubgh\n" > apps.txt
-  echo "==> apps.txt: $(cat apps.txt | tr '\n' ' ')"
+  printf "frappe\nhubgh\n" > sites/apps.txt
+  ./env/bin/python -c "
+import json, os
+path = 'sites/apps.json'
+apps = {}
+if os.path.exists(path):
+    with open(path) as f:
+        apps = json.load(f)
+if 'hubgh' not in apps:
+    apps['hubgh'] = {
+        'resolution': {'commit_hash': None, 'branch': None},
+        'required': [],
+        'idx': len(apps) + 1,
+        'version': '0.0.1'
+    }
+    with open(path, 'w') as f:
+        json.dump(apps, f, indent=4)
+    print('==> hubgh agregado a sites/apps.json')
+"
+  echo "==> sites/apps.txt: $(cat sites/apps.txt | tr '\n' ' ')"
 
   echo "==> Bench inicializado."
 fi
