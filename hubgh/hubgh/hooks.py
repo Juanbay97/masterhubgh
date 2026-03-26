@@ -5,6 +5,13 @@ app_description = "Hub de GH"
 app_email = "user@example.com"
 app_license = "mit"
 
+# Fixtures — exportados/importados con bench export-fixtures / bench migrate
+# Los Workspace en {module}/workspace/*.json se sincronizan automáticamente,
+# pero los listamos aquí también como red de seguridad.
+fixtures = [
+    {"dt": "Workspace", "filters": [["module", "=", "Hubgh"]]},
+]
+
 # Apps
 # ------------------
 
