@@ -1,4 +1,61 @@
 (() => {
+	// ── Logo adaptable por tema ──────────────────────────────────────────────
+	const LOGOS = {
+		navbar: {
+			light: "/assets/hubgh/images/logo-home-negro.png",
+			dark:  "/assets/hubgh/images/logo-home-blanco.png",
+		},
+		loading: {
+			light: "/assets/hubgh/images/logo-circular-black.png",
+			dark:  "/assets/hubgh/images/logo-circular-white.png",
+		},
+	};
+
+	function getCurrentTheme() {
+		return document.documentElement.getAttribute("data-theme") || "light";
+	}
+
+	function applyLogo() {
+		const theme = getCurrentTheme();
+		const isDark = theme === "dark";
+
+		// Navbar
+		const navLogo = document.querySelector(
+			".navbar-brand img.app-logo, .navbar-header img.app-logo, .navbar img.app-logo"
+		);
+		if (navLogo) {
+			navLogo.src = isDark ? LOGOS.navbar.dark : LOGOS.navbar.light;
+			navLogo.alt = "Hub GH";
+			navLogo.style.height = "38px";
+			navLogo.style.width = "auto";
+		}
+
+		// Loading screen
+		const loadingLogo = document.querySelector(
+			".page-loading img, #loading img, .frappe-loading img"
+		);
+		if (loadingLogo) {
+			loadingLogo.src = isDark ? LOGOS.loading.dark : LOGOS.loading.light;
+		}
+	}
+
+	function watchTheme() {
+		const observer = new MutationObserver(() => applyLogo());
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["data-theme"],
+		});
+	}
+
+	function bootLogo() {
+		applyLogo();
+		watchTheme();
+		// Re-aplicar después del render de Frappe
+		setTimeout(applyLogo, 500);
+		setTimeout(applyLogo, 1500);
+	}
+
+	// ── User menu patch ──────────────────────────────────────────────────────
 	function isCandidateOnlyUser() {
 		if (!window.frappe || !frappe.user || !Array.isArray(frappe.user_roles)) return false;
 		const roles = new Set(frappe.user_roles || []);
@@ -38,11 +95,16 @@
 		setTimeout(patchUserMenu, 1200);
 	}
 
-	if (window.frappe && typeof frappe.ready === "function") {
-		frappe.ready(bootToolbarPatch);
-	} else if (document.readyState === "loading") {
-		document.addEventListener("DOMContentLoaded", bootToolbarPatch, { once: true });
-	} else {
+	function boot() {
+		bootLogo();
 		bootToolbarPatch();
+	}
+
+	if (window.frappe && typeof frappe.ready === "function") {
+		frappe.ready(boot);
+	} else if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", boot, { once: true });
+	} else {
+		boot();
 	}
 })();

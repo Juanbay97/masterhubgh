@@ -25,6 +25,10 @@ add_to_apps_screen = [
 # ------------------
 
 # include js, css files in header of desk.html
+app_include_css = [
+	"/assets/hubgh/css/hubgh_branding.css",
+]
+
 app_include_js = [
 	"/assets/hubgh/js/hubgh_toolbar.js",
 	"/assets/hubgh/js/bandejas_ui_base.js",

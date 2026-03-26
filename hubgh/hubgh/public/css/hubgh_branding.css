@@ -1,0 +1,48 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   HubGH Branding — Logo adaptable por tema
+   Light theme: logos negros (sobre fondo blanco)
+   Dark  theme: logos blancos (sobre fondo oscuro)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Navbar: logo rectangular ─────────────────────────────────────────────── */
+.navbar-brand img.app-logo,
+.navbar-header img.app-logo {
+    content: url('/assets/hubgh/images/logo-home-negro.png');
+    height: 38px;
+    width: auto;
+    max-width: 200px;
+    object-fit: contain;
+}
+
+[data-theme="dark"] .navbar-brand img.app-logo,
+[data-theme="dark"] .navbar-header img.app-logo {
+    content: url('/assets/hubgh/images/logo-home-blanco.png');
+}
+
+/* ── App screen / Desk header ─────────────────────────────────────────────── */
+.app-icon img,
+.desk-sidebar-logo img {
+    content: url('/assets/hubgh/images/logo-titulos-black.png');
+    height: 32px;
+    width: auto;
+}
+
+[data-theme="dark"] .app-icon img,
+[data-theme="dark"] .desk-sidebar-logo img {
+    content: url('/assets/hubgh/images/logo-titulos-white.png');
+}
+
+/* ── Loading / Splash screen ──────────────────────────────────────────────── */
+.page-loading img,
+#loading img,
+.frappe-loading img {
+    content: url('/assets/hubgh/images/logo-circular-black.png');
+    width: 64px;
+    height: 64px;
+}
+
+[data-theme="dark"] .page-loading img,
+[data-theme="dark"] #loading img,
+[data-theme="dark"] .frappe-loading img {
+    content: url('/assets/hubgh/images/logo-circular-white.png');
+}
