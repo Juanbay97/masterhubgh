@@ -14,6 +14,7 @@ def run():
 	ensure_dashboards_and_kanban()
 	migrate_policies_to_help_articles()
 	ensure_form_tours()
+	_ensure_website_settings()
 	frappe.db.commit()
 
 
@@ -722,3 +723,15 @@ def _ensure_workspace_tour(title, workspace, steps):
 		doc.insert(ignore_permissions=True)
 	else:
 		doc.save(ignore_permissions=True)
+
+
+def _ensure_website_settings():
+	"""Establece branding de HubGH en Website Settings (login page y web)."""
+	frappe.db.set_value(
+		"Website Settings",
+		"Website Settings",
+		{
+			"app_name": "HubGH",
+			"brand_logo": "/assets/hubgh/images/logo-circular-black.png",
+		},
+	)

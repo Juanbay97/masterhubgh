@@ -32,10 +32,15 @@
     content: url('/assets/hubgh/images/logo-titulos-white.png');
 }
 
-/* ── Loading / Splash screen ──────────────────────────────────────────────── */
+/* ── Loading / Splash screen (desk) ──────────────────────────────────────── */
+/* Frappe v15 usa #freeze > .loading-state > img durante la carga del desk  */
 .page-loading img,
 #loading img,
-.frappe-loading img {
+.frappe-loading img,
+#freeze img,
+.loading-state img,
+img[src*="frappe-favicon"],
+img[src*="frappe-logo"] {
     content: url('/assets/hubgh/images/logo-circular-black.png');
     width: 64px;
     height: 64px;
@@ -43,6 +48,23 @@
 
 [data-theme="dark"] .page-loading img,
 [data-theme="dark"] #loading img,
-[data-theme="dark"] .frappe-loading img {
+[data-theme="dark"] .frappe-loading img,
+[data-theme="dark"] #freeze img,
+[data-theme="dark"] .loading-state img {
     content: url('/assets/hubgh/images/logo-circular-white.png');
+}
+
+/* ── Login page / Páginas web ────────────────────────────────────────────── */
+/* Frappe v15: .page-card-head > img  /  .frappe-logo  /  .brand-logo img   */
+.page-card-head > img,
+.frappe-logo,
+img.frappe-logo,
+.brand-logo img,
+.login-content .brand img {
+    content: url('/assets/hubgh/images/logo-circular-black.png') !important;
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
 }
