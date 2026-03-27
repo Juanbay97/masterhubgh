@@ -48,8 +48,11 @@ web_include_js = "/assets/hubgh/js/hubgh_web.js"
 
 # App logo — used by Frappe boot, login page and email templates
 app_logo_url = "/assets/hubgh/images/logo-circular-black.png"
-# Custom SVG icon sprite for workspace icons
-app_include_icons = "public/icons.svg"
+# Custom SVG icon sprite for workspace sidebar icons
+# MUST be a list, path relative to /assets/ (Frappe fetches via fetch('/assets/{path}'))
+app_include_icons = [
+	"hubgh/public/icons.svg",
+]
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "hubgh/public/scss/website"
