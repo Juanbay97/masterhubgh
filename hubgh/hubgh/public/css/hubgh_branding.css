@@ -5,6 +5,8 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 /* ── Navbar: logo rectangular ─────────────────────────────────────────────── */
+/* IMPORTANTE: scope estricto a .navbar-brand/.navbar-header para no afectar
+   otros img del desk (workspace shortcuts, app icons, etc.) */
 .navbar-brand img.app-logo,
 .navbar-header img.app-logo {
     content: url('/assets/hubgh/images/logo-home-negro.png');
@@ -19,28 +21,13 @@
     content: url('/assets/hubgh/images/logo-home-blanco.png');
 }
 
-/* ── App screen / Desk header ─────────────────────────────────────────────── */
-.app-icon img,
-.desk-sidebar-logo img {
-    content: url('/assets/hubgh/images/logo-titulos-black.png');
-    height: 32px;
-    width: auto;
-}
-
-[data-theme="dark"] .app-icon img,
-[data-theme="dark"] .desk-sidebar-logo img {
-    content: url('/assets/hubgh/images/logo-titulos-white.png');
-}
-
 /* ── Loading / Splash screen (desk) ──────────────────────────────────────── */
-/* Frappe v15 usa #freeze > .loading-state > img durante la carga del desk  */
+/* Scoped a contenedores de carga para NO afectar iconos del desk            */
 .page-loading img,
 #loading img,
 .frappe-loading img,
 #freeze img,
-.loading-state img,
-img[src*="frappe-favicon"],
-img[src*="frappe-logo"] {
+.loading-state img {
     content: url('/assets/hubgh/images/logo-circular-black.png');
     width: 64px;
     height: 64px;
@@ -55,10 +42,10 @@ img[src*="frappe-logo"] {
 }
 
 /* ── Login page / Páginas web ────────────────────────────────────────────── */
-/* Frappe v15: .page-card-head > img  /  .frappe-logo  /  .brand-logo img   */
+/* Frappe v15: .page-card-head > img  /  .brand-logo img                    */
+/* El logo SVG/div en la login page es manejado por hubgh_web.js (JS).      */
+/* Este CSS cubre el caso donde SÍ hay un <img> con el logo por defecto.    */
 .page-card-head > img,
-.frappe-logo,
-img.frappe-logo,
 .brand-logo img,
 .login-content .brand img {
     content: url('/assets/hubgh/images/logo-circular-black.png') !important;
