@@ -55,3 +55,13 @@
     background: none !important;
     box-shadow: none !important;
 }
+
+/* ── Layout: evitar que el titulo del workspace se apriete con el sidebar ── */
+/* En Frappe v15 el page-head y el sidebar comparten el mismo nivel vertical;
+   agregamos breathing room para que no se vea apretado. */
+.page-head {
+    padding-left: 8px;
+}
+.layout-side-section {
+    padding-top: 8px;
+}
