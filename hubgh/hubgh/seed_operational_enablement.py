@@ -735,6 +735,7 @@ def _ensure_website_settings():
 	fields = {
 		"app_name": "HubGH",
 		"brand_logo": "/assets/hubgh/images/logo-circular-black.png",
+		"favicon": "/assets/hubgh/images/logo-circular-black.png",
 	}
 	# app_logo_url existe en algunos builds de Frappe v15; ignorar si no existe el campo
 	try:

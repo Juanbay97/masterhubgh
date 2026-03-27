@@ -5,6 +5,18 @@
 
 	const LOGO_URL = "/assets/hubgh/images/logo-circular-black.png";
 
+	function setFavicon(url) {
+		let link = document.querySelector("link[rel~='icon']") ||
+		           document.querySelector("link[rel='shortcut icon']");
+		if (!link) {
+			link = document.createElement("link");
+			link.rel = "icon";
+			document.head.appendChild(link);
+		}
+		link.href = url;
+	}
+	setFavicon(LOGO_URL);
+
 	function injectBrandLogo() {
 		// 1. Reemplazar <img> que apunten al logo de Frappe por defecto
 		const frappe_img_selectors = [
