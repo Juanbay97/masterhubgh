@@ -56,9 +56,3 @@
     box-shadow: none !important;
 }
 
-/* ── Layout: separar el título del workspace del sidebar ───────────────── */
-/* En Frappe v15 el .page-head (título) queda visualmente encima del sidebar.
-   Empujamos el sidebar hacia abajo para evitar el solapamiento. */
-.layout-side-section {
-    padding-top: 45px;
-}

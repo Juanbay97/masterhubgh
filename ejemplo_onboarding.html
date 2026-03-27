@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H { } M E - Selección</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Montserrat para replicar la tipografía geométrica de Home -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+    <!-- Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+        }
+
+        /* Estilo del Logo H { } M E */
+        .home-logo {
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            display: inline-flex;
+            align-items: center;
+            font-size: 2.5rem; /* Ajustable */
+        }
+        .home-brackets {
+            font-family: 'Playfair Display', serif; /* Serif para los corchetes */
+            font-weight: 400;
+            font-size: 1.1em; /* Un poco más grandes */
+            margin: 0 0.1em;
+        }
+
+        /* Utilidades de Animación */
+        .step-content {
+            display: none;
+            opacity: 0;
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        
+        .step-content.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Inputs Estilo Home: Bordes negros, sin redondeos excesivos */
+        input, select {
+            border: 2px solid #e5e7eb; /* Gris muy suave inicialmente */
+            transition: all 0.2s;
+            border-radius: 0.25rem; /* Bordes sutilmente redondeados */
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #000000;
+            box-shadow: none; /* Sin glow, solo borde duro */
+        }
+
+        /* Checkboxes personalizados */
+        .day-checkbox:checked + label {
+            background-color: #000000;
+            color: #ffffff;
+            border-color: #000000;
+        }
+        
+        .day-checkbox:checked ~ .time-inputs {
+            display: grid;
+        }
+
+        /* Títulos en mayúsculas sostenidas como el manual */
+        h1, h2, h3 {
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-home {
+            background-color: #000000;
+            color: #ffffff;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .btn-home:hover {
+            background-color: #333333;
+        }
+        .btn-home:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header Minimalista -->
+    <header class="w-full py-8 text-center bg-white">
+        <!-- Recreación del Logo -->
+        <div class="home-logo select-none">
+            H<span class="home-brackets">{</span> <span class="home-brackets">}</span>M E
+        </div>
+        <p class="text-xs font-bold tracking-[0.3em] mt-2 uppercase">Proceso de Selección</p>
+    </header>
+
+    <!-- Barra de Progreso (Minimalista) -->
+    <div class="w-full h-1 bg-gray-100">
+        <div id="progress-bar" class="h-full bg-black transition-all duration-500 ease-out" style="width: 16%"></div>
+    </div>
+
+    <!-- Contenedor Principal -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="w-full max-w-xl bg-white p-6 md:p-10">
+            
+            <form id="onboardingForm" onsubmit="return false;">
+
+                <!-- PASO 1: DATOS PERSONALES -->
+                <div id="step-1" class="step-content active flex-col gap-6">
+                    <div class="text-center mb-4">
+                        <h1 class="text-3xl font-extrabold mb-2">Datos Personales</h1>
+                        <p class="text-gray-500 text-sm font-medium">INFORMACIÓN BÁSICA</p>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div class="group">
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Nombre</label>
+                            <input type="text" id="nombre" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="Escribe tu nombre">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Apellido</label>
+                            <input type="text" id="apellido" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="Escribe tus apellidos">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Cédula</label>
+                            <input type="number" id="cedula" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="Número de documento">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 2: BIENVENIDA (Intermedio) -->
+                <div id="step-2" class="step-content flex-col items-center text-center justify-center py-10">
+                    <h1 class="text-5xl md:text-6xl font-black mb-6">HOLA<br><span id="display-name" class="text-gray-400">CANDIDATO</span>.</h1>
+                    
+                    <div class="w-16 h-1 bg-black mb-8"></div> <!-- Separador estilo branding -->
+
+                    <p class="text-xl font-bold uppercase mb-2">YA CASI TERMINAMOS</p>
+                    <p class="text-gray-600 max-w-sm mx-auto">
+                        Estás a un paso de unirte al equipo. Queremos conocerte mejor para saber en qué punto podemos ubicarte.
+                    </p>
+                    <p class="text-xs font-bold mt-8 tracking-widest text-gray-400">RÁPIDO Y SENCILLO</p>
+                </div>
+
+                <!-- PASO 3: CONTACTO -->
+                <div id="step-3" class="step-content flex-col gap-6">
+                    <div class="text-center mb-4">
+                        <h1 class="text-3xl font-extrabold mb-2">Contacto</h1>
+                        <p class="text-gray-500 text-sm font-medium">¿CÓMO TE UBICAMOS?</p>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Correo Electrónico</label>
+                            <input type="email" id="email" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="ejemplo@correo.com">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Celular / WhatsApp</label>
+                            <input type="tel" id="celular" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium placeholder-gray-400 focus:bg-white" placeholder="300 123 4567">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 4: UBICACIÓN -->
+                <div id="step-4" class="step-content flex-col gap-6">
+                    <div class="text-center mb-4">
+                        <h1 class="text-3xl font-extrabold mb-2">Ubicación</h1>
+                        <p class="text-gray-500 text-sm font-medium">¿DÓNDE VIVES?</p>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Ciudad</label>
+                            <select id="ciudad" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium focus:bg-white appearance-none cursor-pointer">
+                                <option value="" disabled selected>Selecciona tu ciudad</option>
+                                <option value="bogota">Bogotá</option>
+                                <option value="medellin">Medellín</option>
+                                <option value="cartagena">Cartagena</option>
+                                <option value="barranquilla">Barranquilla</option>
+                            </select>
+                        </div>
+
+                        <!-- Dropdown Localidad (Solo Bogotá) -->
+                        <div id="localidad-container" class="hidden">
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Localidad</label>
+                            <select id="localidad" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium focus:bg-white appearance-none cursor-pointer">
+                                <option value="" disabled selected>Selecciona tu localidad</option>
+                                <option value="usaquen">Usaquén</option>
+                                <option value="chapinero">Chapinero</option>
+                                <option value="santa_fe">Santa Fe</option>
+                                <option value="suba">Suba</option>
+                                <option value="teusaquillo">Teusaquillo</option>
+                                <option value="kennedy">Kennedy</option>
+                                <option value="engativa">Engativá</option>
+                                <option value="bosa">Bosa</option>
+                                <option value="otra">Otra</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Dirección</label>
+                                <input type="text" id="direccion" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="Ej: Calle 85 # 15-20">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Barrio</label>
+                                <input type="text" id="barrio" class="w-full px-4 py-3 bg-gray-50 font-medium placeholder-gray-400 focus:bg-white" placeholder="Ej: Chicó">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 5: DISPONIBILIDAD -->
+                <div id="step-5" class="step-content flex-col gap-6">
+                    <div class="text-center mb-2">
+                        <h1 class="text-3xl font-extrabold mb-2">Disponibilidad</h1>
+                        <p class="text-gray-500 text-sm font-medium">¿QUÉ DÍAS Y HORAS PUEDES TRABAJAR?</p>
+                    </div>
+
+                    <!-- Nota estilo Home: Directa -->
+                    <div class="border-l-4 border-black pl-4 py-2 mb-4 bg-gray-50">
+                        <p class="text-xs font-bold text-black uppercase mb-1">IMPORTANTE:</p>
+                        <p class="text-sm text-gray-700">Selecciona el día y define tu hora de inicio y fin. Esto nos sirve para programar tus turnos.</p>
+                    </div>
+
+                    <div class="space-y-3" id="schedule-container">
+                        <!-- LUNES -->
+                        <div class="border border-gray-200 p-3 rounded hover:border-black transition-colors">
+                            <input type="checkbox" id="check-lunes" class="peer hidden day-checkbox">
+                            <label for="check-lunes" class="flex items-center justify-between cursor-pointer select-none">
+                                <span class="font-bold text-lg">LUNES</span>
+                                <i class="fa-solid fa-plus peer-checked:hidden"></i>
+                                <i class="fa-solid fa-check hidden peer-checked:block text-white"></i>
+                            </label>
+                            
+                            <!-- Inputs de Hora (Ocultos por defecto) -->
+                            <div class="time-inputs hidden grid-cols-2 gap-3 mt-3 animate-[fadeIn_0.3s_ease-out]">
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-500 uppercase">Hora Inicio</label>
+                                    <input type="time" id="start-lunes" class="w-full p-2 bg-white text-sm">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-500 uppercase">Hora Fin</label>
+                                    <input type="time" id="end-lunes" class="w-full p-2 bg-white text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MARTES -->
+                        <div class="border border-gray-200 p-3 rounded hover:border-black transition-colors">
+                            <input type="checkbox" id="check-martes" class="peer hidden day-checkbox">
+                            <label for="check-martes" class="flex items-center justify-between cursor-pointer select-none">
+                                <span class="font-bold text-lg">MARTES</span>
+                                <i class="fa-solid fa-plus peer-checked:hidden"></i>
+                                <i class="fa-solid fa-check hidden peer-checked:block text-white"></i>
+                            </label>
+                            <div class="time-inputs hidden grid-cols-2 gap-3 mt-3 animate-[fadeIn_0.3s_ease-out]">
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Inicio</label><input type="time" id="start-martes" class="w-full p-2 bg-white text-sm"></div>
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Fin</label><input type="time" id="end-martes" class="w-full p-2 bg-white text-sm"></div>
+                            </div>
+                        </div>
+
+                        <!-- MIERCOLES -->
+                        <div class="border border-gray-200 p-3 rounded hover:border-black transition-colors">
+                            <input type="checkbox" id="check-miercoles" class="peer hidden day-checkbox">
+                            <label for="check-miercoles" class="flex items-center justify-between cursor-pointer select-none">
+                                <span class="font-bold text-lg">MIÉRCOLES</span>
+                                <i class="fa-solid fa-plus peer-checked:hidden"></i>
+                                <i class="fa-solid fa-check hidden peer-checked:block text-white"></i>
+                            </label>
+                            <div class="time-inputs hidden grid-cols-2 gap-3 mt-3 animate-[fadeIn_0.3s_ease-out]">
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Inicio</label><input type="time" id="start-miercoles" class="w-full p-2 bg-white text-sm"></div>
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Fin</label><input type="time" id="end-miercoles" class="w-full p-2 bg-white text-sm"></div>
+                            </div>
+                        </div>
+
+                        <!-- JUEVES -->
+                        <div class="border border-gray-200 p-3 rounded hover:border-black transition-colors">
+                            <input type="checkbox" id="check-jueves" class="peer hidden day-checkbox">
+                            <label for="check-jueves" class="flex items-center justify-between cursor-pointer select-none">
+                                <span class="font-bold text-lg">JUEVES</span>
+                                <i class="fa-solid fa-plus peer-checked:hidden"></i>
+                                <i class="fa-solid fa-check hidden peer-checked:block text-white"></i>
+                            </label>
+                            <div class="time-inputs hidden grid-cols-2 gap-3 mt-3 animate-[fadeIn_0.3s_ease-out]">
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Inicio</label><input type="time" id="start-jueves" class="w-full p-2 bg-white text-sm"></div>
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Fin</label><input type="time" id="end-jueves" class="w-full p-2 bg-white text-sm"></div>
+                            </div>
+                        </div>
+
+                        <!-- VIERNES -->
+                        <div class="border border-gray-200 p-3 rounded hover:border-black transition-colors">
+                            <input type="checkbox" id="check-viernes" class="peer hidden day-checkbox">
+                            <label for="check-viernes" class="flex items-center justify-between cursor-pointer select-none">
+                                <span class="font-bold text-lg">VIERNES</span>
+                                <i class="fa-solid fa-plus peer-checked:hidden"></i>
+                                <i class="fa-solid fa-check hidden peer-checked:block text-white"></i>
+                            </label>
+                            <div class="time-inputs hidden grid-cols-2 gap-3 mt-3 animate-[fadeIn_0.3s_ease-out]">
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Inicio</label><input type="time" id="start-viernes" class="w-full p-2 bg-white text-sm"></div>
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Fin</label><input type="time" id="end-viernes" class="w-full p-2 bg-white text-sm"></div>
+                            </div>
+                        </div>
+
+                         <!-- SABADO -->
+                         <div class="border border-gray-200 p-3 rounded hover:border-black transition-colors">
+                            <input type="checkbox" id="check-sabado" class="peer hidden day-checkbox">
+                            <label for="check-sabado" class="flex items-center justify-between cursor-pointer select-none">
+                                <span class="font-bold text-lg">SÁBADO</span>
+                                <i class="fa-solid fa-plus peer-checked:hidden"></i>
+                                <i class="fa-solid fa-check hidden peer-checked:block text-white"></i>
+                            </label>
+                            <div class="time-inputs hidden grid-cols-2 gap-3 mt-3 animate-[fadeIn_0.3s_ease-out]">
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Inicio</label><input type="time" id="start-sabado" class="w-full p-2 bg-white text-sm"></div>
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Fin</label><input type="time" id="end-sabado" class="w-full p-2 bg-white text-sm"></div>
+                            </div>
+                        </div>
+
+                         <!-- DOMINGO -->
+                         <div class="border border-gray-200 p-3 rounded hover:border-black transition-colors">
+                            <input type="checkbox" id="check-domingo" class="peer hidden day-checkbox">
+                            <label for="check-domingo" class="flex items-center justify-between cursor-pointer select-none">
+                                <span class="font-bold text-lg">DOMINGO</span>
+                                <i class="fa-solid fa-plus peer-checked:hidden"></i>
+                                <i class="fa-solid fa-check hidden peer-checked:block text-white"></i>
+                            </label>
+                            <div class="time-inputs hidden grid-cols-2 gap-3 mt-3 animate-[fadeIn_0.3s_ease-out]">
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Inicio</label><input type="time" id="start-domingo" class="w-full p-2 bg-white text-sm"></div>
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase">Hora Fin</label><input type="time" id="end-domingo" class="w-full p-2 bg-white text-sm"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- PASO 6: DONE -->
+                <div id="step-6" class="step-content flex-col items-center justify-center text-center py-10">
+                     <div class="home-logo select-none text-4xl mb-8">
+                        H<span class="home-brackets">{</span> <span class="home-brackets">}</span>M E
+                    </div>
+                    <h1 class="text-4xl font-black text-black mb-4 uppercase">¡Listo!</h1>
+                    <p class="text-gray-600 text-lg mb-10 font-medium">Recibimos tu información. Revisaremos tu perfil y te contactaremos muy pronto.</p>
+                    
+                    <button onclick="location.reload()" class="border-2 border-black px-8 py-3 text-black font-bold uppercase hover:bg-black hover:text-white transition-colors tracking-widest text-sm">
+                        Volver al inicio
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer de Navegación -->
+    <footer class="bg-white p-6 border-t border-gray-100">
+        <div id="nav-buttons" class="max-w-xl mx-auto flex justify-between items-center">
+            <button id="prevBtn" class="hidden text-gray-400 hover:text-black font-bold uppercase text-xs tracking-widest transition-colors py-4 px-2">
+                ATRÁS
+            </button>
+            <button id="nextBtn" class="btn-home px-10 py-4 rounded shadow-lg w-full md:w-auto text-sm tracking-widest">
+                SIGUIENTE
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        // Configuración Inicial
+        let currentStep = 1;
+        const totalSteps = 6;
+        const availabilityData = {}; // Objeto para guardar disponibilidad
+        
+        // Elementos DOM
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressBar = document.getElementById('progress-bar');
+        const ciudadSelect = document.getElementById('ciudad');
+        const localidadContainer = document.getElementById('localidad-container');
+        const navButtonsContainer = document.getElementById('nav-buttons');
+
+        // Lógica de Localidad (Bogotá)
+        ciudadSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'bogota') {
+                localidadContainer.classList.remove('hidden');
+                localidadContainer.classList.add('block');
+            } else {
+                localidadContainer.classList.add('hidden');
+                localidadContainer.classList.remove('block');
+            }
+        });
+
+        // Navegación
+        nextBtn.addEventListener('click', () => {
+            if (validateStep(currentStep)) {
+                
+                // Actualizar nombre dinámico en paso 2
+                if (currentStep === 1) {
+                    const nombre = document.getElementById('nombre').value;
+                    const primerNombre = nombre.split(' ')[0]; 
+                    document.getElementById('display-name').textContent = primerNombre.toUpperCase();
+                }
+
+                // Si estamos en el paso 5, recolectamos datos de disponibilidad antes de avanzar
+                if (currentStep === 5) {
+                    collectAvailability();
+                    console.log("Datos de disponibilidad:", availabilityData);
+                }
+
+                currentStep++;
+                showStep(currentStep);
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        });
+
+        function showStep(step) {
+            // Ocultar todos
+            document.querySelectorAll('.step-content').forEach(el => {
+                el.classList.remove('active');
+                el.style.display = 'none'; 
+            });
+
+            // Mostrar actual
+            const currentEl = document.getElementById(`step-${step}`);
+            currentEl.style.display = 'flex';
+            // Reflow
+            void currentEl.offsetWidth; 
+            currentEl.classList.add('active');
+
+            // Barra de Progreso
+            const progress = ((step - 1) / (totalSteps - 1)) * 100;
+            progressBar.style.width = `${progress}%`;
+
+            // Botones
+            if (step === 1) {
+                prevBtn.classList.add('hidden');
+                nextBtn.classList.add('w-full');
+            } else {
+                prevBtn.classList.remove('hidden');
+                nextBtn.classList.remove('w-full');
+            }
+
+            // Textos Botón
+            if (step === 2) {
+                nextBtn.innerHTML = 'CONTINUAR';
+                prevBtn.classList.add('hidden'); 
+            } else if (step === totalSteps - 1) { 
+                nextBtn.innerHTML = 'FINALIZAR';
+            } else if (step === totalSteps) {
+                navButtonsContainer.style.display = 'none';
+                progressBar.parentElement.style.display = 'none';
+            } else {
+                nextBtn.innerHTML = 'SIGUIENTE';
+            }
+        }
+
+        function validateStep(step) {
+            let isValid = true;
+            const currentEl = document.getElementById(`step-${step}`);
+            const inputs = currentEl.querySelectorAll('input:not([type="checkbox"]):not([type="time"]), select');
+
+            // Limpiar errores básicos
+            inputs.forEach(input => input.style.borderColor = '#e5e7eb');
+
+            if (step === 1) {
+                if (!checkVal('nombre')) isValid = false;
+                if (!checkVal('apellido')) isValid = false;
+                if (!checkVal('cedula')) isValid = false;
+            }
+
+            if (step === 3) {
+                const email = document.getElementById('email');
+                if (!email.value || !email.value.includes('@')) { errorVal(email); isValid = false; }
+                if (!checkVal('celular')) isValid = false;
+            }
+
+            if (step === 4) {
+                if (!checkVal('ciudad')) isValid = false;
+                if (!checkVal('direccion')) isValid = false;
+                if (!checkVal('barrio')) isValid = false;
+                
+                const ciudad = document.getElementById('ciudad').value;
+                if (ciudad === 'bogota' && !document.getElementById('localidad').value) {
+                    errorVal(document.getElementById('localidad')); isValid = false;
+                }
+            }
+
+            if (step === 5) {
+                const checkboxes = document.querySelectorAll('.day-checkbox:checked');
+                
+                if (checkboxes.length === 0) {
+                    alert("POR FAVOR SELECCIONA AL MENOS UN DÍA.");
+                    isValid = false;
+                } else {
+                    // Validar que los días seleccionados tengan horas
+                    checkboxes.forEach(checkbox => {
+                        const dayName = checkbox.id.split('-')[1]; // ej: "lunes"
+                        const startInput = document.getElementById(`start-${dayName}`);
+                        const endInput = document.getElementById(`end-${dayName}`);
+
+                        // Resetear estilos
+                        startInput.style.borderColor = '#e5e7eb';
+                        endInput.style.borderColor = '#e5e7eb';
+
+                        if (!startInput.value) {
+                            errorVal(startInput);
+                            isValid = false;
+                        }
+                        if (!endInput.value) {
+                            errorVal(endInput);
+                            isValid = false;
+                        }
+                    });
+                    
+                    if (!isValid) {
+                        alert("POR FAVOR COMPLETA LAS HORAS DE INICIO Y FIN PARA LOS DÍAS SELECCIONADOS.");
+                    }
+                }
+            }
+
+            return isValid;
+        }
+
+        function checkVal(id) {
+            const el = document.getElementById(id);
+            if (!el.value) {
+                errorVal(el);
+                return false;
+            }
+            return true;
+        }
+
+        function errorVal(el) {
+            el.style.borderColor = '#000000'; 
+            el.style.borderWidth = '2px';
+            el.classList.add('animate-pulse');
+            setTimeout(() => el.classList.remove('animate-pulse'), 500);
+        }
+
+        // Función para recolectar datos de disponibilidad
+        function collectAvailability() {
+            const days = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            days.forEach(day => {
+                const checkbox = document.getElementById(`check-${day}`);
+                if (checkbox.checked) {
+                    availabilityData[day] = {
+                        start: document.getElementById(`start-${day}`).value,
+                        end: document.getElementById(`end-${day}`).value
+                    };
+                } else {
+                    delete availabilityData[day];
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
