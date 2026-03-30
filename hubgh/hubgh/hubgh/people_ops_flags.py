@@ -4,6 +4,21 @@ import frappe
 SUPPORTED_MODES = {"off", "warn", "enforce"}
 
 
+def _coerce_bool(value, default=False):
+	if value is None:
+		return default
+	if isinstance(value, bool):
+		return value
+	if isinstance(value, (int, float)):
+		return bool(value)
+	value = str(value).strip().lower()
+	if value in {"1", "true", "yes", "on"}:
+		return True
+	if value in {"0", "false", "no", "off", ""}:
+		return False
+	return default
+
+
 def _normalize_mode(value, fallback="warn"):
 	mode = str(value or "").strip().lower()
 	if mode in SUPPORTED_MODES:
@@ -56,6 +71,12 @@ def resolve_payroll_novedades_v1_enabled():
 		return True
 
 	return site_name.endswith(".test") or site_name.startswith("test_")
+
+
+def resolve_operational_person_identity_manual_run_enabled():
+	"""Resolve manual run rollout flag for the identity operations tray."""
+	config = frappe.get_site_config() or {}
+	return _coerce_bool(config.get("enable_operational_person_identity_manual_run"), default=False)
 
 
 def enable_payroll_novedades_v1():

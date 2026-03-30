@@ -1,5 +1,6 @@
 import frappe
 
+from hubgh.person_identity import resolve_employee_for_user
 from hubgh.hubgh.document_service import can_user_read_person_document
 from hubgh.hubgh.people_ops_policy import (
 	DIMENSION_ROLE_MATRIX,
@@ -166,10 +167,7 @@ def gh_novedad_has_permission(doc, user=None):
 
 
 def _get_employee_by_user(user):
-	rows = frappe.get_all(
-		"Ficha Empleado",
-		filters={"email": user},
-		fields=["name", "pdv"],
-		limit=1,
-	)
-	return rows[0] if rows else None
+	identity = resolve_employee_for_user(user)
+	if not identity.employee:
+		return None
+	return frappe.db.get_value("Ficha Empleado", identity.employee, ["name", "pdv"], as_dict=True)

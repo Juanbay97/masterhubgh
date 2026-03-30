@@ -1,8 +1,11 @@
 import frappe
 import csv
 import re
+from io import StringIO
 from frappe import _
-from frappe.utils import getdate
+from frappe.utils import getdate, validate_email_address
+
+from hubgh.person_identity import normalize_document, reconcile_person_identity
 
 
 ALLOWED_BULK_DOCTYPES = {
@@ -12,11 +15,19 @@ ALLOWED_BULK_DOCTYPES = {
 	"User": "create_user",
 }
 
+EXPECTED_CSV_COLUMNS = {
+	"Punto de Venta": {"nombre_pdv"},
+	"Ficha Empleado": {"cedula", "pdv"},
+	"Novedad SST": {"cedula_empleado", "tipo_novedad", "fecha_inicio", "fecha_fin"},
+	"User": {"email"},
+}
+
 
 def _stable_error(code, detail=""):
 	base = {
 		"unsupported_doctype": "Tipo de carga no soportado en Centro de Datos.",
 		"empty_file": "El archivo está vacío o no se pudo leer.",
+		"missing_columns": "El archivo no contiene las columnas esperadas para esta carga.",
 	}
 	message = base.get(code, "Error de carga en Centro de Datos.")
 	if detail:
@@ -27,6 +38,43 @@ def _stable_error(code, detail=""):
 @frappe.whitelist()
 def get_supported_doctypes():
 	return sorted(ALLOWED_BULK_DOCTYPES.keys())
+
+
+def _decode_csv_content(content):
+	if not isinstance(content, bytes):
+		return content
+	try:
+		return content.decode("utf-8-sig")
+	except UnicodeDecodeError:
+		return content.decode("latin-1")
+
+
+def _detect_csv_dialect(content):
+	sample = content[:4096]
+	try:
+		return csv.Sniffer().sniff(sample, delimiters=",;\t").delimiter
+	except csv.Error:
+		first_line = content.splitlines()[0] if content.splitlines() else ""
+		return max([",", ";", "\t"], key=first_line.count)
+
+
+def _build_csv_reader(content):
+	delimiter = _detect_csv_dialect(content)
+	reader = csv.DictReader(StringIO(content), delimiter=delimiter)
+	reader.fieldnames = [((header or "").lstrip("\ufeff")).strip() for header in (reader.fieldnames or [])]
+	return reader
+
+
+def _validate_expected_columns(doctype, fieldnames):
+	expected = EXPECTED_CSV_COLUMNS.get(doctype, set())
+	missing = sorted(column for column in expected if column not in set(fieldnames or []))
+	if not missing:
+		return None
+	found = ", ".join(fieldnames or []) or "ninguna"
+	return _stable_error(
+		"missing_columns",
+		f"Faltan: {', '.join(missing)}. Encontradas: {found}.",
+	)
 
 @frappe.whitelist()
 def upload_data(doctype, file_url):
@@ -45,13 +93,16 @@ def upload_data(doctype, file_url):
 		frappe.throw(_(_stable_error("empty_file")))
 
 	# 2. Decode content
-	if isinstance(content, bytes):
-		try:
-			content = content.decode("utf-8")
-		except UnicodeDecodeError:
-			content = content.decode("latin-1")
+	content = _decode_csv_content(content)
 
-	reader = csv.DictReader(content.splitlines())
+	reader = _build_csv_reader(content)
+	columns_error = _validate_expected_columns(doctype, reader.fieldnames)
+	if columns_error:
+		return {
+			"success": 0,
+			"errors": [columns_error],
+			"supported_doctypes": get_supported_doctypes(),
+		}
 
 	success_count = 0
 	errors = []
@@ -78,6 +129,32 @@ def _slugify(text, max_len=20):
 	"""Genera un código normalizado desde un texto: mayúsculas, espacios a guiones."""
 	slug = re.sub(r"[^A-Z0-9\-]", "", text.upper().replace(" ", "-"))
 	return slug[:max_len] or "PDV"
+
+
+def _log_identity_state(event, identity):
+	logger = frappe.logger("hubgh.person_identity")
+	payload = {
+		"employee": identity.employee,
+		"user": identity.user,
+		"document": identity.document,
+		"email": identity.email,
+		"source": identity.source,
+		"conflict": identity.conflict,
+		"pending": identity.pending,
+		"conflict_reason": identity.conflict_reason,
+		"warnings": list(identity.warnings or ()),
+	}
+	if identity.conflict or identity.pending:
+		logger.warning(event, extra=payload)
+		return
+	logger.info(event, extra=payload)
+
+
+def _get_employee_identity_seed(employee_name):
+	if not employee_name:
+		return None, None
+	employee_row = frappe.db.get_value("Ficha Empleado", employee_name, ["cedula", "email"], as_dict=True) or {}
+	return normalize_document(employee_row.get("cedula")), (employee_row.get("email") or "").strip().lower() or None
 
 
 def create_punto(row):
@@ -142,6 +219,20 @@ def create_empleado(row):
 	doc.pdv = pdv_name
 
 	doc.insert()
+	identity = reconcile_person_identity(
+		employee=doc,
+		document=cedula,
+		email=doc.email,
+		allow_create_user=True,
+		user_defaults={
+			"first_name": doc.nombres or (row.get("first_name") or "").strip(),
+			"last_name": doc.apellidos or (row.get("last_name") or "").strip(),
+			"enabled": 1,
+			"send_welcome_email": 0,
+		},
+		user_roles=["Empleado"],
+	)
+	_log_identity_state("centro_de_datos:create_empleado:identity_reconciled", identity)
 
 
 def create_novedad(row):
@@ -163,16 +254,81 @@ def create_user(row):
 	if not email:
 		raise Exception("El campo 'email' es requerido.")
 
-	if frappe.db.exists("User", email):
-		return  # ya existe, omitir silenciosamente
+	document = normalize_document((row.get("cedula") or row.get("numero_documento") or row.get("username") or "").strip())
+	identity = reconcile_person_identity(document=document, email=email)
+	if identity.conflict:
+		_log_identity_state("centro_de_datos:create_user:identity_conflict", identity)
+		raise Exception(f"Conflicto canónico detectado para user {email}: {identity.conflict_reason}")
 
-	user = frappe.new_doc("User")
-	user.email = email
-	user.first_name = (row.get("first_name") or "").strip()
-	user.last_name = (row.get("last_name") or "").strip()
-	user.enabled = 1
-	user.send_welcome_email = 0
-	user.insert(ignore_permissions=True)
+	if identity.employee and not document:
+		document, _employee_email = _get_employee_identity_seed(identity.employee)
+
+	if identity.user:
+		user = frappe.get_doc("User", identity.user)
+	else:
+		if identity.employee:
+			identity = reconcile_person_identity(
+				employee=identity.employee,
+				document=document,
+				email=email,
+				allow_create_user=True,
+				user_defaults={
+					"first_name": (row.get("first_name") or "").strip(),
+					"last_name": (row.get("last_name") or "").strip(),
+					"enabled": 1,
+					"send_welcome_email": 0,
+				},
+			)
+			if identity.conflict:
+				_log_identity_state("centro_de_datos:create_user:identity_conflict", identity)
+				raise Exception(f"Conflicto canónico detectado para user {email}: {identity.conflict_reason}")
+			if identity.pending:
+				_log_identity_state("centro_de_datos:create_user:identity_pending", identity)
+				raise Exception(f"Estado pendiente canónico para user {email}: {identity.conflict_reason}")
+			if identity.user:
+				user = frappe.get_doc("User", identity.user)
+			else:
+				user = None
+		else:
+			user = None
+
+	if not user:
+		if not validate_email_address(email, throw=False):
+			if not identity.pending:
+				identity = identity.__class__(
+					identity.employee,
+					identity.user,
+					identity.document,
+					email,
+					identity.source,
+					conflict=identity.conflict,
+					fallback=identity.fallback,
+					pending=True,
+					conflict_reason=identity.conflict_reason or "invalid_or_missing_email",
+					warnings=tuple(identity.warnings or ()) + ("missing_valid_email",),
+				)
+			_log_identity_state("centro_de_datos:create_user:identity_pending", identity)
+			raise Exception(f"No se puede crear User sin email válido: {email}")
+
+		if frappe.db.exists("User", email):
+			return
+
+		user = frappe.new_doc("User")
+		user.email = email
+		user.username = document or None
+		user.employee = identity.employee or None
+		user.first_name = (row.get("first_name") or "").strip()
+		user.last_name = (row.get("last_name") or "").strip()
+		user.enabled = 1
+		user.send_welcome_email = 0
+		user.insert(ignore_permissions=True)
+
+		if document:
+			identity = reconcile_person_identity(user=user, document=document, email=email)
+			if identity.conflict:
+				_log_identity_state("centro_de_datos:create_user:identity_conflict", identity)
+				raise Exception(f"Conflicto canónico detectado para user {email}: {identity.conflict_reason}")
+			_log_identity_state("centro_de_datos:create_user:identity_reconciled", identity)
 
 	# rol: nombre canónico del Role (ej: "Gestión Humana", "HR SST", "System Manager")
 	rol = (row.get("rol") or "").strip()

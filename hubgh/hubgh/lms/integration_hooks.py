@@ -1,5 +1,6 @@
 import frappe
 
+from hubgh.person_identity import resolve_user_for_employee
 from hubgh.lms.hardening import (
 	get_lms_course_name,
 	increment_lms_metric,
@@ -56,10 +57,8 @@ def verificar_enrolamiento_calidad(doc, method=None):
 
 
 def _resolver_usuario_empleado(doc):
-	email = (getattr(doc, "email", None) or "").strip()
-	if email and frappe.db.exists("User", email):
-		return email
-	return None
+	identity = resolve_user_for_employee(doc)
+	return identity.user if identity and identity.user else None
 
 
 def _lms_disponible():

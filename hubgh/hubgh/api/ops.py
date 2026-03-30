@@ -10,6 +10,7 @@ from frappe.utils import add_days, get_first_day, get_last_day, getdate, now_dat
 from frappe.utils.file_manager import save_file
 from frappe.utils.pdf import get_pdf
 
+from hubgh.person_identity import resolve_employee_for_user, resolve_user_for_employee
 from hubgh.lms.hardening import (
 	get_lms_course_name,
 	get_lms_metrics_snapshot,
@@ -436,15 +437,15 @@ def _get_session_employee():
 	if not user or user == "Guest":
 		frappe.throw(_("Sesión inválida"), frappe.PermissionError)
 
-	rows = frappe.get_all(
-		"Ficha Empleado",
-		filters={"email": user},
-		fields=["name", "nombres", "apellidos", "pdv", "estado", "email"],
-		limit=1,
-	)
-	if not rows:
+	identity = resolve_employee_for_user(user)
+	if not identity.employee:
 		frappe.throw(_("No existe Ficha Empleado asociada al usuario actual."), frappe.PermissionError)
-	return rows[0]
+	return frappe.db.get_value(
+		"Ficha Empleado",
+		identity.employee,
+		["name", "nombres", "apellidos", "pdv", "estado", "email"],
+		as_dict=True,
+	)
 
 
 def _get_session_point():
@@ -537,7 +538,10 @@ def _build_pdv_lms_report(pdv_id, personas):
 			continue
 
 		user_email = (p.get("email") or "").strip()
-		if not user_email or not frappe.db.exists("User", user_email):
+		identity = resolve_user_for_employee(p)
+		user_id = identity.user if identity else None
+		ctx["user"] = user_id or user_email
+		if not user_id or not frappe.db.exists("User", user_id):
 			log_lms_event(event="report.person", status="skip", context={**ctx, "reason": "user_not_found"})
 			increment_lms_metric("report.person", "skip")
 			reporte.append(
@@ -557,7 +561,7 @@ def _build_pdv_lms_report(pdv_id, personas):
 			"report.enrollment_lookup",
 			lambda: frappe.db.get_value(
 				"LMS Enrollment",
-				{"member": user_email, "course": course_name},
+				{"member": user_id, "course": course_name},
 				["name", "progress"],
 				as_dict=True,
 			),
@@ -584,7 +588,7 @@ def _build_pdv_lms_report(pdv_id, personas):
 			"report.progress_count",
 			lambda: frappe.db.count(
 				"LMS Course Progress",
-				{"member": user_email, "course": course_name, "status": "Complete"},
+				{"member": user_id, "course": course_name, "status": "Complete"},
 			),
 			context=ctx,
 			default=0,
@@ -594,7 +598,7 @@ def _build_pdv_lms_report(pdv_id, personas):
 			"report.certificate_lookup",
 			lambda: frappe.db.get_value(
 				"LMS Certificate",
-				{"member": user_email, "course": course_name},
+				{"member": user_id, "course": course_name},
 				["name", "issue_date"],
 				as_dict=True,
 			),

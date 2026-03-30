@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.password import update_password
 
+from hubgh.person_identity import reconcile_person_identity
 from hubgh.hubgh.candidate_states import STATE_AFILIACION, STATE_DOCUMENTACION, is_candidate_status, normalize_candidate_status
 from hubgh.hubgh.document_service import ensure_candidate_required_documents, set_candidate_status_from_progress
 from hubgh.hubgh.onboarding_security import mark_user_for_first_login_password_reset
@@ -69,9 +70,9 @@ class Candidato(Document):
 	def autovincular_persona(self):
 		if not self.numero_documento:
 			return
-		persona_name = frappe.db.get_value("Ficha Empleado", {"cedula": self.numero_documento})
-		if persona_name:
-			self.persona = persona_name
+		identity = reconcile_person_identity(document=self.numero_documento, email=self.email)
+		if identity.employee:
+			self.persona = identity.employee
 
 	def ensure_user_link(self):
 		logger = frappe.logger("hubgh.candidato")
@@ -147,6 +148,7 @@ class Candidato(Document):
 			self.flags.onboarding_login_user = user_doc.name
 		self._ensure_candidato_role(user_doc.name)
 		self._ensure_persona_for_user()
+		reconcile_person_identity(employee=self.persona, user=user_doc, document=self.numero_documento, email=user_doc.email)
 
 	def _ensure_persona_for_user(self):
 		if self.persona:
@@ -175,6 +177,7 @@ class Candidato(Document):
 			}).insert(ignore_permissions=True, ignore_mandatory=True)
 			persona_name = persona.name
 		self.persona = persona_name
+		reconcile_person_identity(employee=persona_name, user=self.user, document=self.numero_documento, email=self.email)
 
 	def _get_candidate_email(self, user_id):
 		if self.email and validate_email_address(self.email, throw=False):
@@ -329,6 +332,7 @@ class Candidato(Document):
 		self.persona = persona_name
 		self.estado_proceso = "Contratado"
 		self.ensure_user_link()
+		reconcile_person_identity(employee=persona_name, user=self.user, document=self.numero_documento, email=self.email)
 		self._upgrade_user_roles()
 		self._ensure_persona_document_folder()
 		self.save(ignore_permissions=True)

@@ -1,6 +1,7 @@
 import frappe
 from frappe.model.document import Document
 
+from hubgh.person_identity import reconcile_person_identity
 from hubgh.hubgh.bienestar_automation import ensure_ingreso_followups_for_employee
 
 
@@ -69,6 +70,21 @@ class Contrato(Document):
 
 	def on_submit(self):
 		employee = self._ensure_employee()
+		candidate_user = frappe.db.get_value("Candidato", self.candidato, "user") if self.candidato else None
+		reconcile_person_identity(
+			employee=employee,
+			user=candidate_user,
+			document=self.numero_documento,
+			email=self.email,
+			allow_create_user=True,
+			user_defaults={
+				"first_name": self.nombres,
+				"last_name": self.apellidos,
+				"enabled": 1,
+				"send_welcome_email": 0,
+			},
+			user_roles=["Empleado"],
+		)
 		self._sync_employee_operational_data(employee)
 		self.db_set("empleado", employee)
 		self.db_set("estado_contrato", "Activo")

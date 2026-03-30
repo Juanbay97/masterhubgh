@@ -1,6 +1,8 @@
 import frappe
 from frappe.utils import add_days, getdate, nowdate
 
+from hubgh.person_identity import resolve_employee_for_user
+
 
 DEFAULT_TIME_SUMMARY = {
 	"programadas": 0,
@@ -135,10 +137,13 @@ def _get_employee_from_user(user_email):
 	if not frappe.db.exists("DocType", "Ficha Empleado"):
 		return None
 
-	rows = frappe.get_all(
+	identity = resolve_employee_for_user(user_email)
+	if not identity.employee:
+		return None
+
+	return frappe.db.get_value(
 		"Ficha Empleado",
-		filters={"email": user_email},
-		fields=["name", "nombres", "apellidos", "cargo", "pdv", "estado", "email"],
-		limit=1,
+		identity.employee,
+		["name", "nombres", "apellidos", "cargo", "pdv", "estado", "email"],
+		as_dict=True,
 	)
-	return rows[0] if rows else None

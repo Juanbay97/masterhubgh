@@ -1,5 +1,6 @@
 import frappe
 
+from hubgh.person_identity import resolve_employee_for_user
 from hubgh.hubgh.role_matrix import canonicalize_roles, roles_have_any
 
 
@@ -22,25 +23,10 @@ def _get_employee_row(user):
 	if not user or user in {"Guest", "Administrator"}:
 		return {}
 
-	username = frappe.db.get_value("User", user, "username") if frappe.db.exists("User", user) else None
-
-	if username:
-		rows = frappe.get_all(
-			"Ficha Empleado",
-			filters={"cedula": username},
-			fields=["name", "pdv", "email", "cedula"],
-			limit=1,
-		)
-		if rows:
-			return rows[0]
-
-	rows = frappe.get_all(
-		"Ficha Empleado",
-		filters={"email": user},
-		fields=["name", "pdv", "email", "cedula"],
-		limit=1,
-	)
-	return rows[0] if rows else {}
+	identity = resolve_employee_for_user(user)
+	if not identity.employee:
+		return {}
+	return frappe.db.get_value("Ficha Empleado", identity.employee, ["name", "pdv", "email", "cedula"], as_dict=True) or {}
 
 
 def _get_user_allowed_points(user):

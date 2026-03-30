@@ -21,3 +21,4 @@ hubgh.patches.normalize_unidad_centro_catalogs
 hubgh.patches.rename_novedad_laboral_to_novedad_sst
 hubgh.patches.fix_workspace_shortcuts_novedad_sst
 hubgh.patches.sync_seleccion_workspace
+hubgh.patches.backfill_canonical_person_identity_by_document

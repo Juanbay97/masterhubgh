@@ -5,6 +5,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import nowdate
 
+from hubgh.person_identity import resolve_user_for_employee
+
 
 class CasoDisciplinario(Document):
 	def validate(self):
@@ -34,17 +36,8 @@ class CasoDisciplinario(Document):
 
 	def _disable_employee_user(self):
 		persona = frappe.get_doc("Ficha Empleado", self.empleado)
-		cedula = (getattr(persona, "cedula", None) or "").strip()
-		user_name = None
-
-		if cedula:
-			user_name = frappe.db.get_value("User", {"username": cedula}, "name")
-			if not user_name and frappe.db.exists("User", cedula):
-				user_name = cedula
-
-		if not user_name and getattr(persona, "email", None):
-			user_name = frappe.db.get_value("User", {"email": persona.email}, "name")
-
+		identity = resolve_user_for_employee(persona)
+		user_name = identity.user if identity else None
 		if user_name:
 			frappe.db.set_value("User", user_name, "enabled", 0, update_modified=False)
 

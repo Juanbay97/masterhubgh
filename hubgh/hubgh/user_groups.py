@@ -1,5 +1,7 @@
 import frappe
 
+from hubgh.person_identity import resolve_user_for_employee
+
 
 COMPANY_GROUP = "HubGH - Toda la Empresa"
 OPERATIONS_GROUP = "HubGH - Operación"
@@ -108,20 +110,8 @@ def _ensure_base_groups():
 
 
 def _resolve_user_from_employee_row(employee_row):
-	cedula = (employee_row.get("cedula") or "").strip()
-	email = (employee_row.get("email") or "").strip().lower()
-
-	if cedula:
-		by_username = frappe.db.get_value("User", {"username": cedula}, "name")
-		if by_username:
-			return by_username
-		if frappe.db.exists("User", cedula):
-			return cedula
-
-	if email and frappe.db.exists("User", email):
-		return email
-
-	return None
+	identity = resolve_user_for_employee(employee_row)
+	return identity.user if identity and identity.user else None
 
 
 def _get_active_users():

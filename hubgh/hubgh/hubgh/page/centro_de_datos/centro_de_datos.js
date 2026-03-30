@@ -1,4 +1,5 @@
 const CENTRO_DATOS_SUPPORTED = ["Ficha Empleado", "Punto de Venta", "Novedad SST", "User"];
+const OPERATIONAL_PERSON_IDENTITY_TRAY_ROUTE = 'operational_person_identity_tray';
 
 frappe.pages['centro_de_datos'].on_page_load = function (wrapper) {
     var page = frappe.ui.make_app_page({
@@ -31,6 +32,8 @@ frappe.pages['centro_de_datos'].on_page_load = function (wrapper) {
             ${render_card("Usuarios Sistema", "User", "template_usuarios.csv", "lock")}
         </div>
     `);
+
+	render_operational_person_identity_cta(wrapper);
 
     // Bind Events
     $(wrapper).on('click', '.btn-upload', function () {
@@ -74,6 +77,45 @@ frappe.pages['centro_de_datos'].on_page_load = function (wrapper) {
             }
         });
     });
+}
+
+function render_operational_person_identity_cta(wrapper) {
+	frappe.call({
+		method: 'hubgh.hubgh.page.operational_person_identity_tray.operational_person_identity_tray.get_tray_context',
+		callback: function(response) {
+			const context = response.message || {};
+			if (!context.can_view) {
+				return;
+			}
+
+			$(wrapper).find('.page-content .row').append(render_operational_person_identity_card(context));
+			$(wrapper).find('.btn-open-operational-person-identity-tray').on('click', function() {
+				frappe.set_route('app', OPERATIONAL_PERSON_IDENTITY_TRAY_ROUTE);
+			});
+		}
+	});
+}
+
+function render_operational_person_identity_card(context) {
+	const badge = context.can_execute ? 'Lectura + shell de run' : 'Solo lectura';
+	return `
+		<div class="col-md-3">
+			<div class="frappe-card" style="border: 1px solid #d1d8dd; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px; background: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%); box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+				<div class="icon" style="font-size: 24px; color: #1f4b99; margin-bottom: 10px;">
+					<i class="fa fa-random"></i>
+				</div>
+				<h4>Identidad Persona</h4>
+				<p class="text-muted small">Bandeja operativa para snapshot canonico de Ficha Empleado <-> User.</p>
+				<p class="text-muted small" style="margin-bottom: 14px;"><strong>${badge}</strong></p>
+				<hr>
+				<div class="actions" style="display: flex; flex-direction: column; gap: 10px;">
+					<button class="btn btn-default btn-sm btn-block btn-open-operational-person-identity-tray">
+						<i class="fa fa-external-link"></i> Abrir bandeja
+					</button>
+				</div>
+			</div>
+		</div>
+	`;
 }
 
 function render_card(title, doctype, template, icon) {

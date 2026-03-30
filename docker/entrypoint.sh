@@ -4,6 +4,48 @@ set -euo pipefail
 
 BENCH_DIR="/home/frappe/frappe-bench"
 
+ensure_asset_link() {
+  local app="$1"
+  local public_dir="$BENCH_DIR/apps/$app/$app/public"
+  local asset_path="$BENCH_DIR/sites/assets/$app"
+  local current_target=""
+
+  if [ ! -d "$public_dir" ]; then
+    return
+  fi
+
+  mkdir -p "$BENCH_DIR/sites/assets"
+
+  if [ -L "$asset_path" ]; then
+    current_target="$(readlink "$asset_path" || true)"
+  fi
+
+  if [ "$current_target" = "$public_dir" ]; then
+    return
+  fi
+
+  if [ -L "$asset_path" ]; then
+    rm -f "$asset_path"
+  elif [ -e "$asset_path" ]; then
+    echo "==> WARNING: $asset_path existe y no es un symlink; se preserva."
+    return
+  fi
+
+  ln -s "$public_dir" "$asset_path"
+  echo "==> Asset link reparado: $asset_path -> $public_dir"
+}
+
+rebuild_asset_links() {
+  local app
+
+  if [ -f "$BENCH_DIR/sites/apps.txt" ]; then
+    while read -r app; do
+      [ -n "$app" ] || continue
+      ensure_asset_link "$app"
+    done < "$BENCH_DIR/sites/apps.txt"
+  fi
+}
+
 # ── Inicialización del bench (solo primera vez) ──────────────────────────────
 # Docker pre-crea $BENCH_DIR como named volume antes de que este script corra,
 # así que bench init siempre ve un directorio existente y falla.
@@ -62,6 +104,7 @@ if 'hubgh' not in apps:
     print('==> hubgh agregado a sites/apps.json')
 "
   echo "==> sites/apps.txt: $(cat sites/apps.txt | tr '\n' ' ')"
+  rebuild_asset_links
 
   echo "==> Bench inicializado."
 fi
@@ -75,6 +118,7 @@ bench set-config -g redis_cache redis://redis-cache:6379
 bench set-config -g redis_queue redis://redis-queue:6379
 bench set-config -g redis_socketio redis://redis-queue:6379
 bench set-config -g webserver_port 8000
+rebuild_asset_links
 
 echo "==> Arrancando bench..."
 exec bench start
