@@ -41,6 +41,7 @@ services:
         condition: service_started
     ports:
       - "80:8000"
+      - "9000:9000"
     command: ["bash", "/entrypoint.sh"]
 
 volumes:
