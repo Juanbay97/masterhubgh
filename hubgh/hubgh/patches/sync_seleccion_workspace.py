@@ -13,6 +13,8 @@ lo recree correctamente desde selección.json.
 
 import frappe
 
+from hubgh.hubgh.selection_document_types import sync_selection_workspace_shortcut
+
 
 def execute():
 	if not frappe.db.exists("Workspace", "Selección"):
@@ -26,7 +28,8 @@ def execute():
 		if ws.is_hidden:
 			ws.is_hidden = 0
 			ws.save(ignore_permissions=True)
-			frappe.db.commit()
+		sync_selection_workspace_shortcut()
+		frappe.db.commit()
 		return
 
 	# El workspace tiene el contenido del alias (sin shortcuts) — eliminarlo

@@ -145,8 +145,9 @@ def _build_bienestar_followups(seguimientos):
 
 
 def _build_contextual_actions(user, employee_id, is_gh, is_jefe, is_emp, can_view_sensitive):
+    can_manage_disciplinary = _can_manage_disciplinary(user)
     can_create_novedad = bool(is_gh or is_jefe)
-    can_create_disciplinary = bool(is_gh and can_view_sensitive)
+    can_create_disciplinary = bool(can_manage_disciplinary and can_view_sensitive)
     can_create_wellbeing = bool(is_gh or is_jefe)
     can_view_documents = bool(is_gh or is_jefe or is_emp)
 
@@ -207,6 +208,10 @@ def _build_contextual_actions(user, employee_id, is_gh, is_jefe, is_emp, can_vie
 
 
 def _can_access_retirado(user):
+    return user_has_any_role(user, "System Manager", "HR Labor Relations", "GH - RRLL", "Gerente GH")
+
+
+def _can_manage_disciplinary(user):
     return user_has_any_role(user, "System Manager", "HR Labor Relations", "GH - RRLL", "Gerente GH")
 
 @frappe.whitelist()
@@ -641,9 +646,12 @@ def get_persona_stats(
 
 @frappe.whitelist()
 def get_all_personas_overview():
+    filters = {}
+    if not _can_access_retirado(frappe.session.user):
+        filters["estado"] = ["!=", "Retirado"]
     empleados = frappe.get_all(
         "Ficha Empleado",
-        filters={"estado": ["!=", "Retirado"]},
+        filters=filters,
         fields=["name", "nombres", "apellidos", "cedula", "cargo", "pdv", "email", "estado", "fecha_ingreso"],
     )
 
@@ -673,7 +681,7 @@ def get_all_personas_overview():
             limit=1
         )
         if feedback_rows:
-            feedback_last = feedback_rows[0].observaciones or ""
+            feedback_last = _row_value(feedback_rows[0], "observaciones", "") or ""
 
         summary_list.append({
             "name": e.name,

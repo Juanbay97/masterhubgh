@@ -5,8 +5,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import add_days, add_months, cstr, getdate, nowdate
 
-from hubgh.person_identity import resolve_user_for_employee
 from hubgh.hubgh.document_service import move_file_to_employee_subfolder
+from hubgh.hubgh.people_ops_lifecycle import apply_retirement, reverse_retirement_if_clear
 
 
 RADAR_CATEGORIAS = {
@@ -281,19 +281,31 @@ class NovedadSST(Document):
 			"punto_venta": self.punto_venta,
 			"fecha_programada": self.proxima_alerta_fecha,
 			"tipo_alerta": self.tipo_alerta or "Seguimiento",
-			"estado": "Pendiente",
 			"asignado_a": self.get_alert_assignee(),
 			"mensaje": self.get_alert_message(),
 			"canal": "In-app",
 		}
 
 		if alerta:
+			current = frappe.db.get_value(
+				"SST Alerta",
+				alerta,
+				["estado", "referencia_todo", "atendida_en", "ultima_notificacion"],
+				as_dict=True,
+			) or {}
+			values["estado"] = current.get("estado") or "Pendiente"
 			frappe.db.set_value("SST Alerta", alerta, values)
+			if current.get("referencia_todo"):
+				frappe.db.set_value("SST Alerta", alerta, "referencia_todo", current.get("referencia_todo"), update_modified=False)
+			if current.get("atendida_en"):
+				frappe.db.set_value("SST Alerta", alerta, "atendida_en", current.get("atendida_en"), update_modified=False)
+			if current.get("ultima_notificacion"):
+				frappe.db.set_value("SST Alerta", alerta, "ultima_notificacion", current.get("ultima_notificacion"), update_modified=False)
 			if notify:
 				create_sst_todo(alerta)
 			return
 
-		doc = frappe.get_doc({"doctype": "SST Alerta", "novedad": self.name, **values})
+		doc = frappe.get_doc({"doctype": "SST Alerta", "novedad": self.name, "estado": "Pendiente", **values})
 		doc.insert(ignore_permissions=True)
 		if notify:
 			create_sst_todo(doc.name)
@@ -362,8 +374,15 @@ class NovedadSST(Document):
 
 		if estado_target == "Retirado":
 			if is_cerrado:
-				self.update_empleado_estado("Retirado")
-				self.apply_retiro_side_effects()
+				apply_retirement(
+					employee=self.empleado,
+					source_doctype="Novedad SST",
+					source_name=self.name,
+					retirement_date=self.fecha_fin or self.fecha_inicio or nowdate(),
+					reason=self.descripcion_resumen or self.descripcion or self.tipo_novedad,
+				)
+			else:
+				reverse_retirement_if_clear(employee=self.empleado, source_doctype="Novedad SST", source_name=self.name)
 			return
 
 		if estado_target and not is_cerrado and not is_expired:
@@ -378,16 +397,6 @@ class NovedadSST(Document):
 
 	def update_empleado_estado(self, estado):
 		frappe.db.set_value("Ficha Empleado", self.empleado, "estado", estado)
-
-	def apply_retiro_side_effects(self):
-		if not self.empleado:
-			return
-		persona = frappe.get_doc("Ficha Empleado", self.empleado)
-		identity = resolve_user_for_employee(persona)
-		user_name = identity.user if identity else None
-		if user_name:
-			frappe.db.set_value("User", user_name, "enabled", 0)
-		self._deactivate_tarjeta_empleado_if_exists(persona.name)
 
 	def ensure_retiro_traceability_event(self):
 		if self.get_estado_destino() != "Retirado":
@@ -424,20 +433,6 @@ class NovedadSST(Document):
 				"descripcion": f"Retiro controlado desde novedad {self.name}",
 			}
 		).insert(ignore_permissions=True)
-
-	def _deactivate_tarjeta_empleado_if_exists(self, persona_name):
-		if not frappe.db.exists("DocType", "Tarjeta Empleado"):
-			return
-		meta = frappe.get_meta("Tarjeta Empleado")
-		fields = {f.fieldname for f in meta.fields}
-		value_map = {}
-		if "activo" in fields:
-			value_map["activo"] = 0
-		if "estado" in fields:
-			value_map["estado"] = "Inactivo"
-		if not value_map:
-			return
-		frappe.db.set_value("Tarjeta Empleado", {"empleado": persona_name}, value_map)
 
 	def get_estados_temporales(self):
 		return {

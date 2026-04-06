@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"0Eo8U_zmOc\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">SELECCI\u00d3N OPERATIVA</span>\",\"col\":12}},{\"id\":\"ITd9IQSSkG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Candidatos\",\"col\":4}},{\"id\":\"wA5VK0CBY8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Control documental de candidatos\",\"col\":4}},{\"id\":\"sstExMed\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gesti\u00f3n de ex\u00e1menes m\u00e9dicos\",\"col\":4}},{\"id\":\"candRej\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Candidatos rechazados\",\"col\":4}},{\"id\":\"fvYiUCulST\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cargos\",\"col\":4}},{\"id\":\"9KrwyYlkEJ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Documentos requeridos\",\"col\":4}}]",
+ "content": "[{\"id\":\"0Eo8U_zmOc\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">SELECCI\u00d3N OPERATIVA</span>\",\"col\":12}},{\"id\":\"ITd9IQSSkG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Candidatos\",\"col\":4}},{\"id\":\"wA5VK0CBY8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Control documental de candidatos\",\"col\":4}},{\"id\":\"sstExMed\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gesti\u00f3n de ex\u00e1menes m\u00e9dicos\",\"col\":4}},{\"id\":\"candRej\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Candidatos rechazados\",\"col\":4}},{\"id\":\"fvYiUCulST\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cargos\",\"col\":4}},{\"id\":\"9KrwyYlkEJ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Tipos de documento\",\"col\":4}}]",
  "creation": "2026-01-28 17:25:33.849827",
  "custom_blocks": [],
  "docstatus": 0,
@@ -65,8 +65,8 @@
   {
    "color": "Purple",
    "doc_view": "List",
-   "label": "Documentos requeridos",
-   "link_to": "Documento Requerido",
+   "label": "Tipos de documento",
+   "link_to": "Document Type",
    "type": "DocType"
   }
  ],

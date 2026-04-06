@@ -13,6 +13,14 @@ def sync_user_groups_after_migrate():
 	sync_all_user_groups()
 
 
+def ensure_contextual_groups(pdv_name=None, city=None):
+	_ensure_base_groups()
+	if pdv_name:
+		_sync_group(_pdv_group_name(str(pdv_name).strip()), set())
+	if city:
+		_sync_group(_city_group_name(str(city).strip()), set())
+
+
 def sync_user_groups_on_employee_change(doc=None, method=None):
 	sync_all_user_groups()
 
@@ -138,6 +146,8 @@ def _sync_group(group_name, users):
 
 	if frappe.db.exists("User Group", group_name):
 		doc = frappe.get_doc("User Group", group_name)
+		if not users:
+			return
 	else:
 		logger.info(
 			"sync_group:create_missing_group",
@@ -148,6 +158,9 @@ def _sync_group(group_name, users):
 			},
 		)
 		doc = frappe.get_doc({"doctype": "User Group", "name": group_name})
+		if not users:
+			doc.insert(ignore_permissions=True, ignore_mandatory=True)
+			return
 
 	existing = sorted({row.user for row in (doc.user_group_members or []) if row.user})
 	if existing == users and not doc.is_new():

@@ -106,10 +106,33 @@ class TestNovedadSST(FrappeTestCase):
 		with patch(
 			"hubgh.hubgh.doctype.novedad_sst.novedad_sst.frappe.db.get_value",
 			side_effect=scoped_get_value,
-		), patch.object(doc, "apply_retiro_side_effects") as side_effects_mock, patch(
-			"hubgh.hubgh.doctype.novedad_sst.novedad_sst.frappe.db.set_value"
-		) as set_value_mock:
+		), patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.apply_retirement") as retirement_mock:
 			doc.apply_estado_empleado()
 
-		set_value_mock.assert_called_once_with("Ficha Empleado", "EMP-001", "estado", "Retirado")
-		side_effects_mock.assert_called_once()
+		retirement_mock.assert_called_once()
+
+	def test_ensure_sst_alerta_record_preserves_operator_state_and_todo(self):
+		doc = frappe.get_doc({"doctype": "Novedad SST"})
+		doc.name = "NOV-001"
+		doc.empleado = "EMP-001"
+		doc.punto_venta = "PDV-001"
+		doc.proxima_alerta_fecha = "2026-03-20"
+		doc.tipo_alerta = "Seguimiento"
+		doc.alerta_activa = 1
+		doc.crear_alerta = 1
+		doc.get_alert_assignee = lambda: "sst@example.com"
+		doc.get_alert_message = lambda: "Mensaje refrescado"
+
+		with patch(
+			"hubgh.hubgh.doctype.novedad_sst.novedad_sst.frappe.db.get_value",
+			side_effect=lambda doctype, name, fieldname=None, as_dict=False: {
+				"estado": "Atendida",
+				"referencia_todo": "TODO-001",
+				"atendida_en": "2026-03-18 10:00:00",
+				"ultima_notificacion": "2026-03-18",
+			} if doctype == "SST Alerta" and as_dict else "ALERTA-001",
+		), patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.frappe.db.set_value") as set_value_mock:
+			doc.ensure_sst_alerta_record()
+
+		self.assertTrue(any(call.args[:3] == ("SST Alerta", "ALERTA-001", {"empleado": "EMP-001", "punto_venta": "PDV-001", "fecha_programada": "2026-03-20", "tipo_alerta": "Seguimiento", "asignado_a": "sst@example.com", "mensaje": "Mensaje refrescado", "canal": "In-app", "estado": "Atendida"}) for call in set_value_mock.call_args_list))
+		self.assertTrue(any(call.args[:3] == ("SST Alerta", "ALERTA-001", "referencia_todo") for call in set_value_mock.call_args_list))

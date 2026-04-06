@@ -1,5 +1,22 @@
 frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 	frappe.require("/assets/hubgh/css/carpeta_documental_empleado.css");
+	const safeLang =
+		(frappe.boot && frappe.boot.lang) ||
+		(document.documentElement && document.documentElement.lang) ||
+		(navigator.language && navigator.language !== "undefined" ? navigator.language : "") ||
+		"es";
+	if (frappe.boot) {
+		frappe.boot.lang = safeLang;
+	}
+	if (window.Intl && typeof window.Intl.Locale === "function" && !window.Intl.__hubghSafeLocalePatched) {
+		const NativeLocale = window.Intl.Locale;
+		window.Intl.Locale = function(locale, options) {
+			const normalizedLocale = locale && locale !== "undefined" ? locale : safeLang;
+			return new NativeLocale(normalizedLocale, options);
+		};
+		window.Intl.Locale.prototype = NativeLocale.prototype;
+		window.Intl.__hubghSafeLocalePatched = true;
+	}
 
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
@@ -102,14 +119,17 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 			const statusLabel = d.is_expired ? "Vencido" : (d.is_missing ? "Faltante" : "Vigente");
 			const expiry = d.has_expiry ? (d.valid_until ? frappe.datetime.str_to_user(d.valid_until) : "Sin fecha") : "No aplica";
 			const updated = d.uploaded_on ? frappe.datetime.str_to_user(d.uploaded_on) : "Sin carga";
+			const isEditable = Boolean(Number(d.is_editable || 0));
 
 			const downloadBtn = d.file
 				? `<button class='hub-btn hub-btn--icon btn-doc-download' data-url='${esc(d.file)}' title='Descargar'><i class='fa fa-download'></i></button>`
 				: "";
 
-			const updateBtn = d.file
-				? `<button class='hub-btn hub-btn--icon btn-doc-upload' data-document='${esc(d.document_type)}' data-person-document='${esc(d.person_document || "")}' title='Actualizar'><i class='fa fa-refresh'></i></button>`
-				: `<button class='hub-btn hub-btn--primary btn-doc-upload' data-document='${esc(d.document_type)}' data-person-document='${esc(d.person_document || "")}'>Subir</button>`;
+			const updateBtn = !isEditable
+				? ""
+				: d.file
+					? `<button class='hub-btn hub-btn--icon btn-doc-upload' data-document='${esc(d.document_type)}' data-person-document='${esc(d.person_document || "")}' title='Actualizar'><i class='fa fa-refresh'></i></button>`
+					: `<button class='hub-btn hub-btn--primary btn-doc-upload' data-document='${esc(d.document_type)}' data-person-document='${esc(d.person_document || "")}'>Subir</button>`;
 
 			return `
 				<div class='hub-doc-card ${d.is_expired ? "is-expired" : ""}'>

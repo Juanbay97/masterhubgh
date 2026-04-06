@@ -10,6 +10,11 @@ CODE_PAD_BY_DOCTYPE = {
 
 
 OFFICIAL_SIESA_CATALOGS = {
+	"Tipo Cotizante Siesa": [
+		("01", "DEPENDIENTE"),
+		("12", "APRENDIZ ETAPA LECTIVA"),
+		("19", "APRENDIZ ETAPA PRODUCTIVA"),
+	],
 	"Entidad CCF Siesa": [
 		("001", "CCF Bogotá"),
 		("002", "CCF Medellín"),
@@ -45,6 +50,34 @@ OFFICIAL_SIESA_CATALOGS = {
 		("003", "Nivel Riesgo 3 (2,436%)"),
 		("004", "Nivel Riesgo 4 (4,35%)"),
 		("005", "Nivel Riesgo 5 (6,96%)"),
+	],
+}
+
+
+SOCIAL_SECURITY_REFERENCE_CATALOGS = {
+	"Entidad EPS Siesa": [
+		("EPS_SURA", "EPS SURA"),
+		("NUEVA_EPS", "NUEVA EPS"),
+		("SANITAS_EPS", "EPS SANITAS"),
+		("SALUD_TOTAL_EPS", "SALUD TOTAL EPS"),
+		("COMPENSAR_EPS", "COMPENSAR EPS"),
+		("FAMISANAR_EPS", "FAMISANAR EPS"),
+		("COOSALUD_EPS", "COOSALUD EPS"),
+		("ALIANSALUD_EPS", "ALIANSALUD EPS"),
+	],
+	"Entidad AFP Siesa": [
+		("COLPENSIONES_AFP", "COLPENSIONES"),
+		("PORVENIR_AFP", "PORVENIR"),
+		("PROTECCION_AFP", "PROTECCIÓN"),
+		("COLFONDOS_AFP", "COLFONDOS"),
+		("SKANDIA_AFP", "SKANDIA"),
+	],
+	"Entidad Cesantias Siesa": [
+		("PORVENIR_CES", "PORVENIR CESANTÍAS"),
+		("PROTECCION_CES", "PROTECCIÓN CESANTÍAS"),
+		("COLFONDOS_CES", "COLFONDOS CESANTÍAS"),
+		("SKANDIA_CES", "SKANDIA CESANTÍAS"),
+		("FNA_CES", "FONDO NACIONAL DEL AHORRO"),
 	],
 }
 
@@ -193,6 +226,12 @@ def ensure_reference_catalog(doctype):
 	rows = OFFICIAL_SIESA_CATALOGS.get(doctype) or []
 	for code, description in rows:
 		_upsert_reference_row(doctype, code, description)
+
+
+def ensure_social_security_reference_catalogs():
+	for doctype, rows in SOCIAL_SECURITY_REFERENCE_CATALOGS.items():
+		for code, description in rows:
+			_upsert_reference_row(doctype, code, description)
 
 
 def ensure_official_ccf_catalog(strict_disable_others=True):
@@ -378,6 +417,7 @@ def ensure_official_cargo_matrix():
 def sync_reference_masters():
 	for doctype in OFFICIAL_SIESA_CATALOGS:
 		ensure_reference_catalog(doctype)
+	ensure_social_security_reference_catalogs()
 	ensure_official_ccf_catalog(strict_disable_others=True)
 	ensure_official_unidad_negocio_catalog(strict_disable_others=True)
 	ensure_official_centro_trabajo_catalog(strict_disable_others=True)

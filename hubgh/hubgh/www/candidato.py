@@ -57,6 +57,25 @@ def _catalog_workbook_path() -> Path | None:
 	return None
 
 
+def _bundled_procedencia_catalog_path() -> Path | None:
+	for parent in Path(__file__).resolve().parents:
+		candidate = parent / "hubgh" / "data" / "procedencia_siesa_fallback.json"
+		if candidate.exists():
+			return candidate
+	return None
+
+
+def _load_json_catalog(path: Path | None) -> dict:
+	if not path:
+		return {}
+	try:
+		with path.open("r", encoding="utf-8") as f:
+			payload = json.load(f)
+	except Exception:
+		return {}
+	return payload if isinstance(payload, dict) else {}
+
+
 def _load_procedencia_catalog_from_workbook() -> dict:
 	global _PROCEDENCIA_WORKBOOK_CACHE
 	if _PROCEDENCIA_WORKBOOK_CACHE is not None:
@@ -117,18 +136,15 @@ def _load_procedencia_catalog() -> dict:
 	json_path = _catalog_json_path()
 	paises_default = _procedencia_countries_from_frappe() or list(_DEFAULT_PROCEDENCIA_PAISES)
 	workbook_catalog = _load_procedencia_catalog_from_workbook()
+	bundled_catalog = _load_json_catalog(_bundled_procedencia_catalog_path())
 	if not json_path:
 		return {
-			"paises": workbook_catalog.get("paises") or paises_default,
-			"departamentos": (workbook_catalog.get("departamentos") or []) + list(_DEFAULT_PROCEDENCIA_DEPARTAMENTOS_VENEZUELA),
-			"ciudades": workbook_catalog.get("ciudades") or [],
+			"paises": workbook_catalog.get("paises") or bundled_catalog.get("paises") or paises_default,
+			"departamentos": (workbook_catalog.get("departamentos") or bundled_catalog.get("departamentos") or []) + list(_DEFAULT_PROCEDENCIA_DEPARTAMENTOS_VENEZUELA),
+			"ciudades": workbook_catalog.get("ciudades") or bundled_catalog.get("ciudades") or [],
 		}
 
-	try:
-		with json_path.open("r", encoding="utf-8") as f:
-			payload = json.load(f)
-	except Exception:
-		payload = {}
+	payload = _load_json_catalog(json_path)
 
 	paises = payload.get("paises") or payload.get("países") or payload.get("paises_muestra") or []
 	if not isinstance(paises, list) or not paises:
@@ -151,17 +167,19 @@ def _load_procedencia_catalog() -> dict:
 		{**row, "pais_codigo": str(row.get("pais_codigo") or row.get("pais") or "169").strip() or "169"}
 		for row in departamentos
 		if isinstance(row, dict)
-	] + list(_DEFAULT_PROCEDENCIA_DEPARTAMENTOS_VENEZUELA)
+	]
 
 	ciudades = payload.get("ciudades") or payload.get("ciudades_muestra") or []
 	if not isinstance(ciudades, list):
 		ciudades = []
 	if workbook_catalog.get("ciudades"):
 		ciudades = workbook_catalog.get("ciudades") or ciudades
+	elif bundled_catalog.get("ciudades"):
+		ciudades = bundled_catalog.get("ciudades") or ciudades
 
 	return {
-		"paises": paises,
-		"departamentos": (workbook_catalog.get("departamentos") or departamentos) + list(_DEFAULT_PROCEDENCIA_DEPARTAMENTOS_VENEZUELA),
+		"paises": paises or bundled_catalog.get("paises") or paises_default,
+		"departamentos": (workbook_catalog.get("departamentos") or departamentos or bundled_catalog.get("departamentos") or []) + list(_DEFAULT_PROCEDENCIA_DEPARTAMENTOS_VENEZUELA),
 		"ciudades": ciudades,
 	}
 

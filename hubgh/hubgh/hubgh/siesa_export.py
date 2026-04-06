@@ -1,5 +1,7 @@
 import io
 import json
+import unicodedata
+from difflib import get_close_matches
 from datetime import datetime
 
 import frappe
@@ -186,6 +188,56 @@ def _last_two_digits(value):
 	return digits[-2:] if len(digits) >= 2 else ""
 
 
+def _normalize_catalog_lookup_key(value):
+	text = unicodedata.normalize("NFKD", _str(value)).encode("ascii", "ignore").decode("ascii")
+	text = text.lower().replace("_", " ").replace("-", " ")
+	stopwords = {
+		"siesa",
+		"entidad",
+		"eps",
+		"afp",
+		"afc",
+		"ces",
+		"cesantia",
+		"cesantias",
+		"fondo",
+	}
+	tokens = [token for token in text.split() if token and token not in stopwords]
+	return "".join(tokens)
+
+
+def _resolve_catalog_code_by_alias(doctype, raw):
+	normalized_raw = _normalize_catalog_lookup_key(raw)
+	if not normalized_raw:
+		return ""
+
+	rows = frappe.get_all(doctype, fields=["name", "code", "description"], ignore_permissions=True)
+	if not rows:
+		return ""
+
+	alias_to_code = {}
+	for row in rows:
+		code = normalize_code_for_doctype(doctype, _str(getattr(row, "code", None) or row.get("code") or getattr(row, "name", None) or row.get("name")))
+		for candidate in (
+			getattr(row, "name", None) or row.get("name"),
+			getattr(row, "code", None) or row.get("code"),
+			getattr(row, "description", None) or row.get("description"),
+		):
+			alias = _normalize_catalog_lookup_key(candidate)
+			if alias:
+				alias_to_code.setdefault(alias, code)
+
+	exact = alias_to_code.get(normalized_raw)
+	if exact:
+		return exact
+
+	closest = get_close_matches(normalized_raw, list(alias_to_code.keys()), n=1, cutoff=0.75)
+	if closest:
+		return alias_to_code.get(closest[0], "")
+
+	return ""
+
+
 def _get_banco_siesa_snapshot(bank_name):
 	if _is_blank(bank_name) or not frappe.db.exists("Banco Siesa", bank_name):
 		return {}
@@ -293,6 +345,10 @@ def _catalog_code(doctype, value):
 		code = frappe.db.get_value(doctype, name, "code")
 		return normalize_code_for_doctype(doctype, _str(code or name))
 
+	alias_code = _resolve_catalog_code_by_alias(doctype, raw)
+	if alias_code:
+		return alias_code
+
 	return normalize_code_for_doctype(doctype, raw)
 
 
@@ -331,6 +387,26 @@ def _tipo_cuenta_bancaria_ind(value):
 		"Corriente": "2",
 		"Tarjeta Prepago": "3",
 	}.get(_str(value), "")
+
+
+def _resolve_retirement_export_context(contrato):
+	if not contrato or (getattr(contrato, "estado_contrato", "") or "") != "Retirado":
+		return {"fecha_retiro": "", "id_motivo_retiro": "", "ind_estado": "0"}
+
+	retirement_date = ""
+	if getattr(contrato, "empleado", None) and frappe.db.exists("DocType", "Payroll Liquidation Case"):
+		retirement_date = frappe.db.get_value(
+			"Payroll Liquidation Case",
+			{"employee": contrato.empleado, "status": ["not in", ["Cancelado"]]},
+			"retirement_date",
+		) or ""
+	if not retirement_date:
+		retirement_date = getattr(contrato, "fecha_fin_contrato", None) or ""
+	return {
+		"fecha_retiro": _safe_ymd(retirement_date),
+		"id_motivo_retiro": "",
+		"ind_estado": "1",
+	}
 
 
 def _build_employee_context(data):
@@ -432,6 +508,7 @@ def _build_contract_context(data):
 	id_co = _str(frappe.db.get_value("Punto de Venta", contrato.pdv_destino, "codigo") or contrato.pdv_destino)
 	id_cargo = _str(frappe.db.get_value("Cargo", contrato.cargo, "codigo") or contrato.cargo)
 	id_banco_empleado, notas_banco = _resolve_id_banco_empleado(contrato.banco_siesa)
+	retirement_ctx = _resolve_retirement_export_context(contrato)
 
 	tipo_contrato = _str(contrato.tipo_contrato)
 	es_lectiva = tipo_contrato == "Aprendizaje Lectiva"
@@ -450,7 +527,7 @@ def _build_contract_context(data):
 		"id_proyecto": "NM",
 		"id_unidad_negocio": _catalog_code("Unidad Negocio Siesa", contrato.unidad_negocio_siesa),
 		"id_sucursal_autoliquidacion": "001",
-		"id_motivo_retiro": "",
+		"id_motivo_retiro": retirement_ctx["id_motivo_retiro"],
 		"id_turno": "",
 		"id_grupo_empleados": _catalog_code("Grupo Empleados Siesa", contrato.grupo_empleados_siesa),
 		"id_ccosto": _catalog_code("Centro Costos Siesa", contrato.centro_costos_siesa),
@@ -466,7 +543,7 @@ def _build_contract_context(data):
 		"id_entidad_icbf": "899999239",
 		"fecha_ingreso": _safe_ymd(contrato.fecha_ingreso),
 		"fecha_ingreso_ley50": _safe_ymd(contrato.fecha_ingreso),
-		"fecha_retiro": "",
+		"fecha_retiro": retirement_ctx["fecha_retiro"],
 		"fecha_contrato_hasta": _safe_ymd(contrato.fecha_fin_contrato),
 		"fecha_prima_hasta": _safe_ymd(contrato.fecha_ingreso),
 		"fecha_vacaciones_hasta": _safe_ymd(contrato.fecha_ingreso),
@@ -506,7 +583,7 @@ def _build_contract_context(data):
 		"ind_tipo_cuenta": _tipo_cuenta_bancaria_ind(contrato.tipo_cuenta_bancaria),
 		"ind_clase_contrato": "0",
 		"ind_termino_contrato": "1" if (es_fijo or not _is_blank(contrato.fecha_fin_contrato)) else "0",
-		"ind_estado": "0",
+		"ind_estado": retirement_ctx["ind_estado"],
 		"id_cargo": id_cargo,
 		"valor_salud_prepagada": "0",
 		"valor_dependientes": "0",

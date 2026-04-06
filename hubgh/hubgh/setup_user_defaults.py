@@ -1,6 +1,6 @@
 import frappe
 
-from hubgh.access_profiles import sync_user_access_profile
+from hubgh.access_profiles import ensure_roles_and_profiles, sync_user_access_profile
 from hubgh.hubgh.role_matrix import canonicalize_roles, roles_have_any
 from hubgh.utils import get_website_user_home_page
 
@@ -43,6 +43,8 @@ def setup_user_home_page(doc=None, method=None, user_email=None):
 
 	if not frappe.db.exists("User", user_email):
 		return
+
+	ensure_roles_and_profiles()
 
 	roles = set(frappe.get_roles(user_email) or [])
 	workspace = _resolve_home_workspace(roles)

@@ -81,6 +81,7 @@ def upload_data(doctype, file_url):
 	if doctype not in ALLOWED_BULK_DOCTYPES:
 		return {
 			"success": 0,
+			"committed": 0,
 			"errors": [_stable_error("unsupported_doctype", doctype)],
 			"supported_doctypes": get_supported_doctypes(),
 		}
@@ -100,26 +101,42 @@ def upload_data(doctype, file_url):
 	if columns_error:
 		return {
 			"success": 0,
+			"committed": 0,
 			"errors": [columns_error],
 			"supported_doctypes": get_supported_doctypes(),
 		}
 
 	success_count = 0
 	errors = []
+	if hasattr(frappe.db, "sql"):
+		frappe.db.sql("SAVEPOINT centro_de_datos_upload")
 
-	for row in reader:
+	for index, row in enumerate(reader, start=2):
 		try:
 			if row and list(row.keys()) == [None]:
 				continue
 			globals()[ALLOWED_BULK_DOCTYPES[doctype]](row)
 			success_count += 1
 		except Exception as e:
-			errors.append(f"Error en fila {row}: {str(e)}")
+			errors.append({"row": index, "code": "row_validation", "message": str(e)})
+
+	if errors:
+		if hasattr(frappe.db, "sql"):
+			frappe.db.sql("ROLLBACK TO SAVEPOINT centro_de_datos_upload")
+		elif hasattr(frappe.db, "rollback"):
+			frappe.db.rollback()
+		return {
+			"success": 0,
+			"committed": 0,
+			"errors": errors,
+			"supported_doctypes": get_supported_doctypes(),
+		}
 
 	frappe.db.commit()
 
 	return {
 		"success": success_count,
+		"committed": success_count,
 		"errors": errors,
 		"supported_doctypes": get_supported_doctypes(),
 	}

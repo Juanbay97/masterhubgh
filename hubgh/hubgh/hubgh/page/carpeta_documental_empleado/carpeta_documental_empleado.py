@@ -1,6 +1,7 @@
 import io
 import os
 import re
+import unicodedata
 import zipfile
 
 import frappe
@@ -30,10 +31,39 @@ def _is_expired(has_expiry, valid_until):
 
 
 def _normalize_text(value):
-	return re.sub(r"\s+", " ", str(value or "").strip().lower())
+	text = unicodedata.normalize("NFKD", str(value or "").strip().lower())
+	text = "".join(ch for ch in text if not unicodedata.combining(ch))
+	return re.sub(r"\s+", " ", text)
 
 
-def _mk_folder_item(section_key, label, file_url=None, status="Vigente", uploaded_on=None, uploaded_by=None, source_doctype=None, source_name=None):
+def _field_value(row, key, default=None):
+	if isinstance(row, dict):
+		return row.get(key, default)
+	return getattr(row, key, default)
+
+
+LEGACY_PLACEHOLDER_TYPES = {"carpeta"}
+DERIVED_SECTION_KEYS = {"sst_documents", "contract_documents", "disciplinary_documents"}
+SOURCE_PRIORITY = {
+	"Person Document": 300,
+	"Contrato": 200,
+	"Novedad SST": 200,
+	"Caso Disciplinario": 200,
+	"Persona Documento": 100,
+}
+
+
+def _mk_folder_item(
+	section_key,
+	label,
+	file_url=None,
+	status="Vigente",
+	uploaded_on=None,
+	uploaded_by=None,
+	source_doctype=None,
+	source_name=None,
+	is_editable=0,
+):
 	return {
 		"person_document": None,
 		"document_type": label,
@@ -51,11 +81,12 @@ def _mk_folder_item(section_key, label, file_url=None, status="Vigente", uploade
 		"section_key": section_key,
 		"source_doctype": source_doctype,
 		"source_name": source_name,
+		"is_editable": cint(is_editable),
 	}
 
 
-def _split_extra_documents(extra_docs):
-	sections = {
+def _empty_extra_sections():
+	return {
 		"selection_rrll_documents": [],
 		"sst_documents": [],
 		"contract_documents": [],
@@ -63,18 +94,89 @@ def _split_extra_documents(extra_docs):
 		"other_documents": [],
 	}
 
-	for row in extra_docs:
-		label = _normalize_text(row.get("document_label") or row.get("document_type"))
-		if any(k in label for k in ["concepto medico", "examen medico", "incapacidad", "sst", "recomendacion medica"]):
-			sections["sst_documents"].append(row)
-		elif any(k in label for k in ["contrato", "otro si", "otrosi", "anexo", "adenda"]):
-			sections["contract_documents"].append(row)
-		elif any(k in label for k in ["disciplin", "llamado de atencion", "sancion"]):
-			sections["disciplinary_documents"].append(row)
-		elif any(k in label for k in ["carta oferta", "sagrilaft", "afiliacion", "certificado", "autorizacion", "hoja de vida", "referencia", "fotocopia"]):
-			sections["selection_rrll_documents"].append(row)
-		else:
-			sections["other_documents"].append(row)
+
+def _resolve_section_key(label=None, source_doctype=None):
+	label = _normalize_text(label)
+	source_doctype = _normalize_text(source_doctype)
+
+	if source_doctype == _normalize_text("Contrato"):
+		return "contract_documents"
+	if source_doctype == _normalize_text("Novedad SST"):
+		return "sst_documents"
+	if source_doctype == _normalize_text("Caso Disciplinario"):
+		return "disciplinary_documents"
+
+	if any(k in label for k in ["concepto medico", "examen medico", "incapacidad", "sst", "recomendacion medica"]):
+		return "sst_documents"
+	if any(k in label for k in ["contrato", "otro si", "otrosi", "anexo", "adenda"]):
+		return "contract_documents"
+	if any(k in label for k in ["disciplin", "llamado de atencion", "sancion"]):
+		return "disciplinary_documents"
+	if any(k in label for k in ["carta oferta", "sagrilaft", "afiliacion", "certificado", "autorizacion", "hoja de vida", "referencia", "fotocopia"]):
+		return "selection_rrll_documents"
+	return "other_documents"
+
+
+def _is_placeholder_document(label):
+	return _normalize_text(label) in LEGACY_PLACEHOLDER_TYPES
+
+
+def _has_archival_value(item):
+	label = item.get("document_label") or item.get("document_type")
+	if _is_placeholder_document(label):
+		return False
+	return bool(item.get("file"))
+
+
+def _is_editable_document_type(document_type):
+	return _resolve_section_key(document_type, "Person Document") not in DERIVED_SECTION_KEYS
+
+
+def _prepare_extra_item(item):
+	prepared = dict(item)
+	prepared["document_label"] = prepared.get("document_label") or prepared.get("document_type")
+	prepared["section_key"] = _resolve_section_key(prepared.get("document_label"), prepared.get("source_doctype"))
+	prepared["is_editable"] = cint(
+		prepared.get("source_doctype") == "Person Document"
+		and _is_editable_document_type(prepared.get("document_type") or prepared.get("document_label"))
+	)
+	return prepared
+
+
+def _item_priority(row):
+	return (
+		SOURCE_PRIORITY.get(row.get("source_doctype"), 0),
+		str(row.get("uploaded_on") or ""),
+		str(row.get("source_name") or row.get("person_document") or ""),
+	)
+
+
+def _dedupe_and_group_extra_documents(extra_docs, taken_files=None):
+	taken_files = {str(file_url).strip() for file_url in (taken_files or set()) if file_url}
+	sections = _empty_extra_sections()
+	seen_files = set(taken_files)
+	seen_sources = set()
+
+	for row in sorted((_prepare_extra_item(doc) for doc in extra_docs), key=_item_priority, reverse=True):
+		if not _has_archival_value(row):
+			continue
+
+		file_key = str(row.get("file") or "").strip()
+		source_key = (
+			str(row.get("source_doctype") or "").strip(),
+			str(row.get("source_name") or row.get("person_document") or "").strip(),
+			str(row.get("document_type") or row.get("document_label") or "").strip(),
+		)
+
+		if file_key and file_key in seen_files:
+			continue
+		if source_key in seen_sources:
+			continue
+
+		if file_key:
+			seen_files.add(file_key)
+		seen_sources.add(source_key)
+		sections[row["section_key"]].append(row)
 
 	return sections
 
@@ -111,6 +213,8 @@ def _persona_documento_documents(employee):
 		fields=["name", "tipo_documento", "archivo", "estado_documento", "modified", "owner"],
 		order_by="modified desc",
 	):
+		if _is_placeholder_document(row.tipo_documento) or not row.archivo:
+			continue
 		items.append(_mk_folder_item(
 			"selection_rrll_documents",
 			row.tipo_documento or f"Persona Documento {row.name}",
@@ -168,6 +272,50 @@ def _person_document_by_candidate_link(employee, existing_files=None):
 		))
 	
 	return items
+
+
+def _get_candidate_for_employee(employee):
+	return frappe.db.get_value("Candidato", {"persona": employee}, "name")
+
+
+def _collect_employee_and_candidate_person_docs(employee, required_names=None):
+	fields = [
+		"name",
+		"document_type",
+		"status",
+		"file",
+		"uploaded_by",
+		"uploaded_on",
+		"approved_by",
+		"approved_on",
+		"notes",
+		"issue_date",
+		"valid_until",
+		"modified",
+	]
+	filters = {"employee": employee}
+	if required_names:
+		filters["document_type"] = ["in", list(required_names)]
+	rows = list(frappe.get_all("Person Document", filters=filters, fields=fields, order_by="modified desc"))
+	candidate = _get_candidate_for_employee(employee)
+	if candidate:
+		candidate_filters = {"candidate": candidate, "person_type": "Candidato"}
+		if required_names:
+			candidate_filters["document_type"] = ["in", list(required_names)]
+		rows.extend(frappe.get_all("Person Document", filters=candidate_filters, fields=fields, order_by="modified desc"))
+	return rows
+
+
+def _select_freshest_doc(rows):
+	if not rows:
+		return None
+	return sorted(
+		rows,
+		key=lambda row: str(
+			_field_value(row, "uploaded_on") or _field_value(row, "approved_on") or _field_value(row, "modified") or ""
+		),
+		reverse=True,
+	)[0]
 
 
 def _sst_documents(employee):
@@ -300,7 +448,7 @@ def _employee_required_summary(employee_name, required_types_map):
 	)
 	
 	# Also count documents from candidate phase linked to this employee
-	candidate_id = frappe.db.get_value("Candidato", {"persona": employee_name}, "name")
+	candidate_id = _get_candidate_for_employee(employee_name)
 	if candidate_id:
 		candidate_doc_count = frappe.db.count(
 			"Person Document",
@@ -313,40 +461,15 @@ def _employee_required_summary(employee_name, required_types_map):
 		uploaded_any_count += candidate_doc_count
 	
 	if required_names:
-		# Get documents directly linked to employee
-		person_docs = frappe.get_all(
-			"Person Document",
-			filters={
-				"employee": employee_name,
-				"document_type": ["in", required_names],
-				"file": ["is", "set"],
-			},
-			fields=["name", "document_type", "file", "issue_date", "valid_until", "modified", "uploaded_on"],
-			order_by="modified desc",
-		)
-		
-		# Also get documents from candidate phase
-		if candidate_id:
-			candidate_docs = frappe.get_all(
-				"Person Document",
-				filters={
-					"candidate": candidate_id,
-					"person_type": "Candidato",
-					"document_type": ["in", required_names],
-					"file": ["is", "set"],
-				},
-				fields=["name", "document_type", "file", "issue_date", "valid_until", "modified", "uploaded_on"],
-				order_by="modified desc",
-			)
-			person_docs.extend(candidate_docs)
+		person_docs = [row for row in _collect_employee_and_candidate_person_docs(employee_name, required_names) if row.file]
 		
 		for row in person_docs:
-			doc_type = row.document_type
+			doc_type = _field_value(row, "document_type")
 			if doc_type in uploaded_required:
 				continue
 			uploaded_required[doc_type] = row
-			has_expiry = cint((required_types_map.get(doc_type) or {}).get("has_expiry"))
-			if _is_expired(has_expiry, row.valid_until):
+			has_expiry = cint(_field_value(required_types_map.get(doc_type), "has_expiry", 0))
+			if _is_expired(has_expiry, _field_value(row, "valid_until")):
 				vencidos += 1
 
 	total_required = len(required_names)
@@ -407,37 +530,19 @@ def get_employee_documents(employee):
 	required_types = _required_document_types()
 	required_map = {d.name: d for d in required_types}
 
-	person_docs = frappe.get_all(
-		"Person Document",
-		filters={"employee": employee},
-		fields=[
-			"name",
-			"document_type",
-			"status",
-			"file",
-			"uploaded_by",
-			"uploaded_on",
-			"approved_by",
-			"approved_on",
-			"notes",
-			"issue_date",
-			"valid_until",
-			"modified",
-		],
-		order_by="modified desc",
-	)
+	person_docs = _collect_employee_and_candidate_person_docs(employee)
 
 	doc_by_type = {}
 	extra_docs = []
 	for row in person_docs:
-		if row.document_type in required_map and row.document_type not in doc_by_type:
-			doc_by_type[row.document_type] = row
-		elif row.document_type not in required_map:
+		if row.document_type in required_map:
+			doc_by_type.setdefault(row.document_type, []).append(row)
+		elif row.document_type not in required_map and row.file and not _is_placeholder_document(row.document_type):
 			extra_docs.append(row)
 
 	results = []
 	for d in required_types:
-		row = doc_by_type.get(d.name)
+		row = _select_freshest_doc(doc_by_type.get(d.name) or [])
 		has_file = bool(row and row.file)
 		expired = _is_expired(d.has_expiry, row.valid_until if row else None)
 		status = "Faltante"
@@ -460,6 +565,10 @@ def get_employee_documents(employee):
 			"is_missing": status == "Faltante",
 			"is_expired": status == "Vencido",
 			"is_extra": 0,
+			"section_key": "required_documents",
+			"source_doctype": "Person Document" if row else None,
+			"source_name": row.name if row else None,
+			"is_editable": cint(_is_editable_document_type(d.name)),
 		})
 
 	required_results = list(results)
@@ -479,25 +588,20 @@ def get_employee_documents(employee):
 			"is_missing": 0 if row.file else 1,
 			"is_expired": 0,
 			"is_extra": 1,
+			"section_key": _resolve_section_key(row.document_type, "Person Document"),
+			"source_doctype": "Person Document",
+			"source_name": row.name,
+			"is_editable": cint(_is_editable_document_type(row.document_type)),
 		})
 
 	extra_results = [r for r in results if cint(r.get("is_extra")) == 1]
-	extra_split = _split_extra_documents(extra_results)
-	extra_split["selection_rrll_documents"].extend(_persona_documento_documents(employee))
-	
-	# Build set of existing file_urls to avoid duplicates
-	existing_files = set()
-	for r in results:
-		if r.get("file"):
-			existing_files.add(r["file"])
-	
-	# Also get documents from candidate phase that are linked to this employee (skip duplicates)
-	extra_split["selection_rrll_documents"].extend(
-		_person_document_by_candidate_link(employee, existing_files)
-	)
-	extra_split["contract_documents"].extend(_contract_documents(employee))
-	extra_split["sst_documents"].extend(_sst_documents(employee))
-	extra_split["disciplinary_documents"].extend(_disciplinary_documents(employee))
+	taken_files = {r.get("file") for r in required_results if r.get("file")}
+	extra_candidates = list(extra_results)
+	extra_candidates.extend(_persona_documento_documents(employee))
+	extra_candidates.extend(_contract_documents(employee))
+	extra_candidates.extend(_sst_documents(employee))
+	extra_candidates.extend(_disciplinary_documents(employee))
+	extra_split = _dedupe_and_group_extra_documents(extra_candidates, taken_files=taken_files)
 
 	summary = _employee_required_summary(employee, required_map)
 	return {
@@ -522,6 +626,8 @@ def get_employee_documents(employee):
 def _upsert_employee_document(employee, document_type, file_url, issue_date=None, valid_until=None, person_document=None):
 	if not employee or not document_type or not file_url:
 		frappe.throw("employee, document_type y file_url son obligatorios")
+	if not _is_editable_document_type(document_type):
+		frappe.throw("Este documento se gestiona desde su proceso origen y no puede cargarse desde la carpeta documental")
 
 	if person_document:
 		doc = frappe.get_doc("Person Document", person_document)

@@ -12,6 +12,7 @@ from hubgh.hubgh.page.seleccion_documentos import seleccion_documentos
 from hubgh.hubgh.page.persona_360 import persona_360
 from hubgh.hubgh.page.punto_360 import punto_360
 from hubgh.hubgh.page.centro_de_datos import centro_de_datos
+from hubgh.hubgh.page.carpeta_documental_empleado import carpeta_documental_empleado
 
 
 class TestFlowPhase9Adjustments(FrappeTestCase):
@@ -1535,6 +1536,18 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 			self.assertEqual(siesa_export._catalog_code("Centro Trabajo Siesa", "5"), "005")
 			self.assertEqual(siesa_export._catalog_code("Grupo Empleados Siesa", "2"), "002")
 
+	def test_catalog_code_resolves_legacy_social_security_aliases(self):
+		with patch("hubgh.hubgh.siesa_export.frappe.db.exists", return_value=False), patch(
+			"hubgh.hubgh.siesa_export.frappe.db.get_value", return_value=None
+		), patch(
+			"hubgh.hubgh.siesa_export.frappe.get_all",
+			return_value=[
+				{"name": "AFP-230301", "code": "230301", "description": "COLPENSIONES"},
+			],
+		):
+			self.assertEqual(siesa_export._catalog_code("Entidad AFP Siesa", "colpenciones_afc"), "230301")
+			self.assertEqual(siesa_export._catalog_code("Entidad AFP Siesa", "COLPENSIONES"), "230301")
+
 	def test_affiliation_contract_snapshot_falls_back_to_candidate_ccf(self):
 		candidate_doc = SimpleNamespace(
 			name="CAND-001",
@@ -1781,3 +1794,85 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		):
 			with self.assertRaisesRegex(RuntimeError, "docs-blocked"):
 				contratacion_service.submit_contract("CONT-001")
+
+	def test_documentary_folder_prefers_freshest_candidate_or_employee_metadata(self):
+		emp = SimpleNamespace(name="EMP-001", nombres="Ana", apellidos="Paz", cedula="1001", pdv="PDV-1")
+		required = [SimpleNamespace(name="Cedula", document_name="Cedula", has_expiry=1, sort_order=1)]
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Person Document":
+				filters = kwargs.get("filters") or {}
+				if filters.get("employee") == "EMP-001":
+					return [
+						SimpleNamespace(name="PD-EMP", document_type="Cedula", status="Subido", file="/files/emp.pdf", uploaded_by="rrll@example.com", uploaded_on="2026-03-01 08:00:00", approved_by=None, approved_on=None, notes=None, issue_date="2025-01-01", valid_until="2026-03-01", modified="2026-03-01 08:00:00"),
+					]
+				if filters.get("candidate") == "CAND-001":
+					return [
+						SimpleNamespace(name="PD-CAND", document_type="Cedula", status="Subido", file="/files/cand.pdf", uploaded_by="rrll@example.com", uploaded_on="2026-03-10 08:00:00", approved_by=None, approved_on=None, notes=None, issue_date="2025-02-01", valid_until="2026-04-01", modified="2026-03-10 08:00:00"),
+					]
+			return []
+
+		with patch("hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado._validate_folder_access"), patch(
+			"hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.frappe.get_doc",
+			return_value=emp,
+		), patch(
+			"hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado._required_document_types",
+			return_value=required,
+		), patch(
+			"hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.frappe.get_all",
+			side_effect=fake_get_all,
+		), patch(
+			"hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.frappe.db.get_value",
+			return_value="CAND-001",
+		):
+			data = carpeta_documental_empleado.get_employee_documents("EMP-001")
+
+		self.assertEqual(data["required_documents"][0]["file"], "/files/cand.pdf")
+		self.assertEqual(data["required_documents"][0]["status"], "Vigente")
+		self.assertEqual(data["required_documents"][0]["valid_until"], "2026-04-01")
+
+	def test_persona_360_overview_includes_retired_only_for_rrll(self):
+		empleados = [SimpleNamespace(name="EMP-RET", nombres="Ana", apellidos="Paz", cedula="1001", cargo="CAR-1", pdv="PDV-1", email="ana@example.com", estado="Retirado", fecha_ingreso="2026-03-01")]
+
+		with patch("hubgh.hubgh.page.persona_360.persona_360.frappe.get_all", return_value=empleados), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.db.count",
+			return_value=0,
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.has_permission",
+			return_value=True,
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.db.get_value",
+			return_value="PDV 1",
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.session",
+			new=SimpleNamespace(user="rrll@example.com"),
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.user_has_any_role",
+			side_effect=lambda user, *roles: "HR Labor Relations" in roles,
+		):
+			rows = persona_360.get_all_personas_overview()
+
+		self.assertEqual(len(rows), 1)
+
+	def test_siesa_contract_export_marks_retired_contracts(self):
+		contract = SimpleNamespace(candidato="CAND-001", empleado="EMP-001", estado_contrato="Retirado", numero_documento="1001", numero_contrato=3, pdv_destino="PDV-1", cargo="CAR-1", banco_siesa="BANCO", tipo_cotizante_siesa="TC", unidad_negocio_siesa="UN", grupo_empleados_siesa="GE", centro_costos_siesa="CC", centro_trabajo_siesa="CT", entidad_afp_siesa="AFP", entidad_eps_siesa="EPS", entidad_cesantias_siesa="CES", entidad_ccf_siesa="CCF", fecha_ingreso="2026-01-01", fecha_fin_contrato="2026-03-31", salario=1000000, horas_trabajadas_mes=220, cuenta_bancaria="123", tipo_cuenta_bancaria="Ahorros", tipo_contrato="Indefinido")
+		data = SimpleNamespace(candidato="CAND-001", contrato="CONT-001", numero_documento="1001", aplica_auxilio_transporte="3", arl_codigo_siesa="ARL")
+		candidate = SimpleNamespace(es_extranjero=0)
+
+		with patch("hubgh.hubgh.siesa_export.frappe.get_doc", side_effect=lambda doctype, name: contract if doctype == "Contrato" else candidate), patch(
+			"hubgh.hubgh.siesa_export.get_or_create_affiliation",
+			return_value=SimpleNamespace(arl_numero_afiliacion="ARL"),
+		), patch("hubgh.hubgh.siesa_export._catalog_code", return_value="CODE"), patch(
+			"hubgh.hubgh.siesa_export._resolve_id_banco_empleado",
+			return_value=("BANK", ""),
+		), patch(
+			"hubgh.hubgh.siesa_export.frappe.db.exists",
+			return_value=True,
+		), patch(
+			"hubgh.hubgh.siesa_export.frappe.db.get_value",
+			side_effect=lambda doctype, filters, fieldname=None: "2026-03-31" if doctype == "Payroll Liquidation Case" else "PDV-CODE",
+		):
+			ctx, _ = siesa_export._build_contract_context(data)
+
+		self.assertEqual(ctx["ind_estado"], "1")
+		self.assertEqual(ctx["fecha_retiro"], "20260331")

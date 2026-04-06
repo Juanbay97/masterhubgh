@@ -20,17 +20,20 @@ from hubgh.hubgh.document_service import (
 	user_has_any_role,
 )
 from hubgh.hubgh.permissions import user_can_access_dimension
+from hubgh.hubgh.selection_document_types import (
+	SELECTION_OPERATIONAL_DOCS,
+	canonicalize_selection_document_name,
+	get_selection_document_lookup_names,
+	get_selection_operational_document_names,
+)
 
 
 logger = frappe.logger("hubgh.candidato")
 
 
-SELECTION_REQUIRED_DOCS = [
-	{"document_type": "Carta Oferta", "required": 0},
-	{"document_type": "SAGRILAFT", "required": 1},
-	{"document_type": "Autorización de Descuento", "required": 0},
-	{"document_type": "Autorización de Ingreso", "required": 0},
-]
+SELECTION_REQUIRED_DOC_DEFAULTS = {
+	row["document_name"]: int(row.get("is_required_for_hiring") or 0) for row in SELECTION_OPERATIONAL_DOCS
+}
 
 
 MEDICAL_CONCEPTS = {"Favorable", "Desfavorable", "Aplazado"}
@@ -76,22 +79,46 @@ def _candidate_apellidos_fallback(row):
 def _has_uploaded_document(candidate, document_type):
 	rows = frappe.get_all(
 		"Person Document",
-		filters={
-			"person_type": "Candidato",
-			"person": candidate,
-			"document_type": document_type,
-			"status": ["in", ["Subido", "Aprobado"]],
-			"file": ["is", "set"],
-		},
+		filters=[
+			["person_type", "=", "Candidato"],
+			["person", "=", candidate],
+			["document_type", "in", get_selection_document_lookup_names(document_type)],
+			["status", "in", ["Subido", "Aprobado"]],
+			["file", "is", "set"],
+		],
 		fields=["name"],
 		limit_page_length=1,
 	)
 	return bool(rows)
 
 
+def _selection_required_docs():
+	canonical_names = get_selection_operational_document_names()
+	rows = frappe.get_all(
+		"Document Type",
+		filters={
+			"name": ["in", canonical_names],
+			"is_active": 1,
+			"applies_to": ["in", ["Candidato", "Ambos"]],
+		},
+		fields=["name", "is_required_for_hiring"],
+	)
+	by_name = {row.name: row for row in rows}
+	def _required_value(name):
+		row = by_name.get(name)
+		return int(((row.is_required_for_hiring if row else None) or SELECTION_REQUIRED_DOC_DEFAULTS[name]) or 0)
+	return [
+		{
+			"document_type": name,
+			"required": _required_value(name),
+		}
+		for name in canonical_names
+	]
+
+
 def _selection_docs_status(candidate):
 	doc_status = []
-	for row in SELECTION_REQUIRED_DOCS:
+	for row in _selection_required_docs():
 		doc_type = row["document_type"]
 		ok = _has_uploaded_document(candidate, doc_type)
 		doc_status.append({
@@ -289,8 +316,9 @@ def candidate_detail(candidate):
 	progress = get_candidate_progress(candidate)
 	selection_docs = []
 	candidate_docs = []
+	selection_doc_names = set(get_selection_operational_document_names())
 	for d in docs:
-		if d.document_type in {"Carta Oferta", "SAGRILAFT", "Autorización de Descuento", "Autorización de Ingreso"}:
+		if canonicalize_selection_document_name(d.document_type) in selection_doc_names:
 			selection_docs.append(d)
 		else:
 			candidate_docs.append(d)
@@ -305,6 +333,16 @@ def candidate_detail(candidate):
 			"estado_proceso": cand.estado_proceso,
 			"concepto_medico": cand.concepto_medico,
 			"fecha_envio_examen_medico": cand.fecha_envio_examen_medico,
+			"direccion": cand.direccion,
+			"barrio": cand.barrio,
+			"ciudad": cand.ciudad,
+			"localidad": cand.localidad or cand.localidad_otras,
+			"procedencia_pais": cand.procedencia_pais,
+			"procedencia_departamento": cand.procedencia_departamento,
+			"procedencia_ciudad": cand.procedencia_ciudad,
+			"banco_siesa": cand.banco_siesa,
+			"tipo_cuenta_bancaria": cand.tipo_cuenta_bancaria,
+			"numero_cuenta_bancaria": cand.numero_cuenta_bancaria,
 		},
 		"progress": progress,
 		"documents": docs,
@@ -335,6 +373,8 @@ def upload_candidate_document(candidate, document_type, file_url, notes=None):
 		notes,
 		numero_documento=numero_documento,
 	)
+	if getattr(frappe.local, "message_log", None):
+		frappe.local.message_log = []
 	return {"name": doc.name, "status": doc.status}
 
 
@@ -529,6 +569,8 @@ def upload_medical_exam_document(candidate, file_url, notes=None, document_type=
 		notes,
 		numero_documento=numero_documento,
 	)
+	if getattr(frappe.local, "message_log", None):
+		frappe.local.message_log = []
 	return {"name": doc.name, "status": doc.status, "document_type": doc_type}
 
 
@@ -541,10 +583,7 @@ def set_medical_concept(candidate, concepto_medico, notes=None):
 		frappe.throw("Concepto médico inválido. Usa Favorable, Desfavorable o Aplazado.")
 
 	updates = {"concepto_medico": concept}
-	if concept == "Favorable":
-		updates["estado_proceso"] = STATE_AFILIACION
-	else:
-		updates["estado_proceso"] = STATE_EXAMEN_MEDICO
+	updates["estado_proceso"] = STATE_EXAMEN_MEDICO
 	frappe.db.set_value("Candidato", candidate, updates)
 
 	if notes:
@@ -556,7 +595,12 @@ def set_medical_concept(candidate, concepto_medico, notes=None):
 			"content": f"Concepto médico actualizado a {concept}: {notes}",
 		}).insert(ignore_permissions=True)
 
-	return {"ok": True, "concepto_medico": concept, "estado_proceso": updates["estado_proceso"]}
+	return {
+		"ok": True,
+		"concepto_medico": concept,
+		"estado_proceso": updates["estado_proceso"],
+		"next_recommended": "send_to_labor_relations" if concept == "Favorable" else None,
+	}
 
 
 @frappe.whitelist()

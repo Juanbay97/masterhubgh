@@ -9,7 +9,13 @@ from frappe.utils import validate_email_address
 from frappe.utils.password import update_password
 
 from hubgh.person_identity import reconcile_person_identity
-from hubgh.hubgh.candidate_states import STATE_AFILIACION, STATE_DOCUMENTACION, is_candidate_status, normalize_candidate_status
+from hubgh.hubgh.candidate_states import (
+	STATE_AFILIACION,
+	STATE_DOCUMENTACION,
+	get_candidate_status_options,
+	is_candidate_status,
+	resolve_candidate_status_for_storage,
+)
 from hubgh.hubgh.document_service import ensure_candidate_required_documents, set_candidate_status_from_progress
 from hubgh.hubgh.onboarding_security import mark_user_for_first_login_password_reset
 
@@ -24,7 +30,11 @@ class Candidato(Document):
 			self.estado_proceso = STATE_DOCUMENTACION
 
 	def validate(self):
-		self.estado_proceso = normalize_candidate_status(self.estado_proceso, default=STATE_DOCUMENTACION)
+		self.estado_proceso = resolve_candidate_status_for_storage(
+			self.estado_proceso,
+			options=get_candidate_status_options(meta=getattr(self, "meta", None)),
+			default=STATE_DOCUMENTACION,
+		)
 		self.sync_apellidos_compat()
 		self.validate_unique_documento()
 		self.validate_unique_email()
@@ -90,7 +100,7 @@ class Candidato(Document):
 		if self.user and frappe.db.exists("User", self.user):
 			logger.info("ensure_user_link:existing_user", extra={"user": self.user})
 			self.flags.onboarding_login_user = self.user
-			self._ensure_persona_for_user()
+			self._attach_existing_persona()
 			return
 		if not self.numero_documento:
 			logger.warning("ensure_user_link:missing_numero_documento", extra={"candidato": self.name})
@@ -110,7 +120,7 @@ class Candidato(Document):
 				self.user = user_doc.name
 				self.flags.onboarding_login_user = user_doc.name
 				self._ensure_candidato_role(user_doc.name)
-				self._ensure_persona_for_user()
+				self._attach_existing_persona()
 				return
 			logger.info(
 				"ensure_user_link:create_user", extra={
@@ -127,6 +137,7 @@ class Candidato(Document):
 				"first_name": self.nombres or user_id,
 				"last_name": self.apellidos or "",
 				"enabled": 1,
+				"send_welcome_email": 0,
 				"user_type": "Website User",
 				"roles": [{"role": "Candidato"}],
 			})
@@ -147,35 +158,17 @@ class Candidato(Document):
 		if not self.flags.onboarding_login_user:
 			self.flags.onboarding_login_user = user_doc.name
 		self._ensure_candidato_role(user_doc.name)
-		self._ensure_persona_for_user()
+		self._attach_existing_persona()
 		reconcile_person_identity(employee=self.persona, user=user_doc, document=self.numero_documento, email=user_doc.email)
 
-	def _ensure_persona_for_user(self):
+	def _attach_existing_persona(self):
 		if self.persona:
 			return
 		if not self.numero_documento:
 			return
 		persona_name = frappe.db.get_value("Ficha Empleado", {"cedula": self.numero_documento})
 		if not persona_name:
-			persona = frappe.get_doc({
-				"doctype": "Ficha Empleado",
-				"nombres": self.nombres,
-				"apellidos": self.apellidos,
-				"cedula": self.numero_documento,
-				"pdv": self.pdv_destino,
-				"cargo": self.cargo_postulado,
-				"fecha_ingreso": self.fecha_tentativa_ingreso,
-				"email": self.email,
-				"candidato_origen": self.name,
-				"numero_cuenta_bancaria": self.numero_cuenta_bancaria,
-				"tipo_cuenta_bancaria": self.tipo_cuenta_bancaria,
-				"banco_siesa": self.banco_siesa,
-				"eps_siesa": self.eps_siesa,
-				"afp_siesa": self.afp_siesa,
-				"cesantias_siesa": self.cesantias_siesa,
-				"ccf_siesa": self.ccf_siesa,
-			}).insert(ignore_permissions=True, ignore_mandatory=True)
-			persona_name = persona.name
+			return
 		self.persona = persona_name
 		reconcile_person_identity(employee=persona_name, user=self.user, document=self.numero_documento, email=self.email)
 
@@ -276,67 +269,14 @@ class Candidato(Document):
 
 	@frappe.whitelist()
 	def convertir_a_usuario(self):
-		# Compatibilidad con botón legado: ahora marca Contratado.
+		# Compatibilidad con botón legado: no debe crear Ficha Empleado prematuramente.
 		if self.persona:
 			self.estado_proceso = "Contratado"
 			self.save(ignore_permissions=True)
 			return self.persona
-
-		candidato_doc = self.numero_documento
-		if not candidato_doc:
-			frappe.throw("Debe existir el número de documento para convertir.")
-
-		persona_name = frappe.db.get_value("Ficha Empleado", {"cedula": candidato_doc})
-		if not persona_name:
-			persona = frappe.get_doc({
-				"doctype": "Ficha Empleado",
-				"nombres": self.nombres,
-				"apellidos": self.apellidos,
-				"cedula": candidato_doc,
-				"pdv": self.pdv_destino,
-				"cargo": self.cargo_postulado,
-				"fecha_ingreso": self.fecha_tentativa_ingreso,
-				"email": self.email,
-				"candidato_origen": self.name,
-				"numero_cuenta_bancaria": self.numero_cuenta_bancaria,
-				"tipo_cuenta_bancaria": self.tipo_cuenta_bancaria,
-				"banco_siesa": self.banco_siesa,
-				"eps_siesa": self.eps_siesa,
-				"afp_siesa": self.afp_siesa,
-				"cesantias_siesa": self.cesantias_siesa,
-				"ccf_siesa": self.ccf_siesa,
-			}).insert(ignore_permissions=True)
-			persona_name = persona.name
-		else:
-			frappe.db.set_value(
-				"Ficha Empleado",
-				persona_name,
-				{
-					"nombres": self.nombres,
-					"apellidos": self.apellidos,
-					"pdv": self.pdv_destino,
-					"cargo": self.cargo_postulado,
-					"fecha_ingreso": self.fecha_tentativa_ingreso,
-					"email": self.email,
-					"candidato_origen": self.name,
-					"numero_cuenta_bancaria": self.numero_cuenta_bancaria,
-					"tipo_cuenta_bancaria": self.tipo_cuenta_bancaria,
-					"banco_siesa": self.banco_siesa,
-					"eps_siesa": self.eps_siesa,
-					"afp_siesa": self.afp_siesa,
-					"cesantias_siesa": self.cesantias_siesa,
-					"ccf_siesa": self.ccf_siesa,
-				},
-			)
-
-		self.persona = persona_name
-		self.estado_proceso = "Contratado"
 		self.ensure_user_link()
-		reconcile_person_identity(employee=persona_name, user=self.user, document=self.numero_documento, email=self.email)
-		self._upgrade_user_roles()
-		self._ensure_persona_document_folder()
 		self.save(ignore_permissions=True)
-		return persona_name
+		return self.user
 
 	def _ensure_persona_document_folder(self):
 		if not self.persona:

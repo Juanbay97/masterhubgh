@@ -1,0 +1,6919 @@
+{
+  "paises": [
+    {
+      "codigo": "169",
+      "nombre": "Colombia"
+    },
+    {
+      "codigo": "850",
+      "nombre": "Venezuela"
+    }
+  ],
+  "departamentos": [
+    {
+      "codigo": "05",
+      "nombre": "Antioquia",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "08",
+      "nombre": "Atlántico",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "11",
+      "nombre": "Bogotá D.C.",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "13",
+      "nombre": "Bolívar",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "15",
+      "nombre": "Boyacá",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "17",
+      "nombre": "Caldas",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "18",
+      "nombre": "Caquetá",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "19",
+      "nombre": "Cauca",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "20",
+      "nombre": "Cesar",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "23",
+      "nombre": "Córdoba",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "25",
+      "nombre": "Cundinamarca",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "27",
+      "nombre": "Chocó",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "41",
+      "nombre": "Huila",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "44",
+      "nombre": "La Guajira",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "47",
+      "nombre": "Magdalena",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "50",
+      "nombre": "Meta",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "52",
+      "nombre": "Nariño",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "54",
+      "nombre": "Norte de Santander",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "63",
+      "nombre": "Quindío",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "66",
+      "nombre": "Risaralda",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "68",
+      "nombre": "Santander",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "70",
+      "nombre": "Sucre",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "73",
+      "nombre": "Tolima",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "76",
+      "nombre": "Valle del Cauca",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "81",
+      "nombre": "Arauca",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "85",
+      "nombre": "Casanare",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "86",
+      "nombre": "Putumayo",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "88",
+      "nombre": "Archipiélago de San Andrés, Providencia y Santa Catalina",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "91",
+      "nombre": "Amazonas",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "94",
+      "nombre": "Guainía",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "95",
+      "nombre": "Guaviare",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "97",
+      "nombre": "Vaupés",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "99",
+      "nombre": "Vichada",
+      "pais_codigo": "169"
+    }
+  ],
+  "ciudades": [
+    {
+      "codigo": "001",
+      "nombre": "Medellín",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "002",
+      "nombre": "Abejorral",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "004",
+      "nombre": "Abriaquí",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "021",
+      "nombre": "Alejandría",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "030",
+      "nombre": "Amagá",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "031",
+      "nombre": "Amalfi",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "034",
+      "nombre": "Andes",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "036",
+      "nombre": "Angelópolis",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "038",
+      "nombre": "Angostura",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "040",
+      "nombre": "Anorí",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "042",
+      "nombre": "Santafé de Antioquia",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "044",
+      "nombre": "Anza",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "045",
+      "nombre": "Apartadó",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "051",
+      "nombre": "Arboletes",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "055",
+      "nombre": "Argelia",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "059",
+      "nombre": "Armenia",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "079",
+      "nombre": "Barbosa",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "086",
+      "nombre": "Belmira",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "088",
+      "nombre": "Bello",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "091",
+      "nombre": "Betania",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "093",
+      "nombre": "Betulia",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "101",
+      "nombre": "Ciudad Bolívar",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "107",
+      "nombre": "Briceño",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "113",
+      "nombre": "Buriticá",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "120",
+      "nombre": "Cáceres",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "125",
+      "nombre": "Caicedo",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "129",
+      "nombre": "Caldas",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "134",
+      "nombre": "Campamento",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "138",
+      "nombre": "Cañasgordas",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "142",
+      "nombre": "Caracolí",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "145",
+      "nombre": "Caramanta",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "147",
+      "nombre": "Carepa",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "148",
+      "nombre": "El Carmen de Viboral",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "150",
+      "nombre": "Carolina",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "154",
+      "nombre": "Caucasia",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "172",
+      "nombre": "Chigorodó",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "190",
+      "nombre": "Cisneros",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "197",
+      "nombre": "Cocorná",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "206",
+      "nombre": "Concepción",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "209",
+      "nombre": "Concordia",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "212",
+      "nombre": "Copacabana",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "234",
+      "nombre": "Dabeiba",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "237",
+      "nombre": "Don Matías",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "240",
+      "nombre": "Ebéjico",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "250",
+      "nombre": "El Bagre",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "264",
+      "nombre": "Entrerrios",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "266",
+      "nombre": "Envigado",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "282",
+      "nombre": "Fredonia",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "284",
+      "nombre": "Frontino",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "306",
+      "nombre": "Giraldo",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "308",
+      "nombre": "Girardota",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "310",
+      "nombre": "Gómez Plata",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "313",
+      "nombre": "Granada",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "315",
+      "nombre": "Guadalupe",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "318",
+      "nombre": "Guarne",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "321",
+      "nombre": "Guatapé",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "347",
+      "nombre": "Heliconia",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "353",
+      "nombre": "Hispania",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "360",
+      "nombre": "Itagui",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "361",
+      "nombre": "Ituango",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "364",
+      "nombre": "Jardín",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "368",
+      "nombre": "Jericó",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "376",
+      "nombre": "La Ceja",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "380",
+      "nombre": "La Estrella",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "390",
+      "nombre": "La Pintada",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "400",
+      "nombre": "La Unión",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "411",
+      "nombre": "Liborina",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "425",
+      "nombre": "Maceo",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "440",
+      "nombre": "Marinilla",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "467",
+      "nombre": "Montebello",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "475",
+      "nombre": "Murindó",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "480",
+      "nombre": "Mutatá",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "483",
+      "nombre": "Nariño",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "490",
+      "nombre": "Necoclí",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "495",
+      "nombre": "Nechí",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "501",
+      "nombre": "Olaya",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "541",
+      "nombre": "Peñol",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "543",
+      "nombre": "Peque",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "576",
+      "nombre": "Pueblorrico",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "579",
+      "nombre": "Puerto Berrío",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "585",
+      "nombre": "Puerto Nare",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "591",
+      "nombre": "Puerto Triunfo",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "604",
+      "nombre": "Remedios",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "607",
+      "nombre": "Retiro",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "615",
+      "nombre": "Rionegro",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "628",
+      "nombre": "Sabanalarga",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "631",
+      "nombre": "Sabaneta",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "642",
+      "nombre": "Salgar",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "647",
+      "nombre": "San Andrés de Cuerquía",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "649",
+      "nombre": "San Carlos",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "652",
+      "nombre": "San Francisco",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "656",
+      "nombre": "San Jerónimo",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "658",
+      "nombre": "San José de La Montaña",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "659",
+      "nombre": "San Juan de Urabá",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "660",
+      "nombre": "San Luis",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "664",
+      "nombre": "San Pedro",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "665",
+      "nombre": "San Pedro de Uraba",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "667",
+      "nombre": "San Rafael",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "670",
+      "nombre": "San Roque",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "674",
+      "nombre": "San Vicente",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "679",
+      "nombre": "Santa Bárbara",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "686",
+      "nombre": "Santa Rosa de Osos",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "690",
+      "nombre": "Santo Domingo",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "697",
+      "nombre": "El Santuario",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "736",
+      "nombre": "Segovia",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "756",
+      "nombre": "Sonsón",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "761",
+      "nombre": "Sopetrán",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "789",
+      "nombre": "Támesis",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "790",
+      "nombre": "Tarazá",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "792",
+      "nombre": "Tarso",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "809",
+      "nombre": "Titiribí",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "819",
+      "nombre": "Toledo",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "837",
+      "nombre": "Turbo",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "842",
+      "nombre": "Uramita",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "847",
+      "nombre": "Urrao",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "854",
+      "nombre": "Valdivia",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "856",
+      "nombre": "Valparaíso",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "858",
+      "nombre": "Vegachí",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "861",
+      "nombre": "Venecia",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "873",
+      "nombre": "Vigía del Fuerte",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "885",
+      "nombre": "Yalí",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "887",
+      "nombre": "Yarumal",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "890",
+      "nombre": "Yolombó",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "893",
+      "nombre": "Yondó",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "895",
+      "nombre": "Zaragoza",
+      "departamento_codigo": "05",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Barranquilla",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "078",
+      "nombre": "Baranoa",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "137",
+      "nombre": "Campo de La Cruz",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "141",
+      "nombre": "Candelaria",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "296",
+      "nombre": "Galapa",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "372",
+      "nombre": "Juan de Acosta",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "421",
+      "nombre": "Luruaco",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "433",
+      "nombre": "Malambo",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "436",
+      "nombre": "Manatí",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "520",
+      "nombre": "Palmar de Varela",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "549",
+      "nombre": "Piojó",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "558",
+      "nombre": "Polonuevo",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "560",
+      "nombre": "Ponedera",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "573",
+      "nombre": "Puerto Colombia",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "606",
+      "nombre": "Repelón",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "634",
+      "nombre": "Sabanagrande",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "638",
+      "nombre": "Sabanalarga",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "675",
+      "nombre": "Santa Lucía",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "685",
+      "nombre": "Santo Tomás",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "758",
+      "nombre": "Soledad",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "770",
+      "nombre": "Suan",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "832",
+      "nombre": "Tubará",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "849",
+      "nombre": "Usiacurí",
+      "departamento_codigo": "08",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Bogotá D.C.",
+      "departamento_codigo": "11",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Cartagena",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "006",
+      "nombre": "Achí",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "030",
+      "nombre": "Altos del Rosario",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "042",
+      "nombre": "Arenal",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "052",
+      "nombre": "Arjona",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "062",
+      "nombre": "Arroyohondo",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "074",
+      "nombre": "Barranco de Loba",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "140",
+      "nombre": "Calamar",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "160",
+      "nombre": "Cantagallo",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "188",
+      "nombre": "Cicuco",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "212",
+      "nombre": "Córdoba",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "222",
+      "nombre": "Clemencia",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "244",
+      "nombre": "El Carmen de Bolívar",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "248",
+      "nombre": "El Guamo",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "268",
+      "nombre": "El Peñón",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "300",
+      "nombre": "Hatillo de Loba",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "430",
+      "nombre": "Magangué",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "433",
+      "nombre": "Mahates",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "440",
+      "nombre": "Margarita",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "442",
+      "nombre": "María la Baja",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "458",
+      "nombre": "Montecristo",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "468",
+      "nombre": "Mompós",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "473",
+      "nombre": "Morales",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "490",
+      "nombre": "Norosí",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "549",
+      "nombre": "Pinillos",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "580",
+      "nombre": "Regidor",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "600",
+      "nombre": "Río Viejo",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "620",
+      "nombre": "San Cristóbal",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "647",
+      "nombre": "San Estanislao",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "650",
+      "nombre": "San Fernando",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "654",
+      "nombre": "San Jacinto",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "655",
+      "nombre": "San Jacinto del Cauca",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "657",
+      "nombre": "San Juan Nepomuceno",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "667",
+      "nombre": "San Martín de Loba",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "670",
+      "nombre": "San Pablo de Borbur",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "673",
+      "nombre": "Santa Catalina",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "683",
+      "nombre": "Santa Rosa",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "688",
+      "nombre": "Santa Rosa del Sur",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "744",
+      "nombre": "Simití",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "760",
+      "nombre": "Soplaviento",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "780",
+      "nombre": "Talaigua Nuevo",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "810",
+      "nombre": "Tiquisio",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "836",
+      "nombre": "Turbaco",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "838",
+      "nombre": "Turbaná",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "873",
+      "nombre": "Villanueva",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "894",
+      "nombre": "Zambrano",
+      "departamento_codigo": "13",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Tunja",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "022",
+      "nombre": "Almeida",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "047",
+      "nombre": "Aquitania",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "051",
+      "nombre": "Arcabuco",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "087",
+      "nombre": "Belén",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "090",
+      "nombre": "Berbeo",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "092",
+      "nombre": "Betéitiva",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "097",
+      "nombre": "Boavita",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "104",
+      "nombre": "Boyacá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "106",
+      "nombre": "Briceño",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "109",
+      "nombre": "Buena Vista",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "114",
+      "nombre": "Busbanzá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "131",
+      "nombre": "Caldas",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "135",
+      "nombre": "Campohermoso",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "162",
+      "nombre": "Cerinza",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "172",
+      "nombre": "Chinavita",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "176",
+      "nombre": "Chiquinquirá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "180",
+      "nombre": "Chiscas",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "183",
+      "nombre": "Chita",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "185",
+      "nombre": "Chitaraque",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "187",
+      "nombre": "Chivatá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "189",
+      "nombre": "Ciénega",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "204",
+      "nombre": "Cómbita",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "212",
+      "nombre": "Coper",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "215",
+      "nombre": "Corrales",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "218",
+      "nombre": "Covarachía",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "223",
+      "nombre": "Cubará",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "224",
+      "nombre": "Cucaita",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "226",
+      "nombre": "Cuítiva",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "232",
+      "nombre": "Chíquiza",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "236",
+      "nombre": "Chivor",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "238",
+      "nombre": "Duitama",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "244",
+      "nombre": "El Cocuy",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "248",
+      "nombre": "El Espino",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "272",
+      "nombre": "Firavitoba",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "276",
+      "nombre": "Floresta",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "293",
+      "nombre": "Gachantivá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "296",
+      "nombre": "Gameza",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "299",
+      "nombre": "Garagoa",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "317",
+      "nombre": "Guacamayas",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "322",
+      "nombre": "Guateque",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "325",
+      "nombre": "Guayatá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "332",
+      "nombre": "Güicán",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "362",
+      "nombre": "Iza",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "367",
+      "nombre": "Jenesano",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "368",
+      "nombre": "Jericó",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "377",
+      "nombre": "Labranzagrande",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "380",
+      "nombre": "La Capilla",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "401",
+      "nombre": "La Victoria",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "403",
+      "nombre": "La Uvita",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "407",
+      "nombre": "Villa de Leyva",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "425",
+      "nombre": "Macanal",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "442",
+      "nombre": "Maripí",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "455",
+      "nombre": "Miraflores",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "464",
+      "nombre": "Mongua",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "466",
+      "nombre": "Monguí",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "469",
+      "nombre": "Moniquirá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "476",
+      "nombre": "Motavita",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "480",
+      "nombre": "Muzo",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "491",
+      "nombre": "Nobsa",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "494",
+      "nombre": "Nuevo Colón",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "500",
+      "nombre": "Oicatá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "507",
+      "nombre": "Otanche",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "511",
+      "nombre": "Pachavita",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "514",
+      "nombre": "Páez",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "516",
+      "nombre": "Paipa",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "518",
+      "nombre": "Pajarito",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "522",
+      "nombre": "Panqueba",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "531",
+      "nombre": "Pauna",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "533",
+      "nombre": "Paya",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "537",
+      "nombre": "Paz de Río",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "542",
+      "nombre": "Pesca",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "550",
+      "nombre": "Pisba",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "572",
+      "nombre": "Puerto Boyacá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "580",
+      "nombre": "Quípama",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "599",
+      "nombre": "Ramiriquí",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "600",
+      "nombre": "Ráquira",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "621",
+      "nombre": "Rondón",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "632",
+      "nombre": "Saboyá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "638",
+      "nombre": "Sáchica",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "646",
+      "nombre": "Samacá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "660",
+      "nombre": "San Eduardo",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "664",
+      "nombre": "San José de Pare",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "667",
+      "nombre": "San Luis de Gaceno",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "673",
+      "nombre": "San Mateo",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "676",
+      "nombre": "San Miguel de Sema",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "681",
+      "nombre": "San Pablo de Borbur",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "686",
+      "nombre": "Santana",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "690",
+      "nombre": "Santa María",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "693",
+      "nombre": "Santa Rosa de Viterbo",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "696",
+      "nombre": "Santa Sofía",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "720",
+      "nombre": "Sativanorte",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "723",
+      "nombre": "Sativasur",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "740",
+      "nombre": "Siachoque",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "753",
+      "nombre": "Soatá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "755",
+      "nombre": "Socotá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "757",
+      "nombre": "Socha",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "759",
+      "nombre": "Sogamoso",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "761",
+      "nombre": "Somondoco",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "762",
+      "nombre": "Sora",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "763",
+      "nombre": "Sotaquirá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "764",
+      "nombre": "Soracá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "774",
+      "nombre": "Susacón",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "776",
+      "nombre": "Sutamarchán",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "778",
+      "nombre": "Sutatenza",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "790",
+      "nombre": "Tasco",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "798",
+      "nombre": "Tenza",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "804",
+      "nombre": "Tibaná",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "806",
+      "nombre": "Tibasosa",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "808",
+      "nombre": "Tinjacá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "810",
+      "nombre": "Tipacoque",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "814",
+      "nombre": "Toca",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "816",
+      "nombre": "Togüí",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "820",
+      "nombre": "Tópaga",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "822",
+      "nombre": "Tota",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "832",
+      "nombre": "Tununguá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "835",
+      "nombre": "Turmequé",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "837",
+      "nombre": "Tuta",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "839",
+      "nombre": "Tutazá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "842",
+      "nombre": "Umbita",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "861",
+      "nombre": "Ventaquemada",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "879",
+      "nombre": "Viracachá",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "897",
+      "nombre": "Zetaquira",
+      "departamento_codigo": "15",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Manizales",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "013",
+      "nombre": "Aguadas",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "042",
+      "nombre": "Anserma",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "050",
+      "nombre": "Aranzazu",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "088",
+      "nombre": "Belalcázar",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "174",
+      "nombre": "Chinchiná",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "272",
+      "nombre": "Filadelfia",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "380",
+      "nombre": "La Dorada",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "388",
+      "nombre": "La Merced",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "433",
+      "nombre": "Manzanares",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "442",
+      "nombre": "Marmato",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "444",
+      "nombre": "Marquetalia",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "446",
+      "nombre": "Marulanda",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "486",
+      "nombre": "Neira",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "495",
+      "nombre": "Norcasia",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "513",
+      "nombre": "Pácora",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "524",
+      "nombre": "Palestina",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "541",
+      "nombre": "Pensilvania",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "614",
+      "nombre": "Riosucio",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "616",
+      "nombre": "Risaralda",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "653",
+      "nombre": "Salamina",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "662",
+      "nombre": "Samaná",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "665",
+      "nombre": "San José",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "777",
+      "nombre": "Supía",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "867",
+      "nombre": "Victoria",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "873",
+      "nombre": "Villamaría",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "877",
+      "nombre": "Viterbo",
+      "departamento_codigo": "17",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Florencia",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "029",
+      "nombre": "Albania",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "094",
+      "nombre": "Belén de Los Andaquies",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "150",
+      "nombre": "Cartagena del Chairá",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "205",
+      "nombre": "Curillo",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "247",
+      "nombre": "El Doncello",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "256",
+      "nombre": "El Paujil",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "410",
+      "nombre": "La Montañita",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "460",
+      "nombre": "Milán",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "479",
+      "nombre": "Morelia",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "592",
+      "nombre": "Puerto Rico",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "610",
+      "nombre": "San José del Fragua",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "753",
+      "nombre": "San Vicente del Caguán",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "756",
+      "nombre": "Solano",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "785",
+      "nombre": "Solita",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "860",
+      "nombre": "Valparaíso",
+      "departamento_codigo": "18",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Popayán",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "022",
+      "nombre": "Almaguer",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "050",
+      "nombre": "Argelia",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "075",
+      "nombre": "Balboa",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "100",
+      "nombre": "Bolívar",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "110",
+      "nombre": "Buenos Aires",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "130",
+      "nombre": "Cajibío",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "137",
+      "nombre": "Caldono",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "142",
+      "nombre": "Caloto",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "212",
+      "nombre": "Corinto",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "256",
+      "nombre": "El Tambo",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "290",
+      "nombre": "Florencia",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "300",
+      "nombre": "Guachené",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "318",
+      "nombre": "Guapi",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "355",
+      "nombre": "Inzá",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "364",
+      "nombre": "Jambaló",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "392",
+      "nombre": "La Sierra",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "397",
+      "nombre": "La Vega",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "418",
+      "nombre": "López",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "450",
+      "nombre": "Mercaderes",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "455",
+      "nombre": "Miranda",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "473",
+      "nombre": "Morales",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "513",
+      "nombre": "Padilla",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "517",
+      "nombre": "Páez",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "532",
+      "nombre": "Patía",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "533",
+      "nombre": "Piamonte",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "548",
+      "nombre": "Piendamó",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "573",
+      "nombre": "Puerto Tejada",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "585",
+      "nombre": "Puracé",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "622",
+      "nombre": "Rosas",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "693",
+      "nombre": "San Sebastián",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "698",
+      "nombre": "Santander de Quilichao",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "701",
+      "nombre": "Santa Rosa",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "743",
+      "nombre": "Silvia",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "760",
+      "nombre": "Sotara",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "780",
+      "nombre": "Suárez",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "785",
+      "nombre": "Sucre",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "807",
+      "nombre": "Timbío",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "809",
+      "nombre": "Timbiquí",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "821",
+      "nombre": "Toribio",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "824",
+      "nombre": "Totoró",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "845",
+      "nombre": "Villa Rica",
+      "departamento_codigo": "19",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Valledupar",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "011",
+      "nombre": "Aguachica",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "013",
+      "nombre": "Agustín Codazzi",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "032",
+      "nombre": "Astrea",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "045",
+      "nombre": "Becerril",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "060",
+      "nombre": "Bosconia",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "175",
+      "nombre": "Chimichagua",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "178",
+      "nombre": "Chiriguaná",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "228",
+      "nombre": "Curumaní",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "238",
+      "nombre": "El Copey",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "250",
+      "nombre": "El Paso",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "295",
+      "nombre": "Gamarra",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "310",
+      "nombre": "González",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "383",
+      "nombre": "La Gloria",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "400",
+      "nombre": "La Jagua de Ibirico",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "443",
+      "nombre": "Manaure",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "517",
+      "nombre": "Pailitas",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "550",
+      "nombre": "Pelaya",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "570",
+      "nombre": "Pueblo Bello",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "614",
+      "nombre": "Río de Oro",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "621",
+      "nombre": "La Paz",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "710",
+      "nombre": "San Alberto",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "750",
+      "nombre": "San Diego",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "770",
+      "nombre": "San Martín",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "787",
+      "nombre": "Tamalameque",
+      "departamento_codigo": "20",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Montería",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "068",
+      "nombre": "Ayapel",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "079",
+      "nombre": "Buenavista",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "090",
+      "nombre": "Canalete",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "162",
+      "nombre": "Cereté",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "168",
+      "nombre": "Chimá",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "182",
+      "nombre": "Chinú",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "189",
+      "nombre": "Ciénaga de Oro",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "300",
+      "nombre": "Cotorra",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "350",
+      "nombre": "La Apartada",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "417",
+      "nombre": "Lorica",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "419",
+      "nombre": "Los Córdobas",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "464",
+      "nombre": "Momil",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "466",
+      "nombre": "Montelíbano",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "500",
+      "nombre": "Moñitos",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "555",
+      "nombre": "Planeta Rica",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "570",
+      "nombre": "Pueblo Nuevo",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "574",
+      "nombre": "Puerto Escondido",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "580",
+      "nombre": "Puerto Libertador",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "586",
+      "nombre": "Purísima",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "660",
+      "nombre": "Sahagún",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "670",
+      "nombre": "San Andrés Sotavento",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "672",
+      "nombre": "San Antero",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "675",
+      "nombre": "San Bernardo del Viento",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "678",
+      "nombre": "San Carlos",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "682",
+      "nombre": "San José de Uré",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "686",
+      "nombre": "San Pelayo",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "807",
+      "nombre": "Tierralta",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "815",
+      "nombre": "Tuchín",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "855",
+      "nombre": "Valencia",
+      "departamento_codigo": "23",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Agua de Dios",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "019",
+      "nombre": "Albán",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "035",
+      "nombre": "Anapoima",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "040",
+      "nombre": "Anolaima",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "053",
+      "nombre": "Arbeláez",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "086",
+      "nombre": "Beltrán",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "095",
+      "nombre": "Bituima",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "099",
+      "nombre": "Bojacá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "120",
+      "nombre": "Cabrera",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "123",
+      "nombre": "Cachipay",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "126",
+      "nombre": "Cajicá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "148",
+      "nombre": "Caparrapí",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "151",
+      "nombre": "Caqueza",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "154",
+      "nombre": "Carmen de Carupa",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "168",
+      "nombre": "Chaguaní",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "175",
+      "nombre": "Chía",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "178",
+      "nombre": "Chipaque",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "181",
+      "nombre": "Choachí",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "183",
+      "nombre": "Chocontá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "200",
+      "nombre": "Cogua",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "214",
+      "nombre": "Cota",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "224",
+      "nombre": "Cucunubá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "245",
+      "nombre": "El Colegio",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "258",
+      "nombre": "El Peñón",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "260",
+      "nombre": "El Rosal",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "269",
+      "nombre": "Facatativá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "279",
+      "nombre": "Fomeque",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "281",
+      "nombre": "Fosca",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "286",
+      "nombre": "Funza",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "288",
+      "nombre": "Fúquene",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "290",
+      "nombre": "Fusagasugá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "293",
+      "nombre": "Gachala",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "295",
+      "nombre": "Gachancipá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "297",
+      "nombre": "Gachetá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "299",
+      "nombre": "Gama",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "307",
+      "nombre": "Girardot",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "312",
+      "nombre": "Granada",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "317",
+      "nombre": "Guachetá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "320",
+      "nombre": "Guaduas",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "322",
+      "nombre": "Guasca",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "324",
+      "nombre": "Guataquí",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "326",
+      "nombre": "Guatavita",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "328",
+      "nombre": "Guayabal de Siquima",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "335",
+      "nombre": "Guayabetal",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "339",
+      "nombre": "Gutiérrez",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "368",
+      "nombre": "Jerusalén",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "372",
+      "nombre": "Junín",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "377",
+      "nombre": "La Calera",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "386",
+      "nombre": "La Mesa",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "394",
+      "nombre": "La Palma",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "398",
+      "nombre": "La Peña",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "402",
+      "nombre": "La Vega",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "407",
+      "nombre": "Lenguazaque",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "426",
+      "nombre": "Macheta",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "430",
+      "nombre": "Madrid",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "436",
+      "nombre": "Manta",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "438",
+      "nombre": "Medina",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "473",
+      "nombre": "Mosquera",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "483",
+      "nombre": "Nariño",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "486",
+      "nombre": "Nemocón",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "488",
+      "nombre": "Nilo",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "489",
+      "nombre": "Nimaima",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "491",
+      "nombre": "Nocaima",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "506",
+      "nombre": "Venecia",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "513",
+      "nombre": "Pacho",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "518",
+      "nombre": "Paime",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "524",
+      "nombre": "Pandi",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "530",
+      "nombre": "Paratebueno",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "535",
+      "nombre": "Pasca",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "572",
+      "nombre": "Puerto Salgar",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "580",
+      "nombre": "Pulí",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "592",
+      "nombre": "Quebradanegra",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "594",
+      "nombre": "Quetame",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "596",
+      "nombre": "Quipile",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "599",
+      "nombre": "Apulo",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "612",
+      "nombre": "Ricaurte",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "645",
+      "nombre": "San Antonio del Tequendama",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "649",
+      "nombre": "San Bernardo",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "653",
+      "nombre": "San Cayetano",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "658",
+      "nombre": "San Francisco",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "662",
+      "nombre": "San Juan de Río Seco",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "718",
+      "nombre": "Sasaima",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "736",
+      "nombre": "Sesquilé",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "740",
+      "nombre": "Sibaté",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "743",
+      "nombre": "Silvania",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "745",
+      "nombre": "Simijaca",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "754",
+      "nombre": "Soacha",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "758",
+      "nombre": "Sopó",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "769",
+      "nombre": "Subachoque",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "772",
+      "nombre": "Suesca",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "777",
+      "nombre": "Supatá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "779",
+      "nombre": "Susa",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "781",
+      "nombre": "Sutatausa",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "785",
+      "nombre": "Tabio",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "793",
+      "nombre": "Tausa",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "797",
+      "nombre": "Tena",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "799",
+      "nombre": "Tenjo",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "805",
+      "nombre": "Tibacuy",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "807",
+      "nombre": "Tibirita",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "815",
+      "nombre": "Tocaima",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "817",
+      "nombre": "Tocancipá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "823",
+      "nombre": "Topaipí",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "839",
+      "nombre": "Ubalá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "841",
+      "nombre": "Ubaque",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "843",
+      "nombre": "Villa de San Diego de Ubate",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "845",
+      "nombre": "Une",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "851",
+      "nombre": "Útica",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "862",
+      "nombre": "Vergara",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "867",
+      "nombre": "Vianí",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "871",
+      "nombre": "Villagómez",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "873",
+      "nombre": "Villapinzón",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "875",
+      "nombre": "Villeta",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "878",
+      "nombre": "Viotá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "885",
+      "nombre": "Yacopí",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "898",
+      "nombre": "Zipacón",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "899",
+      "nombre": "Zipaquirá",
+      "departamento_codigo": "25",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Quibdó",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "006",
+      "nombre": "Acandí",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "025",
+      "nombre": "Alto Baudo",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "050",
+      "nombre": "Atrato",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "073",
+      "nombre": "Bagadó",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "075",
+      "nombre": "Bahía Solano",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "077",
+      "nombre": "Bajo Baudó",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "086",
+      "nombre": "Belén de Bajira",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "099",
+      "nombre": "Bojaya",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "135",
+      "nombre": "El Cantón del San Pablo",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "150",
+      "nombre": "Carmen del Darien",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "160",
+      "nombre": "Cértegui",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "205",
+      "nombre": "Condoto",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "245",
+      "nombre": "El Carmen de Atrato",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "250",
+      "nombre": "El Litoral del San Juan",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "361",
+      "nombre": "Istmina",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "372",
+      "nombre": "Juradó",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "413",
+      "nombre": "Lloró",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "425",
+      "nombre": "Medio Atrato",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "430",
+      "nombre": "Medio Baudó",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "450",
+      "nombre": "Medio San Juan",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "491",
+      "nombre": "Nóvita",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "495",
+      "nombre": "Nuquí",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "580",
+      "nombre": "Río Iro",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "600",
+      "nombre": "Río Quito",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "615",
+      "nombre": "Riosucio",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "660",
+      "nombre": "San José del Palmar",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "745",
+      "nombre": "Sipí",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "787",
+      "nombre": "Tadó",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "800",
+      "nombre": "Unguía",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "810",
+      "nombre": "Unión Panamericana",
+      "departamento_codigo": "27",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Neiva",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "006",
+      "nombre": "Acevedo",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "013",
+      "nombre": "Agrado",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "016",
+      "nombre": "Aipe",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "020",
+      "nombre": "Algeciras",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "026",
+      "nombre": "Altamira",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "078",
+      "nombre": "Baraya",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "132",
+      "nombre": "Campoalegre",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "206",
+      "nombre": "Colombia",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "244",
+      "nombre": "Elías",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "298",
+      "nombre": "Garzón",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "306",
+      "nombre": "Gigante",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "319",
+      "nombre": "Guadalupe",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "349",
+      "nombre": "Hobo",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "357",
+      "nombre": "Iquira",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "359",
+      "nombre": "Isnos",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "378",
+      "nombre": "La Argentina",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "396",
+      "nombre": "La Plata",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "483",
+      "nombre": "Nátaga",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "503",
+      "nombre": "Oporapa",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "518",
+      "nombre": "Paicol",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "524",
+      "nombre": "Palermo",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "530",
+      "nombre": "Palestina",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "548",
+      "nombre": "Pital",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "551",
+      "nombre": "Pitalito",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "615",
+      "nombre": "Rivera",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "660",
+      "nombre": "Saladoblanco",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "668",
+      "nombre": "San Agustín",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "676",
+      "nombre": "Santa María",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "770",
+      "nombre": "Suaza",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "791",
+      "nombre": "Tarqui",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "797",
+      "nombre": "Tesalia",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "799",
+      "nombre": "Tello",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "801",
+      "nombre": "Teruel",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "807",
+      "nombre": "Timaná",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "872",
+      "nombre": "Villavieja",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "885",
+      "nombre": "Yaguará",
+      "departamento_codigo": "41",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Riohacha",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "035",
+      "nombre": "Albania",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "078",
+      "nombre": "Barrancas",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "090",
+      "nombre": "Dibula",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "098",
+      "nombre": "Distracción",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "110",
+      "nombre": "El Molino",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "279",
+      "nombre": "Fonseca",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "378",
+      "nombre": "Hatonuevo",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "420",
+      "nombre": "La Jagua del Pilar",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "430",
+      "nombre": "Maicao",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "560",
+      "nombre": "Manaure",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "650",
+      "nombre": "San Juan del Cesar",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "847",
+      "nombre": "Uribia",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "855",
+      "nombre": "Urumita",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "874",
+      "nombre": "Villanueva",
+      "departamento_codigo": "44",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Santa Marta",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "030",
+      "nombre": "Algarrobo",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "053",
+      "nombre": "Aracataca",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "058",
+      "nombre": "Ariguaní",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "161",
+      "nombre": "Cerro San Antonio",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "170",
+      "nombre": "Chivolo",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "189",
+      "nombre": "Ciénaga",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "205",
+      "nombre": "Concordia",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "245",
+      "nombre": "El Banco",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "258",
+      "nombre": "El Piñon",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "268",
+      "nombre": "El Retén",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "288",
+      "nombre": "Fundación",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "318",
+      "nombre": "Guamal",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "460",
+      "nombre": "Nueva Granada",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "541",
+      "nombre": "Pedraza",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "545",
+      "nombre": "Pijiño del Carmen",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "551",
+      "nombre": "Pivijay",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "555",
+      "nombre": "Plato",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "570",
+      "nombre": "Pueblo Viejo",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "605",
+      "nombre": "Remolino",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "660",
+      "nombre": "Sabanas de San Angel",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "675",
+      "nombre": "Salamina",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "692",
+      "nombre": "San Sebastián de Buenavista",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "703",
+      "nombre": "San Zenón",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "707",
+      "nombre": "Santa Ana",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "720",
+      "nombre": "Santa Bárbara de Pinto",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "745",
+      "nombre": "Sitionuevo",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "798",
+      "nombre": "Tenerife",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "960",
+      "nombre": "Zapayán",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "980",
+      "nombre": "Zona Bananera",
+      "departamento_codigo": "47",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Villavicencio",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "006",
+      "nombre": "Acacias",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "110",
+      "nombre": "Barranca de Upía",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "124",
+      "nombre": "Cabuyaro",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "150",
+      "nombre": "Castilla la Nueva",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "223",
+      "nombre": "Cubarral",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "226",
+      "nombre": "Cumaral",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "245",
+      "nombre": "El Calvario",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "251",
+      "nombre": "El Castillo",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "270",
+      "nombre": "El Dorado",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "287",
+      "nombre": "Fuente de Oro",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "313",
+      "nombre": "Granada",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "318",
+      "nombre": "Guamal",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "325",
+      "nombre": "Mapiripán",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "330",
+      "nombre": "Mesetas",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "350",
+      "nombre": "La Macarena",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "370",
+      "nombre": "Uribe",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "400",
+      "nombre": "Lejanías",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "450",
+      "nombre": "Puerto Concordia",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "568",
+      "nombre": "Puerto Gaitán",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "573",
+      "nombre": "Puerto López",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "577",
+      "nombre": "Puerto Lleras",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "590",
+      "nombre": "Puerto Rico",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "606",
+      "nombre": "Restrepo",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "680",
+      "nombre": "San Carlos de Guaroa",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "683",
+      "nombre": "San Juan de Arama",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "686",
+      "nombre": "San Juanito",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "689",
+      "nombre": "San Martín",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "711",
+      "nombre": "Vista Hermosa",
+      "departamento_codigo": "50",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Pasto",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "019",
+      "nombre": "Albán",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "022",
+      "nombre": "Aldana",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "036",
+      "nombre": "Ancuyá",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "051",
+      "nombre": "Arboleda",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "079",
+      "nombre": "Barbacoas",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "083",
+      "nombre": "Belén",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "110",
+      "nombre": "Buesaco",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "203",
+      "nombre": "Colón",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "207",
+      "nombre": "Consaca",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "210",
+      "nombre": "Contadero",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "215",
+      "nombre": "Córdoba",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "224",
+      "nombre": "Cuaspud",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "227",
+      "nombre": "Cumbal",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "233",
+      "nombre": "Cumbitara",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "240",
+      "nombre": "Chachagüí",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "250",
+      "nombre": "El Charco",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "254",
+      "nombre": "El Peñol",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "256",
+      "nombre": "El Rosario",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "258",
+      "nombre": "El Tablón de Gómez",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "260",
+      "nombre": "El Tambo",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "287",
+      "nombre": "Funes",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "317",
+      "nombre": "Guachucal",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "320",
+      "nombre": "Guaitarilla",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "323",
+      "nombre": "Gualmatán",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "352",
+      "nombre": "Iles",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "354",
+      "nombre": "Imués",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "356",
+      "nombre": "Ipiales",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "378",
+      "nombre": "La Cruz",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "381",
+      "nombre": "La Florida",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "385",
+      "nombre": "La Llanada",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "390",
+      "nombre": "La Tola",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "399",
+      "nombre": "La Unión",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "405",
+      "nombre": "Leiva",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "411",
+      "nombre": "Linares",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "418",
+      "nombre": "Los Andes",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "427",
+      "nombre": "Magüí",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "435",
+      "nombre": "Mallama",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "473",
+      "nombre": "Mosquera",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "480",
+      "nombre": "Nariño",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "490",
+      "nombre": "Olaya Herrera",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "506",
+      "nombre": "Ospina",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "520",
+      "nombre": "Francisco Pizarro",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "540",
+      "nombre": "Policarpa",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "560",
+      "nombre": "Potosí",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "565",
+      "nombre": "Providencia",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "573",
+      "nombre": "Puerres",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "585",
+      "nombre": "Pupiales",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "612",
+      "nombre": "Ricaurte",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "621",
+      "nombre": "Roberto Payán",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "678",
+      "nombre": "Samaniego",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "683",
+      "nombre": "Sandoná",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "685",
+      "nombre": "San Bernardo",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "687",
+      "nombre": "San Lorenzo",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "693",
+      "nombre": "San Pablo",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "694",
+      "nombre": "San Pedro de Cartago",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "696",
+      "nombre": "Santa Bárbara",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "699",
+      "nombre": "Santacruz",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "720",
+      "nombre": "Sapuyes",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "786",
+      "nombre": "Taminango",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "788",
+      "nombre": "Tangua",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "835",
+      "nombre": "San Andrés de Tumaco",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "838",
+      "nombre": "Túquerres",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "885",
+      "nombre": "Yacuanquer",
+      "departamento_codigo": "52",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Cúcuta",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "003",
+      "nombre": "Abrego",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "051",
+      "nombre": "Arboledas",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "099",
+      "nombre": "Bochalema",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "109",
+      "nombre": "Bucarasica",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "125",
+      "nombre": "Cácota",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "128",
+      "nombre": "Cachirá",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "172",
+      "nombre": "Chinácota",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "174",
+      "nombre": "Chitagá",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "206",
+      "nombre": "Convención",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "223",
+      "nombre": "Cucutilla",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "239",
+      "nombre": "Durania",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "245",
+      "nombre": "El Carmen",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "250",
+      "nombre": "El Tarra",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "261",
+      "nombre": "El Zulia",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "313",
+      "nombre": "Gramalote",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "344",
+      "nombre": "Hacarí",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "347",
+      "nombre": "Herrán",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "377",
+      "nombre": "Labateca",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "385",
+      "nombre": "La Esperanza",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "398",
+      "nombre": "La Playa",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "405",
+      "nombre": "Los Patios",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "418",
+      "nombre": "Lourdes",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "480",
+      "nombre": "Mutiscua",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "498",
+      "nombre": "Ocaña",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "518",
+      "nombre": "Pamplona",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "520",
+      "nombre": "Pamplonita",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "553",
+      "nombre": "Puerto Santander",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "599",
+      "nombre": "Ragonvalia",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "660",
+      "nombre": "Salazar",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "670",
+      "nombre": "San Calixto",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "673",
+      "nombre": "San Cayetano",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "680",
+      "nombre": "Santiago",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "720",
+      "nombre": "Sardinata",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "743",
+      "nombre": "Silos",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "800",
+      "nombre": "Teorama",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "810",
+      "nombre": "Tibú",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "820",
+      "nombre": "Toledo",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "871",
+      "nombre": "Villa Caro",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "874",
+      "nombre": "Villa del Rosario",
+      "departamento_codigo": "54",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Armenia",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "111",
+      "nombre": "Buenavista",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "130",
+      "nombre": "Calarcá",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "190",
+      "nombre": "Circasia",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "212",
+      "nombre": "Córdoba",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "272",
+      "nombre": "Filandia",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "302",
+      "nombre": "Génova",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "401",
+      "nombre": "La Tebaida",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "470",
+      "nombre": "Montenegro",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "548",
+      "nombre": "Pijao",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "594",
+      "nombre": "Quimbaya",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "690",
+      "nombre": "Salento",
+      "departamento_codigo": "63",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Pereira",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "045",
+      "nombre": "Apía",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "075",
+      "nombre": "Balboa",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "088",
+      "nombre": "Belén de Umbría",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "170",
+      "nombre": "Dosquebradas",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "318",
+      "nombre": "Guática",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "383",
+      "nombre": "La Celia",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "400",
+      "nombre": "La Virginia",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "440",
+      "nombre": "Marsella",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "456",
+      "nombre": "Mistrató",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "572",
+      "nombre": "Pueblo Rico",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "594",
+      "nombre": "Quinchía",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "682",
+      "nombre": "Santa Rosa de Cabal",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "687",
+      "nombre": "Santuario",
+      "departamento_codigo": "66",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Bucaramanga",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "013",
+      "nombre": "Aguada",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "020",
+      "nombre": "Albania",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "051",
+      "nombre": "Aratoca",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "077",
+      "nombre": "Barbosa",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "079",
+      "nombre": "Barichara",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "081",
+      "nombre": "Barrancabermeja",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "092",
+      "nombre": "Betulia",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "101",
+      "nombre": "Bolívar",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "121",
+      "nombre": "Cabrera",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "132",
+      "nombre": "California",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "147",
+      "nombre": "Capitanejo",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "152",
+      "nombre": "Carcasí",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "160",
+      "nombre": "Cepitá",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "162",
+      "nombre": "Cerrito",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "167",
+      "nombre": "Charalá",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "169",
+      "nombre": "Charta",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "176",
+      "nombre": "Chimá",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "179",
+      "nombre": "Chipatá",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "190",
+      "nombre": "Cimitarra",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "207",
+      "nombre": "Concepción",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "209",
+      "nombre": "Confines",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "211",
+      "nombre": "Contratación",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "217",
+      "nombre": "Coromoro",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "229",
+      "nombre": "Curití",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "235",
+      "nombre": "El Carmen de Chucurí",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "245",
+      "nombre": "El Guacamayo",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "250",
+      "nombre": "El Peñón",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "255",
+      "nombre": "El Playón",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "264",
+      "nombre": "Encino",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "266",
+      "nombre": "Enciso",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "271",
+      "nombre": "Florián",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "276",
+      "nombre": "Floridablanca",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "296",
+      "nombre": "Galán",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "298",
+      "nombre": "Gambita",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "307",
+      "nombre": "Girón",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "318",
+      "nombre": "Guaca",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "320",
+      "nombre": "Guadalupe",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "322",
+      "nombre": "Guapotá",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "324",
+      "nombre": "Guavatá",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "327",
+      "nombre": "Güepsa",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "344",
+      "nombre": "Hato",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "368",
+      "nombre": "Jesús María",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "370",
+      "nombre": "Jordán",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "377",
+      "nombre": "La Belleza",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "385",
+      "nombre": "Landázuri",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "397",
+      "nombre": "La Paz",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "406",
+      "nombre": "Lebríja",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "418",
+      "nombre": "Los Santos",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "425",
+      "nombre": "Macaravita",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "432",
+      "nombre": "Málaga",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "444",
+      "nombre": "Matanza",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "464",
+      "nombre": "Mogotes",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "468",
+      "nombre": "Molagavita",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "498",
+      "nombre": "Ocamonte",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "500",
+      "nombre": "Oiba",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "502",
+      "nombre": "Onzaga",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "522",
+      "nombre": "Palmar",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "524",
+      "nombre": "Palmas del Socorro",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "533",
+      "nombre": "Páramo",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "547",
+      "nombre": "Piedecuesta",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "549",
+      "nombre": "Pinchote",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "572",
+      "nombre": "Puente Nacional",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "573",
+      "nombre": "Puerto Parra",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "575",
+      "nombre": "Puerto Wilches",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "615",
+      "nombre": "Rionegro",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "655",
+      "nombre": "Sabana de Torres",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "669",
+      "nombre": "San Andrés",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "673",
+      "nombre": "San Benito",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "679",
+      "nombre": "San Gil",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "682",
+      "nombre": "San Joaquín",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "684",
+      "nombre": "San José de Miranda",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "686",
+      "nombre": "San Miguel",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "689",
+      "nombre": "San Vicente de Chucurí",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "705",
+      "nombre": "Santa Bárbara",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "720",
+      "nombre": "Santa Helena del Opón",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "745",
+      "nombre": "Simacota",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "755",
+      "nombre": "Socorro",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "770",
+      "nombre": "Suaita",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "773",
+      "nombre": "Sucre",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "780",
+      "nombre": "Suratá",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "820",
+      "nombre": "Tona",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "855",
+      "nombre": "Valle de San José",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "861",
+      "nombre": "Vélez",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "867",
+      "nombre": "Vetas",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "872",
+      "nombre": "Villanueva",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "895",
+      "nombre": "Zapatoca",
+      "departamento_codigo": "68",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Sincelejo",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "110",
+      "nombre": "Buenavista",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "124",
+      "nombre": "Caimito",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "204",
+      "nombre": "Coloso",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "215",
+      "nombre": "Corozal",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "221",
+      "nombre": "Coveñas",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "230",
+      "nombre": "Chalán",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "233",
+      "nombre": "El Roble",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "235",
+      "nombre": "Galeras",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "265",
+      "nombre": "Guaranda",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "400",
+      "nombre": "La Unión",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "418",
+      "nombre": "Los Palmitos",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "429",
+      "nombre": "Majagual",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "473",
+      "nombre": "Morroa",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "508",
+      "nombre": "Ovejas",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "523",
+      "nombre": "Palmito",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "670",
+      "nombre": "Sampués",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "678",
+      "nombre": "San Benito Abad",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "702",
+      "nombre": "San Juan de Betulia",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "708",
+      "nombre": "San Marcos",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "713",
+      "nombre": "San Onofre",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "717",
+      "nombre": "San Pedro",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "742",
+      "nombre": "San Luis de Sincé",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "771",
+      "nombre": "Sucre",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "820",
+      "nombre": "Santiago de Tolú",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "823",
+      "nombre": "Tolú Viejo",
+      "departamento_codigo": "70",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Ibagué",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "024",
+      "nombre": "Alpujarra",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "026",
+      "nombre": "Alvarado",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "030",
+      "nombre": "Ambalema",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "043",
+      "nombre": "Anzoátegui",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "055",
+      "nombre": "Armero",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "067",
+      "nombre": "Ataco",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "124",
+      "nombre": "Cajamarca",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "148",
+      "nombre": "Carmen de Apicala",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "152",
+      "nombre": "Casabianca",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "168",
+      "nombre": "Chaparral",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "200",
+      "nombre": "Coello",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "217",
+      "nombre": "Coyaima",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "226",
+      "nombre": "Cunday",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "236",
+      "nombre": "Dolores",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "268",
+      "nombre": "Espinal",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "270",
+      "nombre": "Falan",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "275",
+      "nombre": "Flandes",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "283",
+      "nombre": "Fresno",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "319",
+      "nombre": "Guamo",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "347",
+      "nombre": "Herveo",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "349",
+      "nombre": "Honda",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "352",
+      "nombre": "Icononzo",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "408",
+      "nombre": "Lérida",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "411",
+      "nombre": "Líbano",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "443",
+      "nombre": "Mariquita",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "449",
+      "nombre": "Melgar",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "461",
+      "nombre": "Murillo",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "483",
+      "nombre": "Natagaima",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "504",
+      "nombre": "Ortega",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "520",
+      "nombre": "Palocabildo",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "547",
+      "nombre": "Piedras",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "555",
+      "nombre": "Planadas",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "563",
+      "nombre": "Prado",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "585",
+      "nombre": "Purificación",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "616",
+      "nombre": "Rio Blanco",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "622",
+      "nombre": "Roncesvalles",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "624",
+      "nombre": "Rovira",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "671",
+      "nombre": "Saldaña",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "675",
+      "nombre": "San Antonio",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "678",
+      "nombre": "San Luis",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "686",
+      "nombre": "Santa Isabel",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "770",
+      "nombre": "Suárez",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "854",
+      "nombre": "Valle de San Juan",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "861",
+      "nombre": "Venadillo",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "870",
+      "nombre": "Villahermosa",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "873",
+      "nombre": "Villarrica",
+      "departamento_codigo": "73",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Cali",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "020",
+      "nombre": "Alcalá",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "036",
+      "nombre": "Andalucía",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "041",
+      "nombre": "Ansermanuevo",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "054",
+      "nombre": "Argelia",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "100",
+      "nombre": "Bolívar",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "109",
+      "nombre": "Buenaventura",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "111",
+      "nombre": "Guadalajara de Buga",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "113",
+      "nombre": "Bugalagrande",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "122",
+      "nombre": "Caicedonia",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "126",
+      "nombre": "Calima",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "130",
+      "nombre": "Candelaria",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "147",
+      "nombre": "Cartago",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "233",
+      "nombre": "Dagua",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "243",
+      "nombre": "El Águila",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "246",
+      "nombre": "El Cairo",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "248",
+      "nombre": "El Cerrito",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "250",
+      "nombre": "El Dovio",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "275",
+      "nombre": "Florida",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "306",
+      "nombre": "Ginebra",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "318",
+      "nombre": "Guacarí",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "364",
+      "nombre": "Jamundí",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "377",
+      "nombre": "La Cumbre",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "400",
+      "nombre": "La Unión",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "403",
+      "nombre": "La Victoria",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "497",
+      "nombre": "Obando",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "520",
+      "nombre": "Palmira",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "563",
+      "nombre": "Pradera",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "606",
+      "nombre": "Restrepo",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "616",
+      "nombre": "Riofrío",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "622",
+      "nombre": "Roldanillo",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "670",
+      "nombre": "San Pedro",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "736",
+      "nombre": "Sevilla",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "823",
+      "nombre": "Toro",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "828",
+      "nombre": "Trujillo",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "834",
+      "nombre": "Tuluá",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "845",
+      "nombre": "Ulloa",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "863",
+      "nombre": "Versalles",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "869",
+      "nombre": "Vijes",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "890",
+      "nombre": "Yotoco",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "892",
+      "nombre": "Yumbo",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "895",
+      "nombre": "Zarzal",
+      "departamento_codigo": "76",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Arauca",
+      "departamento_codigo": "81",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "065",
+      "nombre": "Arauquita",
+      "departamento_codigo": "81",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "220",
+      "nombre": "Cravo Norte",
+      "departamento_codigo": "81",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "300",
+      "nombre": "Fortul",
+      "departamento_codigo": "81",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "591",
+      "nombre": "Puerto Rondón",
+      "departamento_codigo": "81",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "736",
+      "nombre": "Saravena",
+      "departamento_codigo": "81",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "794",
+      "nombre": "Tame",
+      "departamento_codigo": "81",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Yopal",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "010",
+      "nombre": "Aguazul",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "015",
+      "nombre": "Chámeza",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "125",
+      "nombre": "Hato Corozal",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "136",
+      "nombre": "La Salina",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "139",
+      "nombre": "Maní",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "162",
+      "nombre": "Monterrey",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "225",
+      "nombre": "Nunchía",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "230",
+      "nombre": "Orocué",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "250",
+      "nombre": "Paz de Ariporo",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "263",
+      "nombre": "Pore",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "279",
+      "nombre": "Recetor",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "300",
+      "nombre": "Sabanalarga",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "315",
+      "nombre": "Sácama",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "325",
+      "nombre": "San Luis de Gaceno",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "400",
+      "nombre": "Támara",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "410",
+      "nombre": "Tauramena",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "430",
+      "nombre": "Trinidad",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "440",
+      "nombre": "Villanueva",
+      "departamento_codigo": "85",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Mocoa",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "219",
+      "nombre": "Colón",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "320",
+      "nombre": "Orito",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "568",
+      "nombre": "Puerto Asís",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "569",
+      "nombre": "Puerto Caicedo",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "571",
+      "nombre": "Puerto Guzmán",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "573",
+      "nombre": "Leguízamo",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "749",
+      "nombre": "Sibundoy",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "755",
+      "nombre": "San Francisco",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "757",
+      "nombre": "San Miguel",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "760",
+      "nombre": "Santiago",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "865",
+      "nombre": "Valle de Guamez",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "885",
+      "nombre": "Villagarzón",
+      "departamento_codigo": "86",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "San Andrés",
+      "departamento_codigo": "88",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "564",
+      "nombre": "Providencia",
+      "departamento_codigo": "88",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Leticia",
+      "departamento_codigo": "91",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "263",
+      "nombre": "El Encanto",
+      "departamento_codigo": "91",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "405",
+      "nombre": "La Chorrera",
+      "departamento_codigo": "91",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "407",
+      "nombre": "La Pedrera",
+      "departamento_codigo": "91",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "430",
+      "nombre": "La Victoria",
+      "departamento_codigo": "91",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "460",
+      "nombre": "Miriti Paraná",
+      "departamento_codigo": "91",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "530",
+      "nombre": "Puerto Alegría",
+      "departamento_codigo": "91",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "536",
+      "nombre": "Puerto Arica",
+      "departamento_codigo": "91",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "540",
+      "nombre": "Puerto Nariño",
+      "departamento_codigo": "91",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "669",
+      "nombre": "Puerto Santander",
+      "departamento_codigo": "91",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "798",
+      "nombre": "Tarapacá",
+      "departamento_codigo": "91",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Inírida",
+      "departamento_codigo": "94",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "343",
+      "nombre": "Barranco Minas",
+      "departamento_codigo": "94",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "663",
+      "nombre": "Mapiripana",
+      "departamento_codigo": "94",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "883",
+      "nombre": "San Felipe",
+      "departamento_codigo": "94",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "884",
+      "nombre": "Puerto Colombia",
+      "departamento_codigo": "94",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "885",
+      "nombre": "La Guadalupe",
+      "departamento_codigo": "94",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "886",
+      "nombre": "Cacahual",
+      "departamento_codigo": "94",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "887",
+      "nombre": "Pana Pana",
+      "departamento_codigo": "94",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "888",
+      "nombre": "Morichal",
+      "departamento_codigo": "94",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "San José del Guaviare",
+      "departamento_codigo": "95",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "015",
+      "nombre": "Calamar",
+      "departamento_codigo": "95",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "025",
+      "nombre": "El Retorno",
+      "departamento_codigo": "95",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "200",
+      "nombre": "Miraflores",
+      "departamento_codigo": "95",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Mitú",
+      "departamento_codigo": "97",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "161",
+      "nombre": "Caruru",
+      "departamento_codigo": "97",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "511",
+      "nombre": "Pacoa",
+      "departamento_codigo": "97",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "666",
+      "nombre": "Taraira",
+      "departamento_codigo": "97",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "777",
+      "nombre": "Papunaua",
+      "departamento_codigo": "97",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "889",
+      "nombre": "Yavaraté",
+      "departamento_codigo": "97",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "001",
+      "nombre": "Puerto Carreño",
+      "departamento_codigo": "99",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "524",
+      "nombre": "La Primavera",
+      "departamento_codigo": "99",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "624",
+      "nombre": "Santa Rosalía",
+      "departamento_codigo": "99",
+      "pais_codigo": "169"
+    },
+    {
+      "codigo": "773",
+      "nombre": "Cumaribo",
+      "departamento_codigo": "99",
+      "pais_codigo": "169"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import frappe
 
 from hubgh.hubgh.document_service import ensure_person_document, upload_person_document
+from hubgh.hubgh.siesa_reference_matrix import ensure_social_security_reference_catalogs
 
 
 META_FIELDS_BY_DOC = {
@@ -218,6 +219,7 @@ def _catalog_rows(doctype):
 @frappe.whitelist()
 def get_siesa_options():
 	_get_my_candidate_name()
+	ensure_social_security_reference_catalogs()
 	return {
 		"eps": _catalog_rows(CATALOG_SOURCES["eps"][0]),
 		"afp": _catalog_rows(CATALOG_SOURCES["afp"][0]),
@@ -264,6 +266,8 @@ def upload_my_document(document_type, file_url, notes=None):
 		notes,
 		numero_documento=numero_documento,
 	)
+	if getattr(frappe.local, "message_log", None):
+		frappe.local.message_log = []
 	return {"name": doc.name, "status": doc.status}
 
 

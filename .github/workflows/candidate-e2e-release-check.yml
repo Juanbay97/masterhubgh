@@ -1,0 +1,80 @@
+name: Candidate E2E release check
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  candidate-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Prepare environment file
+        run: |
+          if [ ! -f .env ]; then
+            cp .env.example .env
+          fi
+
+      - name: Start Docker services
+        run: make up
+
+      - name: Wait for backend container
+        run: |
+          for i in {1..24}; do
+            if docker compose -f docker/docker-compose.yml --env-file .env ps backend | grep -q "running"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Backend container did not reach running state in time"
+          exit 1
+
+      - name: Initialize site
+        run: make init-site
+
+      - name: Run migrations
+        run: make migrate
+
+      - name: Install Playwright browser
+        run: make e2e-install
+
+      - name: Run candidate E2E
+        env:
+          HUBGH_BASE_URL: http://localhost
+        run: make e2e-candidato
+
+      - name: Upload Playwright artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+
+      - name: Show backend logs on failure
+        if: failure()
+        run: make logs
+
+      - name: Cleanup Docker services
+        if: always()
+        run: make down

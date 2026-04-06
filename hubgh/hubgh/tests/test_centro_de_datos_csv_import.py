@@ -50,10 +50,13 @@ class TestCentroDeDatosCsvImport(TestCase):
 
 		with patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.get_doc", return_value=file_doc), patch(
 			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.create_punto"
-		) as create_punto, patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.commit"):
+		) as create_punto, patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.commit"), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.sql", create=True
+		):
 			res = centro_de_datos.upload_data("Punto de Venta", "/private/files/puntos.csv")
 
 		self.assertEqual(res["success"], 1)
+		self.assertEqual(res["committed"], 1)
 		self.assertEqual(res["errors"], [])
 		self.assertEqual(create_punto.call_args.args[0]["nombre_pdv"], "Centro Uno")
 
@@ -62,10 +65,13 @@ class TestCentroDeDatosCsvImport(TestCase):
 
 		with patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.get_doc", return_value=file_doc), patch(
 			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.create_punto"
-		) as create_punto, patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.commit"):
+		) as create_punto, patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.commit"), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.sql", create=True
+		):
 			res = centro_de_datos.upload_data("Punto de Venta", "/private/files/puntos.csv")
 
 		self.assertEqual(res["success"], 1)
+		self.assertEqual(res["committed"], 1)
 		self.assertEqual(res["errors"], [])
 		self.assertEqual(create_punto.call_args.args[0]["codigo"], "PDV-2")
 
@@ -74,10 +80,36 @@ class TestCentroDeDatosCsvImport(TestCase):
 
 		with patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.get_doc", return_value=file_doc), patch(
 			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.commit"
+		), patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.sql", create=True):
+			res = centro_de_datos.upload_data("Punto de Venta", "/private/files/puntos.csv")
+
+		self.assertEqual(res["success"], 0)
+		self.assertEqual(res["committed"], 0)
+		self.assertEqual(len(res["errors"]), 1)
+		self.assertIn("nombre_pdv", res["errors"][0])
+		self.assertIn("columnas", res["errors"][0].lower())
+
+	def test_upload_data_rolls_back_all_rows_when_any_row_fails(self):
+		file_doc = SimpleNamespace(get_content=lambda: "nombre_pdv,codigo\nCentro Uno,PDV-1\nCentro Dos,PDV-2\n")
+		sql_calls = []
+
+		def fake_create(row):
+			if row["codigo"] == "PDV-2":
+				raise Exception("codigo duplicado")
+
+		with patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.get_doc", return_value=file_doc), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.create_punto",
+			side_effect=fake_create,
+		), patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.commit") as commit_mock, patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.sql",
+			side_effect=lambda query: sql_calls.append(query),
+			create=True,
 		):
 			res = centro_de_datos.upload_data("Punto de Venta", "/private/files/puntos.csv")
 
 		self.assertEqual(res["success"], 0)
-		self.assertEqual(len(res["errors"]), 1)
-		self.assertIn("nombre_pdv", res["errors"][0])
-		self.assertIn("columnas", res["errors"][0].lower())
+		self.assertEqual(res["committed"], 0)
+		self.assertEqual(res["errors"][0]["row"], 3)
+		self.assertEqual(res["errors"][0]["code"], "row_validation")
+		commit_mock.assert_not_called()
+		self.assertEqual(sql_calls, ["SAVEPOINT centro_de_datos_upload", "ROLLBACK TO SAVEPOINT centro_de_datos_upload"])

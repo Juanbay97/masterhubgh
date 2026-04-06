@@ -15,12 +15,15 @@ from hubgh.hubgh.candidate_states import (
 	STATE_DOCUMENTACION,
 	STATE_EXAMEN_MEDICO,
 	STATE_LISTO_CONTRATAR,
+	get_candidate_status_options,
 	is_candidate_status,
+	resolve_candidate_status_for_storage,
 )
 from hubgh.hubgh.doctype.document_type.document_type import get_effective_area_roles
 from hubgh.hubgh.people_ops_handoffs import validate_selection_to_rrll_gate
 from hubgh.hubgh.people_ops_policy import evaluate_dimension_access, resolve_document_dimension
 from hubgh.hubgh.role_matrix import roles_have_any, user_has_any_role
+from hubgh.hubgh.selection_document_types import canonicalize_selection_document_name
 
 
 _MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK = {
@@ -37,7 +40,7 @@ def _normalize_text(value):
 
 
 def _resolve_document_type_name(document_type):
-	requested = (document_type or "").strip()
+	requested = canonicalize_selection_document_name((document_type or "").strip())
 	if not requested:
 		frappe.throw(_("Tipo de documento requerido."))
 
@@ -91,6 +94,31 @@ def _safe_document_type_slug(document_type):
 	slug = re.sub(r"\s+", "_", (document_type or "documento").strip())
 	slug = re.sub(r"[^\w\-]", "", slug, flags=re.UNICODE)
 	return slug or "documento"
+
+
+def _person_doctype_for(person_type):
+	return "Candidato" if person_type == "Candidato" else "Ficha Empleado"
+
+
+def _resolve_person_name(person_type, person):
+	person_name = str(person or "").strip()
+	if not person_name:
+		return ""
+
+	target_doctype = _person_doctype_for(person_type)
+	if frappe.db.exists(target_doctype, person_name):
+		return person_name
+
+	if person_type == "Candidato":
+		by_document = frappe.db.get_value("Candidato", {"numero_documento": person_name}, "name")
+		if by_document:
+			return by_document
+	else:
+		by_document = frappe.db.get_value("Ficha Empleado", {"cedula": person_name}, "name")
+		if by_document:
+			return by_document
+
+	return person_name
 
 
 def _get_file_doc_from_url(file_url):
@@ -227,6 +255,33 @@ def _candidate_apellidos_fallback(row):
 	primer = (row.get("primer_apellido") if isinstance(row, dict) else getattr(row, "primer_apellido", None)) or ""
 	segundo = (row.get("segundo_apellido") if isinstance(row, dict) else getattr(row, "segundo_apellido", None)) or ""
 	return " ".join([p.strip() for p in [primer, segundo] if p and str(p).strip()]).strip()
+
+
+def _sync_employee_from_candidate(employee_doc, candidate_doc):
+	updates = {}
+	for fieldname in (
+		"email",
+		"banco_siesa",
+		"tipo_cuenta_bancaria",
+		"numero_cuenta_bancaria",
+		"eps_siesa",
+		"afp_siesa",
+		"cesantias_siesa",
+		"ccf_siesa",
+	):
+		current_value = employee_doc.get(fieldname) if hasattr(employee_doc, "get") else getattr(employee_doc, fieldname, None)
+		candidate_value = candidate_doc.get(fieldname) if hasattr(candidate_doc, "get") else getattr(candidate_doc, fieldname, None)
+		if current_value in (None, "") and candidate_value not in (None, ""):
+			updates[fieldname] = candidate_value
+
+	current_origin = employee_doc.get("candidato_origen") if hasattr(employee_doc, "get") else getattr(employee_doc, "candidato_origen", None)
+	if current_origin in (None, "") and getattr(candidate_doc, "name", None):
+		updates["candidato_origen"] = candidate_doc.name
+
+	for fieldname, value in updates.items():
+		setattr(employee_doc, fieldname, value)
+
+	return updates
 
 
 def can_user_read_person_document(doc, user=None):
@@ -383,11 +438,14 @@ def _build_person_dossier(person_type, person):
 
 
 def _new_person_document(person_type, person, document_type):
+	person_name = _resolve_person_name(person_type, person)
 	doc = frappe.get_doc({
 		"doctype": "Person Document",
 		"person_type": person_type,
-		"person_doctype": "Candidato" if person_type == "Candidato" else "Ficha Empleado",
-		"person": person,
+		"person_doctype": _person_doctype_for(person_type),
+		"person": person_name,
+		"candidate": person_name if person_type == "Candidato" else None,
+		"employee": person_name if person_type == "Empleado" else None,
 		"document_type": document_type,
 		"status": "Pendiente",
 	})
@@ -395,7 +453,86 @@ def _new_person_document(person_type, person, document_type):
 	return doc
 
 
+def _sync_person_document_identity(doc, person_type, person):
+	person_name = _resolve_person_name(person_type, person)
+	doc.person_type = person_type
+	if person_type == "Candidato":
+		doc.person_doctype = _person_doctype_for(person_type)
+		doc.person = person_name
+		doc.candidate = person_name
+		if hasattr(doc, "employee"):
+			doc.employee = None
+		return doc
+
+	doc.person_doctype = _person_doctype_for(person_type)
+	doc.person = person_name
+	doc.employee = person_name
+	if hasattr(doc, "candidate"):
+		doc.candidate = None
+	return doc
+
+
+def repair_person_document_links(person_type=None, person=None):
+	if not frappe.db.exists("DocType", "Person Document"):
+		return 0
+
+	filters = {}
+	if person_type:
+		filters["person_type"] = person_type
+
+	updated = 0
+	requested_person = str(person or "").strip()
+	resolved_requested_person = _resolve_person_name(person_type or "Candidato", person) if person else ""
+	rows = frappe.get_all(
+		"Person Document",
+		filters=filters or None,
+		fields=["name", "person_type", "person", "person_doctype", "candidate", "employee"],
+		ignore_permissions=True,
+	)
+	for row in rows:
+		row_person_type = str(row.get("person_type") or "").strip()
+		if row_person_type not in {"Candidato", "Empleado"}:
+			continue
+		if requested_person:
+			row_reference = str(
+				row.get("candidate") if row_person_type == "Candidato" else row.get("employee") or row.get("person") or ""
+			).strip()
+			if row_reference not in {requested_person, resolved_requested_person} and str(row.get("person") or "").strip() not in {
+				requested_person,
+				resolved_requested_person,
+			}:
+				continue
+
+		reference_name = row.get("candidate") if row_person_type == "Candidato" else row.get("employee")
+		reference_name = reference_name or row.get("person")
+		resolved_person = _resolve_person_name(row_person_type, reference_name)
+		target_doctype = _person_doctype_for(row_person_type)
+		if not resolved_person or not frappe.db.exists(target_doctype, resolved_person):
+			continue
+
+		updates = {}
+		if str(row.get("person") or "").strip() != resolved_person:
+			updates["person"] = resolved_person
+		if str(row.get("person_doctype") or "").strip() != target_doctype:
+			updates["person_doctype"] = target_doctype
+		if row_person_type == "Candidato" and str(row.get("candidate") or "").strip() != resolved_person:
+			updates["candidate"] = resolved_person
+		if row_person_type == "Candidato" and str(row.get("employee") or "").strip():
+			updates["employee"] = None
+		if row_person_type == "Empleado" and str(row.get("employee") or "").strip() != resolved_person:
+			updates["employee"] = resolved_person
+		if row_person_type == "Empleado" and str(row.get("candidate") or "").strip():
+			updates["candidate"] = None
+
+		if updates:
+			frappe.db.set_value("Person Document", row.get("name"), updates, update_modified=False)
+			updated += 1
+
+	return updated
+
+
 def ensure_person_document(person_type, person, document_type):
+	person = _resolve_person_name(person_type, person)
 	rules = _get_document_type_rules(document_type)
 	resolved_document_type = rules["document_type"]
 	if not rules["allows_multiple"]:
@@ -490,13 +627,19 @@ def set_candidate_status_from_progress(candidate):
 	if is_candidate_status(current_status, STATE_EXAMEN_MEDICO):
 		return current_status
 
-	progress = get_candidate_progress(candidate)
-	status = STATE_DOCUMENTACION
+	get_candidate_progress(candidate)
+	status = resolve_candidate_status_for_storage(
+		STATE_DOCUMENTACION,
+		options=get_candidate_status_options(),
+		default=STATE_DOCUMENTACION,
+	)
 	frappe.db.set_value("Candidato", candidate, "estado_proceso", status, update_modified=False)
 	return status
 
 
 def upload_person_document(person_type, person, document_type, file_url, notes=None, numero_documento=None):
+	repair_person_document_links(person_type=person_type, person=person)
+	person = _resolve_person_name(person_type, person)
 	rules = _get_document_type_rules(document_type)
 	resolved_document_type = rules["document_type"]
 	if rules["allows_multiple"]:
@@ -504,6 +647,8 @@ def upload_person_document(person_type, person, document_type, file_url, notes=N
 		doc = frappe.get_doc("Person Document", pending_name) if pending_name else _new_person_document(person_type, person, resolved_document_type)
 	else:
 		doc = ensure_person_document(person_type, person, resolved_document_type)
+
+	_sync_person_document_identity(doc, person_type, person)
 
 	renamed_file_url = file_url
 	if person_type == "Candidato":
@@ -598,7 +743,8 @@ def hire_candidate(candidate):
 		frappe.throw(_("El candidato debe estar en estado Listo para contratar."))
 
 	if cand.persona and frappe.db.exists("Ficha Empleado", cand.persona):
-		employee = cand.persona
+		emp = frappe.get_doc("Ficha Empleado", cand.persona)
+		employee = emp.name
 	else:
 		emp = frappe.get_doc({
 			"doctype": "Ficha Empleado",
@@ -612,14 +758,30 @@ def hire_candidate(candidate):
 		}).insert(ignore_permissions=True, ignore_mandatory=True)
 		employee = emp.name
 
+	emp_updates = _sync_employee_from_candidate(emp, cand)
+	if emp_updates:
+		emp.save(ignore_permissions=True)
+
 	frappe.db.set_value("Candidato", candidate, "persona", employee)
 
 	datos_name = frappe.db.get_value("Datos Contratacion", {"candidato": candidate})
 	if datos_name:
 		datos = frappe.get_doc("Datos Contratacion", datos_name)
-		if not datos.ficha_empleado:
-			datos.ficha_empleado = employee
+	else:
+		datos = frappe.get_doc({
+			"doctype": "Datos Contratacion",
+			"candidato": candidate,
+		})
+	if not datos.ficha_empleado:
+		datos.ficha_empleado = employee
+	if not getattr(datos, "contrato", None):
+		ultimo_contrato = frappe.db.get_value("Contrato", {"candidato": candidate}, "name", order_by="creation desc")
+		if ultimo_contrato:
+			datos.contrato = ultimo_contrato
+	if getattr(datos, "name", None):
 		datos.save(ignore_permissions=True)
+	else:
+		datos.insert(ignore_permissions=True)
 
 	pdocs = frappe.get_all(
 		"Person Document",
@@ -679,8 +841,9 @@ def build_employee_documents_zip(employee):
 			"is_vigente": True,
 		})
 
-	if emp.candidato_origen:
-		cand_dossier = _build_person_dossier("Candidato", emp.candidato_origen)
+	candidate_origin = getattr(emp, "candidato_origen", None) or frappe.db.get_value("Candidato", {"persona": employee}, "name")
+	if candidate_origin:
+		cand_dossier = _build_person_dossier("Candidato", candidate_origin)
 		docs.extend(cand_dossier.get("vigentes") or [])
 		docs.extend(cand_dossier.get("historico") or [])
 

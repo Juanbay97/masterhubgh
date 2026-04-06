@@ -1,4 +1,21 @@
 frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
+	const safeLang =
+		(frappe.boot && frappe.boot.lang) ||
+		(document.documentElement && document.documentElement.lang) ||
+		(navigator.language && navigator.language !== "undefined" ? navigator.language : "") ||
+		"es";
+	if (frappe.boot) {
+		frappe.boot.lang = safeLang;
+	}
+	if (window.Intl && typeof window.Intl.Locale === "function" && !window.Intl.__hubghSafeLocalePatched) {
+		const NativeLocale = window.Intl.Locale;
+		window.Intl.Locale = function(locale, options) {
+			const normalizedLocale = locale && locale !== "undefined" ? locale : safeLang;
+			return new NativeLocale(normalizedLocale, options);
+		};
+		window.Intl.Locale.prototype = NativeLocale.prototype;
+		window.Intl.__hubghSafeLocalePatched = true;
+	}
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
 		title: "Selección - Control documental",
@@ -197,6 +214,25 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 					</tr>
 				`).join("");
 
+				const candidateInfoHtml = [
+					["Documento", candidateData.numero_documento],
+					["Ciudad", candidateData.ciudad],
+					["Localidad", candidateData.localidad],
+					["Dirección", candidateData.direccion],
+					["Barrio", candidateData.barrio],
+					["País procedencia", candidateData.procedencia_pais],
+					["Departamento procedencia", candidateData.procedencia_departamento],
+					["Ciudad procedencia", candidateData.procedencia_ciudad],
+					["Banco", candidateData.banco_siesa],
+					["Tipo cuenta", candidateData.tipo_cuenta_bancaria],
+					["Nro. cuenta", candidateData.numero_cuenta_bancaria],
+				].map(([label, value]) => `
+					<div class='sel-docs-summary-card'>
+						<div class='sel-docs-summary-label'>${esc(label)}</div>
+						<div class='sel-docs-summary-value' style='font-size:14px; line-height:1.3;'>${esc(value || "—")}</div>
+					</div>
+				`).join("");
+
 				const dialog = new frappe.ui.Dialog({
 					title: `Detalle documental: ${candidateData.full_name || candidate}`,
 					fields: [{ fieldtype: "HTML", fieldname: "content" }],
@@ -218,6 +254,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 							<button class='btn btn-sm btn-primary btn-upload-selection-doc'>Subir documento</button>
 						</div>
 						<div class='sel-req-docs'>${requiredDocsHtml}</div>
+						<div class='sel-docs-summary'>${candidateInfoHtml}</div>
 					</div>
 					<div class='sel-docs-table-wrap'>
 						<table class='table table-sm'>

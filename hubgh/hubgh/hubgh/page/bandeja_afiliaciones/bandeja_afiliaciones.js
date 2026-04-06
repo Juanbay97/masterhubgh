@@ -1,4 +1,21 @@
 frappe.pages["bandeja_afiliaciones"].on_page_load = function(wrapper) {
+	const safeLang =
+		(frappe.boot && frappe.boot.lang) ||
+		(document.documentElement && document.documentElement.lang) ||
+		(navigator.language && navigator.language !== "undefined" ? navigator.language : "") ||
+		"es";
+	if (frappe.boot) {
+		frappe.boot.lang = safeLang;
+	}
+	if (window.Intl && typeof window.Intl.Locale === "function" && !window.Intl.__hubghSafeLocalePatched) {
+		const NativeLocale = window.Intl.Locale;
+		window.Intl.Locale = function(locale, options) {
+			const normalizedLocale = locale && locale !== "undefined" ? locale : safeLang;
+			return new NativeLocale(normalizedLocale, options);
+		};
+		window.Intl.Locale.prototype = NativeLocale.prototype;
+		window.Intl.__hubghSafeLocalePatched = true;
+	}
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
 		title: "RRLL - Gestión de afiliaciones",

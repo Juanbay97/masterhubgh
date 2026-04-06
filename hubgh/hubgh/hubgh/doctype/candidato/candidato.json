@@ -331,14 +331,14 @@
    "options": "Cargo",
    "permlevel": 1
   },
-   {
-    "default": "En documentación",
-    "fieldname": "estado_proceso",
-    "fieldtype": "Select",
-    "label": "Estado Proceso",
-    "options": "En documentación\nEn examen médico\nEn afiliación\nListo para contratar\nContratado\nRechazado",
-    "permlevel": 1
-   },
+    {
+     "default": "En Proceso",
+     "fieldname": "estado_proceso",
+     "fieldtype": "Select",
+     "label": "Estado Proceso",
+     "options": "En Proceso\nDocumentación Incompleta\nDocumentación Completa\nEn Examen Médico\nEn Afiliación\nListo para Contratar\nContratado\nRechazado",
+     "permlevel": 1
+    },
   {
    "default": "Pendiente",
    "fieldname": "concepto_medico",

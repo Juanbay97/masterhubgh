@@ -1,0 +1,11 @@
+{
+  "name": "hubgh-e2e",
+  "private": true,
+  "scripts": {
+    "e2e:install": "playwright install firefox",
+    "e2e:candidato": "playwright test tests/e2e/candidate-onboarding-upload.spec.js --project=firefox"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

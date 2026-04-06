@@ -300,69 +300,59 @@ class TestPersonIdentityBatchDContract(TestCase):
 
 	def test_contrato_on_submit_reconciles_identity_canonically(self):
 		doc = contrato_module.Contrato.__new__(contrato_module.Contrato)
-		doc.candidato = "CAND-1"
-		doc.numero_documento = "1002"
-		doc.email = "employee@example.com"
-		doc.nombres = "Ana"
-		doc.apellidos = "Paz"
 		doc.name = "CONT-1"
-		doc.fecha_ingreso = "2026-03-30"
-		doc.pdv_destino = "PDV-1"
-		doc._ensure_employee = lambda: "EMP-10"
-		doc._sync_employee_operational_data = lambda employee: None
+		doc.candidato = "CAND-1"
 		doc._sync_contrato_to_datos_contratacion = lambda: None
-		doc._publish_ingreso_event = lambda employee: None
-		doc.db_set = lambda fieldname, value: None
 
-		with patch("hubgh.hubgh.doctype.contrato.contrato.frappe.db.get_value", return_value="USR-10"), patch(
-			"hubgh.hubgh.doctype.contrato.contrato.reconcile_person_identity"
-		) as reconcile_mock, patch(
-			"hubgh.hubgh.doctype.contrato.contrato.frappe.get_doc",
-			return_value=SimpleNamespace(name="EMP-10"),
-		), patch("hubgh.hubgh.doctype.contrato.contrato.ensure_ingreso_followups_for_employee"):
+		with patch(
+			"hubgh.hubgh.doctype.contrato.contrato.finalize_hiring",
+			return_value={"employee": "EMP-10", "user": "USR-10", "status": "hired"},
+		) as finalize_mock:
 			doc.on_submit()
 
-		reconcile_mock.assert_called_once_with(
-			employee="EMP-10",
-			user="USR-10",
-			document="1002",
-			email="employee@example.com",
-			allow_create_user=True,
-			user_defaults={
-				"first_name": "Ana",
-				"last_name": "Paz",
-				"enabled": 1,
-				"send_welcome_email": 0,
-			},
-			user_roles=["Empleado"],
-		)
+		finalize_mock.assert_called_once_with(doc)
 
 	def test_novedad_sst_retiro_uses_canonical_user_resolution(self):
 		doc = novedad_sst_module.NovedadSST.__new__(novedad_sst_module.NovedadSST)
 		doc.empleado = "EMP-11"
-		doc._deactivate_tarjeta_empleado_if_exists = lambda persona_name: None
-		identity = person_identity.PersonIdentity("EMP-11", "USR-11", "1100", "user@example.com", "employee_link")
+		doc.name = "NOV-001"
+		doc.estado = "Cerrada"
+		doc.estado_destino = "Retirado"
+		doc.impacta_estado = 1
+		doc.fecha_inicio = "2026-03-01"
+		doc.fecha_fin = "2026-03-03"
+		doc.descripcion_resumen = "Retiro SST"
+		doc.descripcion = "Retiro SST"
+		doc.get_impacta_estado = lambda: True
+		doc.get_estado_destino = lambda: "Retirado"
+		doc.get_estado_actual = lambda: "Activo"
 
-		with patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.frappe.get_doc", return_value=SimpleNamespace(name="EMP-11")), patch(
-			"hubgh.hubgh.doctype.novedad_sst.novedad_sst.resolve_user_for_employee",
-			return_value=identity,
-		), patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.frappe.db.set_value") as set_value_mock:
-			doc.apply_retiro_side_effects()
+		with patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.apply_retirement") as retirement_mock, patch(
+			"hubgh.hubgh.doctype.novedad_sst.novedad_sst.getdate",
+			side_effect=lambda value=None: value or "2026-03-03",
+		), patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.nowdate", return_value="2026-03-03"):
+			doc.apply_estado_empleado()
 
-		set_value_mock.assert_called_once_with("User", "USR-11", "enabled", 0)
+		retirement_mock.assert_called_once_with(
+			employee="EMP-11",
+			source_doctype="Novedad SST",
+			source_name="NOV-001",
+			retirement_date="2026-03-03",
+			reason="Retiro SST",
+		)
 
 	def test_caso_disciplinario_retiro_uses_canonical_user_resolution(self):
-		doc = caso_disciplinario_module.CasoDisciplinario.__new__(caso_disciplinario_module.CasoDisciplinario)
-		doc.empleado = "EMP-12"
-		identity = person_identity.PersonIdentity("EMP-12", "USR-12", "1200", "user@example.com", "employee_link")
+		with patch("hubgh.hubgh.permissions.frappe.get_roles", return_value=["HR Labor Relations"]):
+			self.assertEqual(nested_permissions.get_caso_disciplinario_permission_query("rrll@example.com"), "")
 
-		with patch(
-			"hubgh.hubgh.doctype.caso_disciplinario.caso_disciplinario.frappe.get_doc",
-			return_value=SimpleNamespace(name="EMP-12"),
-		), patch(
-			"hubgh.hubgh.doctype.caso_disciplinario.caso_disciplinario.resolve_user_for_employee",
-			return_value=identity,
-		), patch("hubgh.hubgh.doctype.caso_disciplinario.caso_disciplinario.frappe.db.set_value") as set_value_mock:
-			doc._disable_employee_user()
+		with patch("hubgh.hubgh.permissions.frappe.get_roles", return_value=["Empleado"]):
+			self.assertEqual(nested_permissions.get_caso_disciplinario_permission_query("empleado@example.com"), "1=0")
 
-		set_value_mock.assert_called_once_with("User", "USR-12", "enabled", 0, update_modified=False)
+	def test_caso_disciplinario_has_permission_denies_non_rrll_entrypoint(self):
+		doc = SimpleNamespace(empleado="EMP-12")
+
+		with patch("hubgh.hubgh.permissions.frappe.get_roles", return_value=["HR Labor Relations"]):
+			self.assertTrue(nested_permissions.caso_disciplinario_has_permission(doc, user="rrll@example.com"))
+
+		with patch("hubgh.hubgh.permissions.frappe.get_roles", return_value=["Empleado"]):
+			self.assertFalse(nested_permissions.caso_disciplinario_has_permission(doc, user="empleado@example.com"))

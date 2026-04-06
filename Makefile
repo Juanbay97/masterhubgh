@@ -12,7 +12,7 @@ SITE             := $(FRAPPE_SITE_NAME)
 DOCKER_COMPOSE := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
 COMPOSE = $(DOCKER_COMPOSE) -f docker/docker-compose.yml --env-file .env
 
-.PHONY: up down restart logs shell init-site migrate build ps destroy
+.PHONY: up down restart logs shell init-site migrate build ps destroy e2e-install e2e-candidato
 
 ## Levantar todos los servicios (primera vez: ~15 min por bench init)
 up:
@@ -51,6 +51,15 @@ build:
 migrate:
 	$(COMPOSE) exec backend bash -c \
 		"cd /home/frappe/frappe-bench && bench --site $(SITE) migrate"
+
+## Instalar navegador Firefox para Playwright E2E
+e2e-install:
+	npm install
+	npx playwright install firefox
+
+## Ejecutar E2E de candidato (onboarding + login + upload)
+e2e-candidato:
+	npm run e2e:candidato
 
 ## Destruir TODO incluyendo volumes (CUIDADO: borra la base de datos)
 destroy:

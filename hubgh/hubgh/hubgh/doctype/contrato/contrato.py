@@ -1,8 +1,7 @@
 import frappe
 from frappe.model.document import Document
 
-from hubgh.person_identity import reconcile_person_identity
-from hubgh.hubgh.bienestar_automation import ensure_ingreso_followups_for_employee
+from hubgh.hubgh.people_ops_lifecycle import finalize_hiring
 
 
 class Contrato(Document):
@@ -69,36 +68,11 @@ class Contrato(Document):
 			frappe.throw("La fecha fin no puede ser menor a la fecha de ingreso.")
 
 	def on_submit(self):
-		employee = self._ensure_employee()
-		candidate_user = frappe.db.get_value("Candidato", self.candidato, "user") if self.candidato else None
-		reconcile_person_identity(
-			employee=employee,
-			user=candidate_user,
-			document=self.numero_documento,
-			email=self.email,
-			allow_create_user=True,
-			user_defaults={
-				"first_name": self.nombres,
-				"last_name": self.apellidos,
-				"enabled": 1,
-				"send_welcome_email": 0,
-			},
-			user_roles=["Empleado"],
-		)
-		self._sync_employee_operational_data(employee)
-		self.db_set("empleado", employee)
-		self.db_set("estado_contrato", "Activo")
-		employee_doc = frappe.get_doc("Ficha Empleado", employee) if employee else None
-		ensure_ingreso_followups_for_employee(employee_doc, from_source=f"Contrato {self.name}")
+		result = finalize_hiring(self)
+		employee = result.get("employee")
 		if self.candidato:
-			frappe.db.set_value(
-				"Candidato",
-				self.candidato,
-				{"persona": employee, "estado_proceso": "Contratado"},
-			)
 			# Link contrato to Datos Contratacion
 			self._sync_contrato_to_datos_contratacion()
-		self._publish_ingreso_event(employee)
 
 	def _sync_contrato_to_datos_contratacion(self):
 		"""Link this contrato to the Datos Contratacion record for the candidate."""
@@ -145,7 +119,7 @@ class Contrato(Document):
 				"fecha_inicio": self.fecha_ingreso,
 				"fecha_fin": self.fecha_ingreso,
 				"descripcion": description,
-				"estado": "Cerrada",
+				"estado": "Recibida",
 				"cola_origen": "GH-RRLL",
 				"cola_sugerida": "GH-RRLL",
 				"cola_destino": "GH-RRLL",

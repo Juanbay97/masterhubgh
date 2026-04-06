@@ -111,6 +111,14 @@ def validate_candidate_duplicates(numero_documento=None, email=None):
 	numero_documento = (numero_documento or "").strip()
 	if numero_documento and frappe.db.exists("Candidato", {"numero_documento": numero_documento}):
 		frappe.throw(_("Ya existe un candidato con ese número de documento."), frappe.DuplicateEntryError)
+	if numero_documento and (
+		frappe.db.exists("User", numero_documento)
+		or frappe.db.exists("User", {"username": numero_documento})
+	):
+		frappe.throw(
+			_("Ya existe una cuenta asociada a este documento. Inicia sesión o recupera tu contraseña."),
+			frappe.ValidationError,
+		)
 
 	normalized_email = (email or "").strip().lower()
 	if not normalized_email:
@@ -127,6 +135,21 @@ def validate_candidate_duplicates(numero_documento=None, email=None):
 	)
 	if existing_email:
 		frappe.throw(_("Ya existe un candidato con ese correo electrónico."), frappe.DuplicateEntryError)
+
+	existing_user_email = frappe.db.sql(
+		"""
+		SELECT name
+		FROM `tabUser`
+		WHERE LOWER(email) = %s OR LOWER(name) = %s
+		LIMIT 1
+		""",
+		(normalized_email, normalized_email),
+	)
+	if existing_user_email:
+		frappe.throw(
+			_("Ya existe una cuenta asociada a este correo. Inicia sesión o recupera tu contraseña."),
+			frappe.ValidationError,
+		)
 
 
 def mark_user_for_first_login_password_reset(user_id):

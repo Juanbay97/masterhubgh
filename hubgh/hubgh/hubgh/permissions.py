@@ -18,6 +18,7 @@ from hubgh.hubgh.role_matrix import (
 
 GH_ADMIN_ROLES = GH_ADMIN_CANONICAL_ROLES
 OPS_POINT_ROLES = OPS_POINT_CANONICAL_ROLES
+DISCIPLINARY_MANAGER_ROLES = {"System Manager", "HR Labor Relations", "GH - RRLL", "Gerente GH"}
 
 
 def get_user_dimension_access(user=None):
@@ -164,6 +165,20 @@ def gh_novedad_has_permission(doc, user=None):
 		return doc.persona == emp.get("name")
 
 	return bool(emp.get("pdv") and doc.punto == emp.get("pdv"))
+
+
+def get_caso_disciplinario_permission_query(user=None):
+	user = user or frappe.session.user
+	if user == "Administrator" or user_has_any_role(user, *DISCIPLINARY_MANAGER_ROLES):
+		return ""
+	return "1=0"
+
+
+def caso_disciplinario_has_permission(doc, user=None):
+	user = user or frappe.session.user
+	if user == "Administrator":
+		return True
+	return user_has_any_role(user, *DISCIPLINARY_MANAGER_ROLES)
 
 
 def _get_employee_by_user(user):

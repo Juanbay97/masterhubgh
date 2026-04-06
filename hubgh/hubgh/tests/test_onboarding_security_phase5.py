@@ -105,6 +105,28 @@ class TestOnboardingSecurityPhase5(FrappeTestCase):
 		with self.assertRaises(frappe.DuplicateEntryError):
 			validate_candidate_duplicates(numero_documento=f"x-{uuid4().hex[:8]}", email=payload["email"].upper())
 
+	def test_validate_candidate_duplicates_blocks_existing_user_by_document_or_email(self):
+		suffix = uuid4().hex[:8]
+		user = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": f"existing.{suffix}@example.com",
+				"username": f"3{suffix}",
+				"first_name": "Existing",
+				"last_name": "User",
+				"enabled": 1,
+				"send_welcome_email": 0,
+				"user_type": "Website User",
+			}
+		).insert(ignore_permissions=True)
+		self._created_users.append(user.name)
+
+		with self.assertRaises(frappe.ValidationError):
+			validate_candidate_duplicates(numero_documento=f"3{suffix}", email="other@example.com")
+
+		with self.assertRaises(frappe.ValidationError):
+			validate_candidate_duplicates(numero_documento=f"4{suffix}", email=f"EXISTING.{suffix}@EXAMPLE.COM")
+
 	def test_ensure_user_link_generates_non_document_password_and_marks_reset(self):
 		payload, result = self._create_candidate_for_tests()
 		user = result["user"]
@@ -113,6 +135,33 @@ class TestOnboardingSecurityPhase5(FrappeTestCase):
 			check_password(user, payload["numero_documento"])
 
 		self.assertTrue(should_force_password_reset(user))
+
+	def test_create_candidate_disables_welcome_email_for_new_user(self):
+		_, result = self._create_candidate_for_tests()
+		user = frappe.get_doc("User", result["user"])
+		self.assertEqual(int(user.send_welcome_email or 0), 0)
+
+	def test_create_candidate_uses_workflow_compatible_initial_status(self):
+		meta = frappe.get_meta("Candidato")
+		estado_field = meta.get_field("estado_proceso")
+		allowed = [line.strip() for line in (estado_field.options or "").splitlines() if line.strip()]
+		_, result = self._create_candidate_for_tests()
+		candidate = frappe.get_doc("Candidato", result["name"])
+		expected = "En documentación" if "En documentación" in allowed else "En Proceso"
+		self.assertEqual(candidate.estado_proceso, expected)
+
+	def test_create_candidate_falls_back_to_live_legacy_initial_status(self):
+		meta = frappe.get_meta("Candidato")
+		estado_field = meta.get_field("estado_proceso")
+		original_options = estado_field.options
+		estado_field.options = "En Proceso\nEn examen médico\nEn afiliación\nListo para contratar\nContratado\nRechazado"
+		try:
+			_, result = self._create_candidate_for_tests()
+		finally:
+			estado_field.options = original_options
+
+		candidate = frappe.get_doc("Candidato", result["name"])
+		self.assertEqual(candidate.estado_proceso, "En Proceso")
 
 	def test_enforce_password_reset_on_login_sets_redirect(self):
 		_, result = self._create_candidate_for_tests()
@@ -271,3 +320,38 @@ class TestOnboardingSecurityPhase5(FrappeTestCase):
 		self.assertEqual(created.procedencia_ciudad, "001")
 		self.assertEqual(int(created.es_extranjero or 0), 0)
 		self.assertEqual((created.prefijo_cuenta_extranjero or "").upper(), "NO APLICA")
+
+	def test_create_candidate_persists_banking_and_location_fields(self):
+		suffix = uuid4().hex[:8]
+		payload = {
+			"tipo_documento": "Cedula",
+			"numero_documento": f"3{suffix}",
+			"nombres": "Sara",
+			"apellidos": "Campos",
+			"email": f"sara.{suffix}@example.com",
+			"ciudad": "Bogota",
+			"localidad": "Suba",
+			"direccion": "Cra 50 # 20-10",
+			"barrio": "Niza",
+			"procedencia_pais": "169",
+			"procedencia_departamento": "11",
+			"procedencia_ciudad": "001",
+			"banco_siesa": "1059",
+			"tipo_cuenta_bancaria": "Ahorros",
+			"numero_cuenta_bancaria": "1234567890",
+		}
+
+		result = create_candidate(json.dumps(payload))
+		self._created_candidates.append(result["name"])
+		if result.get("user"):
+			self._created_users.append(result["user"])
+
+		created = frappe.get_doc("Candidato", result["name"])
+		self.assertEqual(created.barrio, "Niza")
+		self.assertEqual(created.localidad, "Suba")
+		self.assertEqual(created.procedencia_pais, "169")
+		self.assertEqual(created.procedencia_departamento, "11")
+		self.assertEqual(created.procedencia_ciudad, "001")
+		self.assertEqual(created.banco_siesa, "1059")
+		self.assertEqual(created.tipo_cuenta_bancaria, "Ahorros")
+		self.assertEqual(created.numero_cuenta_bancaria, "1234567890")

@@ -5,7 +5,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import nowdate
 
-from hubgh.person_identity import resolve_user_for_employee
+from hubgh.hubgh.people_ops_lifecycle import apply_retirement, reverse_retirement_if_clear
 
 
 class CasoDisciplinario(Document):
@@ -20,26 +20,31 @@ class CasoDisciplinario(Document):
 			frappe.throw("No se puede cerrar el caso sin fecha de cierre.")
 
 	def on_update(self):
-		if (self.estado or "") != "Cerrado":
+		if (self.estado or "") == "Cerrado" and (self.decision_final or "").strip() == "Terminación":
+			self._apply_rrll_retiro_if_required()
 			return
-		self._apply_rrll_retiro_if_required()
+		self._reverse_rrll_retiro_if_possible()
 
 	def _apply_rrll_retiro_if_required(self):
-		if (self.decision_final or "").strip() != "Terminación":
-			return
 		if not self.empleado:
 			return
-
-		frappe.db.set_value("Ficha Empleado", self.empleado, "estado", "Retirado", update_modified=False)
-		self._disable_employee_user()
+		apply_retirement(
+			employee=self.empleado,
+			source_doctype="Caso Disciplinario",
+			source_name=self.name,
+			retirement_date=self.fecha_cierre or self.fecha_incidente or nowdate(),
+			reason=self.decision_final,
+		)
 		self._emit_retiro_trace_event()
 
-	def _disable_employee_user(self):
-		persona = frappe.get_doc("Ficha Empleado", self.empleado)
-		identity = resolve_user_for_employee(persona)
-		user_name = identity.user if identity else None
-		if user_name:
-			frappe.db.set_value("User", user_name, "enabled", 0, update_modified=False)
+	def _reverse_rrll_retiro_if_possible(self):
+		if not self.empleado:
+			return
+		reverse_retirement_if_clear(
+			employee=self.empleado,
+			source_doctype="Caso Disciplinario",
+			source_name=self.name,
+		)
 
 	def _emit_retiro_trace_event(self):
 		if not frappe.db.exists("DocType", "GH Novedad"):

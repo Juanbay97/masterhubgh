@@ -364,7 +364,7 @@
 					<button id="resetBtn" class="border-2 border-black px-8 py-3 text-black font-bold uppercase hover:bg-black hover:text-white transition-colors tracking-widest text-sm">
 						Volver al inicio
 					</button>
-					<a id="loginBtn" href="/login" class="hidden mt-4 inline-flex items-center justify-center border-2 border-black px-8 py-3 text-black font-bold uppercase hover:bg-black hover:text-white transition-colors tracking-widest text-sm">
+					<a id="loginBtn" href="/login?redirect-to=%2Fapp%2Fmis_documentos_candidato" class="hidden mt-4 inline-flex items-center justify-center border-2 border-black px-8 py-3 text-black font-bold uppercase hover:bg-black hover:text-white transition-colors tracking-widest text-sm">
 						Iniciar sesión
 					</a>
 				</div>
@@ -964,7 +964,8 @@
             if (res && res.message && res.message.name) {
                 data._created_candidate = res.message.name;
                 data._login_user = res.message.login_user || data.numero_documento || '';
-                data._initial_password = res.message.initial_password || data.numero_documento || '';
+                data._user_created = !!res.message.user_created;
+                data._initial_password = res.message.initial_password || '';
                 data._password_must_be_changed = !!res.message.password_must_be_changed;
                 saveDraft(data);
                 saved = true;
@@ -973,7 +974,11 @@
             alert("No se pudo registrar. El servidor no devolvió confirmación de creación.");
             return false;
         } catch (err) {
-            alert(humanizeErrorMessage(err?.message || "No se pudo registrar. Revisa los datos."));
+            const message = humanizeErrorMessage(err?.message || "No se pudo registrar. Revisa los datos.");
+            alert(message);
+            if (shouldRedirectToLogin(message)) {
+                window.location.href = '/login';
+            }
             return false;
         } finally {
             if (!saved) {
@@ -1125,11 +1130,14 @@
 		return String(raw);
 	}
 
-	function humanizeErrorMessage(message) {
-		const text = String(message || '').replace(/<[^>]*>/g, '').trim();
-		if (/Banco Siesa|banco_siesa|Could not find.*Banco/i.test(text)) {
-			return 'El banco seleccionado no es válido. Debes elegir un banco de la lista SIESA.';
-		}
+    function humanizeErrorMessage(message) {
+        const text = String(message || '').replace(/<[^>]*>/g, '').trim();
+        if (/ya existe una cuenta asociada a este (documento|correo)|inicia sesi[oó]n o recupera tu contraseñ?a/i.test(text)) {
+            return 'Ya existe una cuenta asociada a estos datos. Te vamos a llevar al inicio de sesión para que ingreses o recuperes tu contraseña.';
+        }
+        if (/Banco Siesa|banco_siesa|Could not find.*Banco/i.test(text)) {
+            return 'El banco seleccionado no es válido. Debes elegir un banco de la lista SIESA.';
+        }
 		if (/Payload inválido|JSON malformado|formato no soportado|se esperaba un objeto JSON/i.test(text)) {
 			return 'No se pudo procesar el formulario por un problema de formato. Recarga la página e intenta de nuevo.';
 		}
@@ -1151,7 +1159,12 @@
 		if (/400|bad request/i.test(text)) {
 			return 'El servidor rechazó la solicitud por datos inválidos o incompletos. Revisa el formulario e intenta de nuevo.';
 		}
-		return text || 'No se pudo registrar. Revisa los datos obligatorios e inténtalo nuevamente.';
+        return text || 'No se pudo registrar. Revisa los datos obligatorios e inténtalo nuevamente.';
+    }
+
+	function shouldRedirectToLogin(message) {
+		const text = String(message || '').trim();
+		return /ya existe una cuenta asociada a estos datos|ya existe una cuenta asociada a este (documento|correo)|inicia sesi[oó]n o recupera tu contraseñ?a/i.test(text);
 	}
 
 	async function loadBancosSiesa() {
@@ -1208,12 +1221,19 @@
 		successMessage.textContent = `Excelente ${firstName}, recibimos tu información correctamente. Estás un paso más cerca.`;
 		loginButton.classList.remove('hidden');
 		if (credentialsBox && credentialUser && credentialPassword) {
-			credentialUser.textContent = data._login_user || data.numero_documento || '';
-			credentialPassword.textContent = data._initial_password || data.numero_documento || '';
-			credentialsBox.classList.remove('hidden');
+			const hasGeneratedPassword = !!(data._user_created && data._initial_password);
+			if (hasGeneratedPassword) {
+				credentialUser.textContent = data._login_user || data.numero_documento || '';
+				credentialPassword.textContent = data._initial_password;
+				credentialsBox.classList.remove('hidden');
+			} else {
+				credentialsBox.classList.add('hidden');
+			}
 		}
 		localStorage.removeItem(STORAGE_KEY);
-		redirectNote.textContent = 'Copia tus credenciales y luego usa el botón "Iniciar sesión" cuando estés listo.';
+		redirectNote.textContent = data._user_created
+			? 'Copia tus credenciales y luego usa el botón "Iniciar sesión" cuando estés listo.'
+			: 'Tu cuenta ya existe. Usa el botón "Iniciar sesión" para entrar o recuperar tu contraseña.';
 	}
 
     if (procedenciaPaisSelect) {

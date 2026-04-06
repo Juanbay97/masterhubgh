@@ -128,6 +128,8 @@ def sync_user_access_profile(user):
 	if not user or user == "Guest" or not frappe.db.exists("User", user):
 		return
 
+	ensure_roles_and_profiles()
+
 	user_roles = set(frappe.get_roles(user) or [])
 	canonical_roles = canonicalize_roles(user_roles)
 
@@ -168,8 +170,24 @@ def sync_user_access_profile(user):
 		_target_role_profile = "HubGH Operario"
 		_target_module_profile = "HubGH Operario"
 
-	frappe.db.set_value("User", user, "role_profile_name", _target_role_profile, update_modified=False)
-	frappe.db.set_value("User", user, "module_profile", _target_module_profile, update_modified=False)
+	_ensure_role_profile(_target_role_profile, ROLE_PROFILES.get(_target_role_profile, []))
+	_ensure_module_profile(_target_module_profile, MODULE_PROFILES.get(_target_module_profile, []))
+
+	if frappe.db.exists("Role Profile", _target_role_profile):
+		frappe.db.set_value("User", user, "role_profile_name", _target_role_profile, update_modified=False)
+	else:
+		frappe.logger("hubgh.access_profiles").warning(
+			"sync_user_access_profile:missing_role_profile_skip",
+			extra={"user": user, "role_profile": _target_role_profile},
+		)
+
+	if frappe.db.exists("Module Profile", _target_module_profile):
+		frappe.db.set_value("User", user, "module_profile", _target_module_profile, update_modified=False)
+	else:
+		frappe.logger("hubgh.access_profiles").warning(
+			"sync_user_access_profile:missing_module_profile_skip",
+			extra={"user": user, "module_profile": _target_module_profile},
+		)
 
 
 def apply_workspace_role_matrix():
@@ -289,7 +307,7 @@ def _ensure_module_profile(profile_name, blocked_modules):
 
 	if doc.is_new():
 		try:
-			doc.insert(ignore_permissions=True)
+			doc.insert(ignore_permissions=True, ignore_mandatory=True)
 		except DocumentLockedError:
 			frappe.logger("hubgh.access_profiles").warning(
 				"ensure_module_profile:locked_skip",

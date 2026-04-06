@@ -1,5 +1,9 @@
 import frappe
 
+from hubgh.hubgh.document_service import repair_person_document_links
+from hubgh.hubgh.siesa_reference_matrix import ensure_social_security_reference_catalogs
+from hubgh.hubgh.selection_document_types import sync_selection_document_types, sync_selection_workspace_shortcut
+
 
 def run():
 	# Fix pre-existing Form Tour records with NULL page_route that crash SessionBoot
@@ -8,6 +12,10 @@ def run():
 	)
 	# LMS excluded from current scope — skip workspace setup that references missing DocTypes
 	# ensure_lms_single_entrypoint()
+	sync_selection_document_types()
+	ensure_social_security_reference_catalogs()
+	repair_person_document_links()
+	sync_selection_workspace_shortcut()
 	ensure_workflow_states_and_actions()
 	ensure_workflows()
 	ensure_notifications()

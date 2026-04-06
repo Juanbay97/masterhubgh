@@ -18,14 +18,22 @@ class PersonDocument(Document):
 	def _sync_person_links(self):
 		if self.person_type == "Candidato":
 			self.person_doctype = "Candidato"
-			self.candidate = self.person
+			if self.candidate and self.person != self.candidate:
+				self.person = self.candidate
+			if not self.person and self.candidate:
+				self.person = self.candidate
+			if self.person and not self.candidate:
+				self.candidate = self.person
+			self.employee = None
 		elif self.person_type == "Empleado":
 			self.person_doctype = "Ficha Empleado"
-			self.employee = self.person
-
-		if self.employee and self.person_type == "Candidato":
-			# Conserva trazabilidad cuando aún cuelga del candidato.
-			return
+			if self.employee and self.person != self.employee:
+				self.person = self.employee
+			if not self.person and self.employee:
+				self.person = self.employee
+			if self.person and not self.employee:
+				self.employee = self.person
+			self.candidate = None
 
 	def _validate_status_rules(self):
 		if self.status in STATUS_WITH_UPLOAD and not self.file:
