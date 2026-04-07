@@ -29,6 +29,13 @@ def _install_frappe_stub():
 		"get_doc",
 		lambda *args, **kwargs: SimpleNamespace(name=None, add_roles=lambda *a, **k: None),
 	)
+	frappe_module.get_all = getattr(frappe_module, "get_all", lambda *args, **kwargs: [])
+	frappe_module.enqueue = getattr(frappe_module, "enqueue", lambda *args, **kwargs: None)
+	frappe_module.cache = getattr(
+		frappe_module,
+		"cache",
+		lambda: types.SimpleNamespace(get_value=lambda *a, **k: None, set_value=lambda *a, **k: None),
+	)
 	frappe_module.logger = getattr(
 		frappe_module,
 		"logger",
@@ -64,6 +71,10 @@ class TestCentroDeDatosPersonIdentityContract(TestCase):
 		self.assertIn("get_tray_context", content)
 		self.assertIn("if (!context.can_view)", content)
 		self.assertIn("operational_person_identity_tray", content)
+		self.assertIn("start_upload_data", content)
+		self.assertIn("get_upload_status", content)
+		self.assertIn("template_actualizacion_empleados.csv", content)
+		self.assertIn("download_employee_master_report", content)
 
 	def test_operational_person_identity_tray_assets_expose_basic_page_contract(self):
 		base = Path(__file__).resolve().parents[1] / "hubgh" / "page" / "operational_person_identity_tray"
@@ -120,7 +131,7 @@ class TestCentroDeDatosPersonIdentityContract(TestCase):
 
 		with patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.exists", return_value=False), patch(
 			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.get_value",
-			return_value="PDV-1",
+			side_effect=[None, "PDV-1"],
 		), patch(
 			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.new_doc",
 			return_value=employee_doc,
@@ -167,6 +178,83 @@ class TestCentroDeDatosPersonIdentityContract(TestCase):
 		self.assertEqual(reconcile.call_args_list[1].kwargs["document"], "123")
 		self.assertTrue(reconcile.call_args_list[1].kwargs["allow_create_user"])
 		new_doc.assert_not_called()
+
+	def test_create_empleado_upserts_existing_employee_without_duplicate(self):
+		employee_doc = SimpleNamespace(
+			name="EMP-1",
+			doctype="Ficha Empleado",
+			cedula="123",
+			nombres="Ana",
+			apellidos="Paz",
+			email="ana@example.com",
+			cargo="Auxiliar",
+			tipo_jornada="Diurna",
+			estado="Activo",
+			pdv="PDV-OLD",
+			save=MagicMock(),
+		)
+		identity = PersonIdentity("EMP-1", "ana@example.com", "123", "ana@example.com", "employee_link")
+
+		with patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.get_value", side_effect=["EMP-1", "PDV-1"]), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.get_doc",
+			return_value=employee_doc,
+		), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.reconcile_person_identity",
+			return_value=identity,
+		), patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.logger", return_value=MagicMock()):
+			result = centro_de_datos.create_empleado({"cedula": "123", "pdv": "Centro", "cargo": "Jefe", "email": "ana@example.com"})
+
+		employee_doc.save.assert_called_once()
+		self.assertEqual(result["action"], "updated")
+
+	def test_update_empleado_can_create_novedad_from_single_row(self):
+		employee_doc = SimpleNamespace(
+			name="EMP-1",
+			doctype="Ficha Empleado",
+			cedula="123",
+			nombres="Ana",
+			apellidos="Paz",
+			email="ana@example.com",
+			cargo="Auxiliar",
+			tipo_jornada="Diurna",
+			estado="Activo",
+			pdv="PDV-1",
+			save=MagicMock(),
+		)
+		identity = PersonIdentity("EMP-1", "ana@example.com", "123", "ana@example.com", "employee_link")
+		novedad_doc = SimpleNamespace(name="NOV-1", insert=MagicMock())
+
+		def fake_get_value(doctype, filters=None, fieldname=None, as_dict=False):
+			if doctype == "Ficha Empleado":
+				return "EMP-1"
+			if doctype == "Novedad SST":
+				return None
+			return None
+
+		with patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.get_value", side_effect=fake_get_value), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.get_doc",
+			return_value=employee_doc,
+		), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.new_doc",
+			return_value=novedad_doc,
+		), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.reconcile_person_identity",
+			return_value=identity,
+		), patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.logger", return_value=MagicMock()):
+			result = centro_de_datos.update_empleado(
+				{
+					"cedula": "123",
+					"estado": "Retirado",
+					"novedad_tipo": "Retiro",
+					"novedad_fecha_inicio": "2026-04-01",
+					"novedad_fecha_fin": "2026-04-01",
+					"novedad_descripcion": "Retiro masivo",
+				}
+			)
+
+		employee_doc.save.assert_called_once()
+		novedad_doc.insert.assert_called_once()
+		self.assertEqual(result["action"], "updated")
 
 	def test_create_user_raises_explicit_pending_for_invalid_email(self):
 		lookup_identity = PersonIdentity("EMP-1", None, None, "correo-invalido", "unresolved")

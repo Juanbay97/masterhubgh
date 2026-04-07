@@ -23,6 +23,13 @@ def _install_frappe_stub():
 		"get_doc",
 		lambda *args, **kwargs: SimpleNamespace(get_content=lambda: ""),
 	)
+	frappe_module.get_all = getattr(frappe_module, "get_all", lambda *args, **kwargs: [])
+	frappe_module.enqueue = getattr(frappe_module, "enqueue", lambda *args, **kwargs: None)
+	frappe_module.cache = getattr(
+		frappe_module,
+		"cache",
+		lambda: SimpleNamespace(get_value=lambda *a, **k: None, set_value=lambda *a, **k: None),
+	)
 	frappe_module.throw = getattr(frappe_module, "throw", lambda message: (_ for _ in ()).throw(Exception(message)))
 	frappe_module.whitelist = getattr(frappe_module, "whitelist", lambda *args, **kwargs: (lambda fn: fn))
 	frappe_module._ = getattr(frappe_module, "_", lambda value: value)
@@ -113,3 +120,25 @@ class TestCentroDeDatosCsvImport(TestCase):
 		self.assertEqual(res["errors"][0]["code"], "row_validation")
 		commit_mock.assert_not_called()
 		self.assertEqual(sql_calls, ["SAVEPOINT centro_de_datos_upload", "ROLLBACK TO SAVEPOINT centro_de_datos_upload"])
+
+	def test_start_upload_data_enqueues_background_job_and_persists_status(self):
+		file_doc = SimpleNamespace(get_content=lambda: "nombre_pdv,codigo\nCentro Uno,PDV-1\n")
+		cache_values = {}
+
+		cache = SimpleNamespace(
+			get_value=lambda key: cache_values.get(key),
+			set_value=lambda key, value, expires_in_sec=None: cache_values.__setitem__(key, value),
+		)
+
+		with patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.get_doc", return_value=file_doc), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.cache",
+			return_value=cache,
+		), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.enqueue"
+		) as enqueue:
+			result = centro_de_datos.start_upload_data("Punto de Venta", "/private/files/puntos.csv", chunk_size=25)
+
+		enqueue.assert_called_once()
+		self.assertEqual(result["status"], "queued")
+		self.assertEqual(result["total_rows"], 1)
+		self.assertEqual(result["chunk_size"], 25)

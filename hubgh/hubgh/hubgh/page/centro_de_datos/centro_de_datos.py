@@ -1,16 +1,26 @@
-import frappe
 import csv
 import re
-from io import StringIO
+import uuid
+from copy import deepcopy
+from datetime import datetime, timezone
+from io import BytesIO, StringIO
+
+import frappe
 from frappe import _
 from frappe.utils import getdate, validate_email_address
 
 from hubgh.person_identity import normalize_document, reconcile_person_identity
 
 
+DEFAULT_IMPORT_CHUNK_SIZE = 50
+MAX_IMPORT_ERRORS = 200
+IMPORT_STATUS_TTL_SEC = 60 * 60 * 24
+_IMPORT_STATUS_FALLBACK = {}
+
 ALLOWED_BULK_DOCTYPES = {
 	"Punto de Venta": "create_punto",
 	"Ficha Empleado": "create_empleado",
+	"Actualización Empleado": "update_empleado",
 	"Novedad SST": "create_novedad",
 	"User": "create_user",
 }
@@ -18,6 +28,7 @@ ALLOWED_BULK_DOCTYPES = {
 EXPECTED_CSV_COLUMNS = {
 	"Punto de Venta": {"nombre_pdv"},
 	"Ficha Empleado": {"cedula", "pdv"},
+	"Actualización Empleado": {"cedula"},
 	"Novedad SST": {"cedula_empleado", "tipo_novedad", "fecha_inicio", "fecha_fin"},
 	"User": {"email"},
 }
@@ -35,9 +46,273 @@ def _stable_error(code, detail=""):
 	return f"{message} [{code}]"
 
 
+def _utcnow_iso():
+	return datetime.now(timezone.utc).isoformat()
+
+
+def _coerce_chunk_size(value):
+	try:
+		chunk_size = int(value or DEFAULT_IMPORT_CHUNK_SIZE)
+	except (TypeError, ValueError):
+		chunk_size = DEFAULT_IMPORT_CHUNK_SIZE
+	return max(10, min(chunk_size, 200))
+
+
+def _get_import_status_key(import_id):
+	return f"hubgh:centro_de_datos:import:{import_id}"
+
+
+def _get_cache():
+	cache_factory = getattr(frappe, "cache", None)
+	if not callable(cache_factory):
+		return None
+	try:
+		return cache_factory()
+	except Exception:
+		return None
+
+
+def _save_import_status(import_id, payload):
+	state = deepcopy(payload)
+	cache = _get_cache()
+	if cache and hasattr(cache, "set_value"):
+		cache.set_value(_get_import_status_key(import_id), state, expires_in_sec=IMPORT_STATUS_TTL_SEC)
+		return
+	_IMPORT_STATUS_FALLBACK[import_id] = state
+
+
+def _load_import_status(import_id):
+	cache = _get_cache()
+	if cache and hasattr(cache, "get_value"):
+		state = cache.get_value(_get_import_status_key(import_id))
+		if state:
+			return state
+	return deepcopy(_IMPORT_STATUS_FALLBACK.get(import_id))
+
+
+def _empty_import_counts():
+	return {
+		"processed": 0,
+		"created": 0,
+		"updated": 0,
+		"skipped": 0,
+		"errors": 0,
+	}
+
+
+def _new_import_status(import_id, doctype, file_url, total_rows, chunk_size):
+	return {
+		"import_id": import_id,
+		"doctype": doctype,
+		"file_url": file_url,
+		"status": "queued",
+		"message": "Carga encolada correctamente.",
+		"created_at": _utcnow_iso(),
+		"started_at": None,
+		"finished_at": None,
+		"chunk_size": chunk_size,
+		"total_rows": total_rows,
+		"processed_rows": 0,
+		"progress": 0,
+		"counts": _empty_import_counts(),
+		"errors": [],
+		"supported_doctypes": get_supported_doctypes(),
+	}
+
+
+def _append_import_error(state, row_index, exc):
+	state["counts"]["errors"] += 1
+	if len(state["errors"]) < MAX_IMPORT_ERRORS:
+		state["errors"].append({"row": row_index, "code": "row_validation", "message": str(exc)})
+
+
+def _record_handler_result(state, result):
+	result = result or {}
+	action = result.get("action") or "skipped"
+	state["counts"]["processed"] += 1
+	if action == "created":
+		state["counts"]["created"] += 1
+	elif action == "updated":
+		state["counts"]["updated"] += 1
+	else:
+		state["counts"]["skipped"] += 1
+
+
+def _row_is_effectively_empty(row):
+	if not row:
+		return True
+	for key, value in row.items():
+		if key is None:
+			continue
+		if str(value or "").strip():
+			return False
+	return True
+
+
+def _read_csv_rows(doctype, file_url):
+	if doctype not in ALLOWED_BULK_DOCTYPES:
+		frappe.throw(_stable_error("unsupported_doctype", doctype))
+
+	file_doc = frappe.get_doc("File", {"file_url": file_url})
+	content = file_doc.get_content()
+	if not content:
+		frappe.throw(_(_stable_error("empty_file")))
+
+	content = _decode_csv_content(content)
+	reader = _build_csv_reader(content)
+	columns_error = _validate_expected_columns(doctype, reader.fieldnames)
+	if columns_error:
+		frappe.throw(columns_error)
+
+	return [(index, row) for index, row in enumerate(reader, start=2) if not _row_is_effectively_empty(row)]
+
+
+def _chunked(rows, chunk_size):
+	for offset in range(0, len(rows), chunk_size):
+		yield rows[offset: offset + chunk_size]
+
+
+def _set_bulk_import_flag(enabled):
+	flags = getattr(frappe, "flags", None)
+	if flags is None:
+		class _Flags:
+			pass
+
+		flags = _Flags()
+		frappe.flags = flags
+	flags.hubgh_centro_datos_bulk_import = enabled
+
+
+def _finalize_bulk_side_effects(state):
+	if state["counts"]["created"] + state["counts"]["updated"] <= 0:
+		return
+	from hubgh.user_groups import sync_all_user_groups
+
+	sync_all_user_groups()
+
+
+def _run_import_rows(rows, doctype, *, chunk_size):
+	handler = globals()[ALLOWED_BULK_DOCTYPES[doctype]]
+	import_id = uuid.uuid4().hex
+	state = _new_import_status(import_id, doctype, None, len(rows), chunk_size)
+	state["status"] = "running"
+	state["started_at"] = _utcnow_iso()
+	_save_import_status(import_id, state)
+	previous_bulk_flag = getattr(getattr(frappe, "flags", None), "hubgh_centro_datos_bulk_import", False)
+	_set_bulk_import_flag(True)
+	try:
+		for chunk in _chunked(rows, chunk_size):
+			for row_index, row in chunk:
+				try:
+					result = handler(row)
+				except Exception as exc:
+					_append_import_error(state, row_index, exc)
+					state["counts"]["processed"] += 1
+				else:
+					_record_handler_result(state, result)
+				state["processed_rows"] += 1
+			if hasattr(frappe.db, "commit"):
+				frappe.db.commit()
+			state["progress"] = int((state["processed_rows"] / max(state["total_rows"], 1)) * 100)
+			state["message"] = f"Procesadas {state['processed_rows']} de {state['total_rows']} filas."
+			_save_import_status(import_id, state)
+		_finalize_bulk_side_effects(state)
+		state["status"] = "completed"
+		state["finished_at"] = _utcnow_iso()
+		state["progress"] = 100
+		state["message"] = "Carga finalizada."
+		_save_import_status(import_id, state)
+		return state
+	except Exception as exc:
+		state["status"] = "failed"
+		state["finished_at"] = _utcnow_iso()
+		state["message"] = str(exc)
+		_save_import_status(import_id, state)
+		raise
+	finally:
+		_set_bulk_import_flag(previous_bulk_flag)
+
+
 @frappe.whitelist()
 def get_supported_doctypes():
 	return sorted(ALLOWED_BULK_DOCTYPES.keys())
+
+
+@frappe.whitelist()
+def start_upload_data(doctype, file_url, chunk_size=DEFAULT_IMPORT_CHUNK_SIZE):
+	rows = _read_csv_rows(doctype, file_url)
+	chunk_size = _coerce_chunk_size(chunk_size)
+	import_id = uuid.uuid4().hex
+	state = _new_import_status(import_id, doctype, file_url, len(rows), chunk_size)
+	_save_import_status(import_id, state)
+	enqueue = getattr(frappe, "enqueue", None)
+	if callable(enqueue):
+		enqueue(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.process_upload_data_job",
+			queue="long",
+			timeout=60 * 60,
+			job_name=f"centro-de-datos:{doctype}:{import_id}",
+			import_id=import_id,
+			doctype=doctype,
+			file_url=file_url,
+			chunk_size=chunk_size,
+		)
+	else:
+		process_upload_data_job(import_id=import_id, doctype=doctype, file_url=file_url, chunk_size=chunk_size)
+	return _load_import_status(import_id)
+
+
+@frappe.whitelist()
+def get_upload_status(import_id):
+	status = _load_import_status(import_id)
+	if not status:
+		frappe.throw("No encontramos esa carga masiva o ya expiró su estado.")
+	return status
+
+
+def process_upload_data_job(import_id, doctype, file_url, chunk_size=DEFAULT_IMPORT_CHUNK_SIZE):
+	rows = _read_csv_rows(doctype, file_url)
+	state = _load_import_status(import_id) or _new_import_status(import_id, doctype, file_url, len(rows), _coerce_chunk_size(chunk_size))
+	state["status"] = "running"
+	state["started_at"] = state.get("started_at") or _utcnow_iso()
+	state["message"] = "Procesando archivo en background."
+	state["total_rows"] = len(rows)
+	state["chunk_size"] = _coerce_chunk_size(chunk_size)
+	_save_import_status(import_id, state)
+	handler = globals()[ALLOWED_BULK_DOCTYPES[doctype]]
+	previous_bulk_flag = getattr(getattr(frappe, "flags", None), "hubgh_centro_datos_bulk_import", False)
+	_set_bulk_import_flag(True)
+	try:
+		for chunk in _chunked(rows, state["chunk_size"]):
+			for row_index, row in chunk:
+				try:
+					result = handler(row)
+				except Exception as exc:
+					_append_import_error(state, row_index, exc)
+					state["counts"]["processed"] += 1
+				else:
+					_record_handler_result(state, result)
+				state["processed_rows"] += 1
+			if hasattr(frappe.db, "commit"):
+				frappe.db.commit()
+			state["progress"] = int((state["processed_rows"] / max(state["total_rows"], 1)) * 100)
+			state["message"] = f"Procesadas {state['processed_rows']} de {state['total_rows']} filas."
+			_save_import_status(import_id, state)
+		_finalize_bulk_side_effects(state)
+		state["status"] = "completed"
+		state["finished_at"] = _utcnow_iso()
+		state["progress"] = 100
+		state["message"] = "Carga finalizada."
+		_save_import_status(import_id, state)
+		return state
+	except Exception as exc:
+		state["status"] = "failed"
+		state["finished_at"] = _utcnow_iso()
+		state["message"] = str(exc)
+		_save_import_status(import_id, state)
+		raise
+	finally:
+		_set_bulk_import_flag(previous_bulk_flag)
 
 
 def _decode_csv_content(content):
@@ -86,23 +361,13 @@ def upload_data(doctype, file_url):
 			"supported_doctypes": get_supported_doctypes(),
 		}
 
-	# 1. Get the file content
-	file_doc = frappe.get_doc("File", {"file_url": file_url})
-	content = file_doc.get_content()
-
-	if not content:
-		frappe.throw(_(_stable_error("empty_file")))
-
-	# 2. Decode content
-	content = _decode_csv_content(content)
-
-	reader = _build_csv_reader(content)
-	columns_error = _validate_expected_columns(doctype, reader.fieldnames)
-	if columns_error:
+	try:
+		rows = _read_csv_rows(doctype, file_url)
+	except Exception as exc:
 		return {
 			"success": 0,
 			"committed": 0,
-			"errors": [columns_error],
+			"errors": [str(exc)],
 			"supported_doctypes": get_supported_doctypes(),
 		}
 
@@ -111,10 +376,8 @@ def upload_data(doctype, file_url):
 	if hasattr(frappe.db, "sql"):
 		frappe.db.sql("SAVEPOINT centro_de_datos_upload")
 
-	for index, row in enumerate(reader, start=2):
+	for index, row in rows:
 		try:
-			if row and list(row.keys()) == [None]:
-				continue
 			globals()[ALLOWED_BULK_DOCTYPES[doctype]](row)
 			success_count += 1
 		except Exception as e:
@@ -148,6 +411,96 @@ def _slugify(text, max_len=20):
 	return slug[:max_len] or "PDV"
 
 
+def _update_value(doc, fieldname, value, changed_fields):
+	if getattr(doc, fieldname, None) == value:
+		return
+	setattr(doc, fieldname, value)
+	changed_fields.append(fieldname)
+
+
+def _resolve_pdv_name(pdv_nombre, *, cedula=None, required=False):
+	pdv_nombre = (pdv_nombre or "").strip()
+	if not pdv_nombre:
+		if required:
+			raise Exception(f"Empleado {cedula or ''}: el campo 'pdv' es requerido.".strip())
+		return None
+	pdv_name = frappe.db.get_value("Punto de Venta", {"nombre_pdv": pdv_nombre}, "name") or (
+		pdv_nombre if frappe.db.exists("Punto de Venta", pdv_nombre) else None
+	)
+	if not pdv_name:
+		raise Exception(
+			f"Empleado {cedula}: Punto de Venta '{pdv_nombre}' no encontrado. "
+			"Cargá los Puntos de Venta antes de los Empleados."
+		)
+	return pdv_name
+
+
+def _apply_employee_payload(doc, row, *, is_new=False):
+	changed_fields = []
+	for fieldname in ("nombres", "apellidos", "cargo", "email", "tipo_jornada"):
+		value = (row.get(fieldname) or "").strip()
+		if value or is_new:
+			_update_value(doc, fieldname, value, changed_fields)
+
+	estado = (row.get("estado") or ("Activo" if is_new else "")).strip()
+	if estado:
+		_update_value(doc, "estado", estado, changed_fields)
+
+	fecha_raw = (row.get("fecha_ingreso") or "").strip()
+	if fecha_raw:
+		_update_value(doc, "fecha_ingreso", getdate(fecha_raw), changed_fields)
+
+	pdv_name = _resolve_pdv_name(row.get("pdv"), cedula=(row.get("cedula") or "").strip(), required=is_new)
+	if pdv_name:
+		_update_value(doc, "pdv", pdv_name, changed_fields)
+
+	return changed_fields
+
+
+def _upsert_novedad_for_employee(employee_name, row, *, optional=False):
+	tipo_novedad = (row.get("tipo_novedad") or row.get("novedad_tipo") or "").strip()
+	fecha_inicio = (row.get("fecha_inicio") or row.get("novedad_fecha_inicio") or "").strip()
+	fecha_fin = (row.get("fecha_fin") or row.get("novedad_fecha_fin") or "").strip()
+	descripcion = (row.get("descripcion") or row.get("novedad_descripcion") or "").strip()
+
+	if optional and not any([tipo_novedad, fecha_inicio, fecha_fin, descripcion]):
+		return None
+
+	if not (tipo_novedad and fecha_inicio and fecha_fin):
+		raise Exception("Para registrar una novedad debés enviar tipo_novedad/novedad_tipo, fecha_inicio/novedad_fecha_inicio y fecha_fin/novedad_fecha_fin.")
+
+	fecha_inicio_value = getdate(fecha_inicio)
+	fecha_fin_value = getdate(fecha_fin)
+	existing_name = frappe.db.get_value(
+		"Novedad SST",
+		{
+			"empleado": employee_name,
+			"tipo_novedad": tipo_novedad,
+			"fecha_inicio": fecha_inicio_value,
+			"fecha_fin": fecha_fin_value,
+		},
+		"name",
+	)
+	if existing_name:
+		doc = frappe.get_doc("Novedad SST", existing_name)
+		changed_fields = []
+		if descripcion:
+			_update_value(doc, "descripcion", descripcion, changed_fields)
+		if changed_fields:
+			doc.save(ignore_permissions=True)
+			return {"action": "updated", "name": existing_name}
+		return {"action": "skipped", "name": existing_name}
+
+	doc = frappe.new_doc("Novedad SST")
+	doc.empleado = employee_name
+	doc.tipo_novedad = tipo_novedad
+	doc.fecha_inicio = fecha_inicio_value
+	doc.fecha_fin = fecha_fin_value
+	doc.descripcion = descripcion
+	doc.insert()
+	return {"action": "created", "name": doc.name}
+
+
 def _log_identity_state(event, identity):
 	logger = frappe.logger("hubgh.person_identity")
 	payload = {
@@ -179,8 +532,22 @@ def create_punto(row):
 	if not nombre:
 		raise Exception("El campo 'nombre_pdv' es requerido.")
 
-	if frappe.db.exists("Punto de Venta", {"nombre_pdv": nombre}):
-		return  # ya existe, omitir silenciosamente
+	existing_name = frappe.db.get_value("Punto de Venta", {"nombre_pdv": nombre}, "name")
+	if existing_name:
+		doc = frappe.get_doc("Punto de Venta", existing_name)
+		changed_fields = []
+		for fieldname, value in {
+			"zona": (row.get("zona") or "").strip(),
+			"ciudad": (row.get("ciudad") or "").strip(),
+			"departamento": (row.get("departamento") or "").strip(),
+			"planta_autorizada": int(row.get("planta_autorizada") or 0),
+		}.items():
+			if value or isinstance(value, int):
+				_update_value(doc, fieldname, value, changed_fields)
+		if changed_fields:
+			doc.save(ignore_permissions=True)
+			return {"action": "updated", "punto": doc.name}
+		return {"action": "skipped", "punto": doc.name}
 
 	# codigo es requerido y autoname — tomar del CSV o autogenerar desde nombre
 	codigo = (row.get("codigo") or "").strip() or _slugify(nombre)
@@ -200,6 +567,7 @@ def create_punto(row):
 	doc.departamento = (row.get("departamento") or "").strip()
 	doc.planta_autorizada = int(row.get("planta_autorizada") or 0)
 	doc.insert()
+	return {"action": "created", "punto": doc.name}
 
 
 def create_empleado(row):
@@ -207,35 +575,22 @@ def create_empleado(row):
 	if not cedula:
 		raise Exception("El campo 'cedula' es requerido.")
 
-	if frappe.db.exists("Ficha Empleado", {"cedula": cedula}):
-		return  # ya existe, omitir silenciosamente
+	existing_name = frappe.db.get_value("Ficha Empleado", {"cedula": cedula}, "name")
+	if existing_name:
+		doc = frappe.get_doc("Ficha Empleado", existing_name)
+		changed_fields = _apply_employee_payload(doc, row, is_new=False)
+		if changed_fields:
+			doc.save(ignore_permissions=True)
+			action = "updated"
+		else:
+			action = "skipped"
+	else:
+		doc = frappe.new_doc("Ficha Empleado")
+		doc.cedula = cedula
+		_apply_employee_payload(doc, row, is_new=True)
+		doc.insert()
+		action = "created"
 
-	doc = frappe.new_doc("Ficha Empleado")
-	doc.nombres = (row.get("nombres") or "").strip()
-	doc.apellidos = (row.get("apellidos") or "").strip()
-	doc.cedula = cedula
-	doc.cargo = (row.get("cargo") or "").strip()
-	doc.email = (row.get("email") or "").strip()
-	doc.tipo_jornada = (row.get("tipo_jornada") or "").strip()
-	doc.estado = (row.get("estado") or "Activo").strip()
-
-	fecha_raw = (row.get("fecha_ingreso") or "").strip()
-	if fecha_raw:
-		doc.fecha_ingreso = getdate(fecha_raw)
-
-	# pdv es reqd:1 — buscar por nombre exacto, fallar claro si no existe
-	pdv_nombre = (row.get("pdv") or "").strip()
-	if not pdv_nombre:
-		raise Exception(f"Empleado {cedula}: el campo 'pdv' es requerido.")
-	pdv_name = frappe.db.get_value("Punto de Venta", {"nombre_pdv": pdv_nombre}, "name")
-	if not pdv_name:
-		raise Exception(
-			f"Empleado {cedula}: Punto de Venta '{pdv_nombre}' no encontrado. "
-			"Cargá los Puntos de Venta antes de los Empleados."
-		)
-	doc.pdv = pdv_name
-
-	doc.insert()
 	identity = reconcile_person_identity(
 		employee=doc,
 		document=cedula,
@@ -250,20 +605,49 @@ def create_empleado(row):
 		user_roles=["Empleado"],
 	)
 	_log_identity_state("centro_de_datos:create_empleado:identity_reconciled", identity)
+	return {"action": action, "employee": doc.name, "user": identity.user}
+
+
+def update_empleado(row):
+	cedula = (row.get("cedula") or "").strip()
+	if not cedula:
+		raise Exception("El campo 'cedula' es requerido.")
+
+	existing_name = frappe.db.get_value("Ficha Empleado", {"cedula": cedula}, "name")
+	if not existing_name:
+		raise Exception(f"Empleado con cédula {cedula} no encontrado para actualización.")
+
+	doc = frappe.get_doc("Ficha Empleado", existing_name)
+	changed_fields = _apply_employee_payload(doc, row, is_new=False)
+	if changed_fields:
+		doc.save(ignore_permissions=True)
+
+	novedad_result = _upsert_novedad_for_employee(doc.name, row, optional=True)
+	identity = reconcile_person_identity(
+		employee=doc,
+		document=cedula,
+		email=(doc.email or "").strip() or None,
+		allow_create_user=True,
+		user_defaults={
+			"first_name": doc.nombres or "Empleado",
+			"last_name": doc.apellidos or "",
+			"enabled": 1,
+			"send_welcome_email": 0,
+		},
+		user_roles=["Empleado"],
+	)
+	_log_identity_state("centro_de_datos:update_empleado:identity_reconciled", identity)
+	if changed_fields or (novedad_result and novedad_result.get("action") in {"created", "updated"}):
+		return {"action": "updated", "employee": doc.name, "user": identity.user}
+	return {"action": "skipped", "employee": doc.name, "user": identity.user}
 
 
 def create_novedad(row):
 	emp_name = frappe.db.get_value("Ficha Empleado", {"cedula": row["cedula_empleado"]}, "name")
 	if not emp_name:
 		raise Exception(f"Empleado con cédula {row['cedula_empleado']} no encontrado.")
-
-	doc = frappe.new_doc("Novedad SST")
-	doc.empleado = emp_name
-	doc.tipo_novedad = row["tipo_novedad"]
-	doc.fecha_inicio = getdate(row["fecha_inicio"])
-	doc.fecha_fin = getdate(row["fecha_fin"])
-	doc.descripcion = row.get("descripcion", "")
-	doc.insert()
+	result = _upsert_novedad_for_employee(emp_name, row)
+	return {"action": result.get("action", "skipped"), "employee": emp_name, "novedad": result.get("name")}
 
 
 def create_user(row):
@@ -351,6 +735,104 @@ def create_user(row):
 	rol = (row.get("rol") or "").strip()
 	if rol and frappe.db.exists("Role", rol):
 		user.add_roles(rol)
+
+	return {"action": "updated" if identity.user else "created", "user": user.name, "employee": identity.employee}
+
+
+def _xlsx_library():
+	try:
+		import openpyxl  # type: ignore
+
+		return openpyxl
+	except ImportError:
+		frappe.throw("La librería openpyxl no está instalada en el entorno.")
+
+
+def _build_employee_report_rows():
+	employees = frappe.get_all(
+		"Ficha Empleado",
+		fields=["name", "cedula", "nombres", "apellidos", "email", "estado", "pdv", "cargo", "tipo_jornada", "fecha_ingreso"],
+	)
+	pdv_rows = frappe.get_all("Punto de Venta", fields=["name", "nombre_pdv"])
+	pdv_map = {row.get("name"): row.get("nombre_pdv") for row in pdv_rows}
+	user_rows = frappe.get_all("User", fields=["name", "employee", "enabled"])
+	user_map = {row.get("employee"): row for row in user_rows if row.get("employee")}
+	novedades = frappe.get_all(
+		"Novedad SST",
+		fields=["empleado", "tipo_novedad", "fecha_inicio", "fecha_fin", "descripcion"],
+	)
+	novedades_map = {}
+	for row in novedades:
+		novedades_map.setdefault(row.get("empleado"), []).append(row)
+
+	def _latest_novedad(rows):
+		if not rows:
+			return None
+		return sorted(rows, key=lambda item: (str(item.get("fecha_inicio") or ""), str(item.get("fecha_fin") or "")), reverse=True)[0]
+
+	report_rows = []
+	for employee in employees:
+		emp_novedades = novedades_map.get(employee.get("name"), [])
+		latest = _latest_novedad(emp_novedades)
+		user_row = user_map.get(employee.get("name"), {})
+		report_rows.append(
+			[
+				employee.get("cedula") or "",
+				employee.get("nombres") or "",
+				employee.get("apellidos") or "",
+				employee.get("email") or "",
+				pdv_map.get(employee.get("pdv"), employee.get("pdv") or ""),
+				employee.get("cargo") or "",
+				employee.get("estado") or "",
+				employee.get("tipo_jornada") or "",
+				str(employee.get("fecha_ingreso") or ""),
+				user_row.get("name") or "",
+				"Sí" if user_row.get("enabled") else "No",
+				len(emp_novedades),
+				(latest or {}).get("tipo_novedad") or "",
+				str((latest or {}).get("fecha_inicio") or ""),
+				str((latest or {}).get("fecha_fin") or ""),
+				(latest or {}).get("descripcion") or "",
+			]
+		)
+	return report_rows
+
+
+@frappe.whitelist()
+def download_employee_master_report():
+	openpyxl = _xlsx_library()
+	wb = openpyxl.Workbook()
+	ws = wb.active
+	ws.title = "Empleados"
+	ws.append(
+		[
+			"cedula",
+			"nombres",
+			"apellidos",
+			"email",
+			"punto_de_venta",
+			"cargo",
+			"estado",
+			"tipo_jornada",
+			"fecha_ingreso",
+			"user",
+			"user_enabled",
+			"total_novedades",
+			"ultima_novedad",
+			"ultima_novedad_inicio",
+			"ultima_novedad_fin",
+			"ultima_novedad_descripcion",
+		]
+	)
+	for row in _build_employee_report_rows():
+		ws.append(row)
+
+	buf = BytesIO()
+	wb.save(buf)
+	buf.seek(0)
+	frappe.response["filename"] = f"Reporte_Empleados_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+	frappe.response["filecontent"] = buf.read()
+	frappe.response["type"] = "binary"
 
 
 def create_comentario_bienestar(row):

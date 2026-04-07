@@ -22,10 +22,14 @@ def ensure_contextual_groups(pdv_name=None, city=None):
 
 
 def sync_user_groups_on_employee_change(doc=None, method=None):
+	if _bulk_import_active():
+		return
 	sync_all_user_groups()
 
 
 def sync_user_groups_on_user_change(doc=None, method=None):
+	if _bulk_import_active():
+		return
 	sync_all_user_groups()
 
 
@@ -130,6 +134,10 @@ def _get_active_users():
 			pluck="name",
 		)
 	)
+
+
+def _bulk_import_active():
+	return bool(getattr(getattr(frappe, "flags", None), "hubgh_centro_datos_bulk_import", False))
 
 
 def _pdv_group_name(pdv_name):

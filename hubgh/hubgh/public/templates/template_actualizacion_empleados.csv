@@ -1,0 +1,3 @@
+cedula,nombres,apellidos,email,pdv,cargo,estado,tipo_jornada,fecha_ingreso,novedad_tipo,novedad_fecha_inicio,novedad_fecha_fin,novedad_descripcion
+12345678,JUAN,PÉREZ,juan@empresa.com,Home 01,ADMINISTRADOR PUNTO VENTA,Retirado,Tiempo Completo,2024-01-15,Retiro,2026-04-01,2026-04-01,Retiro reportado por carga masiva
+87654321,MARIA,GÓMEZ,maria@empresa.com,Home 02,AUXILIAR DE COCINA,Activo,Tiempo Completo,2024-03-01,Vacaciones,2026-04-10,2026-04-20,Vacaciones programadas abril
