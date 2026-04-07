@@ -180,8 +180,7 @@ class TestPersonIdentity(TestCase):
 		before = person_identity.PersonIdentity("EMP-1", None, "123", "empleado@example.com", "unresolved")
 		after = person_identity.PersonIdentity("EMP-1", "empleado@example.com", "123", "empleado@example.com", "employee_link")
 		with patch(
-			"hubgh.patches.backfill_canonical_person_identity_by_document.frappe.get_all",
-			return_value=[{"name": "EMP-1", "cedula": "123", "email": "empleado@example.com", "nombres": "Ana", "apellidos": "Paz"}],
+			"hubgh.patches.backfill_canonical_person_identity_by_document.ensure_roles_and_profiles"
 		), patch(
 			"hubgh.patches.backfill_canonical_person_identity_by_document.run_canonical_person_identity_backfill",
 			return_value={

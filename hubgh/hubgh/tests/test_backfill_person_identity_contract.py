@@ -144,6 +144,8 @@ class TestBackfillPersonIdentityContract(TestCase):
 	def test_patch_execute_uses_shared_backfill_helper(self):
 		report = {"employees_scanned": 1}
 		with patch(
+			"hubgh.patches.backfill_canonical_person_identity_by_document.ensure_roles_and_profiles"
+		) as ensure_roles, patch(
 			"hubgh.patches.backfill_canonical_person_identity_by_document.run_canonical_person_identity_backfill",
 			return_value=report,
 		) as run_backfill, patch(
@@ -152,6 +154,7 @@ class TestBackfillPersonIdentityContract(TestCase):
 		):
 			result = backfill_canonical_person_identity_by_document.execute()
 
+		ensure_roles.assert_called_once_with()
 		run_backfill.assert_called_once_with(commit=True)
 		self.assertEqual(result, report)
 
