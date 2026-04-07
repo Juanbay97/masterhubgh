@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from hubgh import permissions, person_identity, user_groups
 from hubgh.api import my_profile, ops
@@ -125,6 +125,54 @@ class TestPersonIdentity(TestCase):
 
 		self.assertTrue(identity.conflict)
 		self.assertEqual(identity.conflict_reason, "user_duplicate_document")
+
+	def test_ensure_user_roles_inserts_has_role_without_saving_user(self):
+		user_doc = SimpleNamespace(roles=[], save=MagicMock())
+		inserted = []
+
+		def fake_get_doc(*args, **kwargs):
+			if args == ("User", "empleado@example.com"):
+				return user_doc
+			payload = args[0] if args else kwargs
+			insert = MagicMock(side_effect=lambda ignore_permissions=True: inserted.append(payload))
+			return SimpleNamespace(insert=insert)
+
+		with patch("hubgh.person_identity.frappe.get_doc", side_effect=fake_get_doc), patch(
+			"hubgh.person_identity.frappe.db.exists",
+			return_value=True,
+		):
+			person_identity._ensure_user_roles("empleado@example.com", ["Empleado"])
+
+		user_doc.save.assert_not_called()
+		self.assertEqual(inserted, [{"doctype": "Has Role", "parenttype": "User", "parentfield": "roles", "parent": "empleado@example.com", "role": "Empleado"}])
+
+	def test_ensure_user_roles_creates_missing_role_before_assignment(self):
+		user_doc = SimpleNamespace(roles=[])
+		inserted = []
+
+		def fake_get_doc(*args, **kwargs):
+			if args == ("User", "empleado@example.com"):
+				return user_doc
+			payload = args[0] if args else kwargs
+			insert = MagicMock(side_effect=lambda ignore_permissions=True: inserted.append(payload))
+			return SimpleNamespace(insert=insert)
+
+		def fake_exists(doctype, name):
+			return not (doctype == "Role" and name == "Empleado")
+
+		with patch("hubgh.person_identity.frappe.get_doc", side_effect=fake_get_doc), patch(
+			"hubgh.person_identity.frappe.db.exists",
+			side_effect=fake_exists,
+		):
+			person_identity._ensure_user_roles("empleado@example.com", ["Empleado"])
+
+		self.assertEqual(
+			inserted,
+			[
+				{"doctype": "Role", "role_name": "Empleado", "desk_access": 1, "read_only": 0},
+				{"doctype": "Has Role", "parenttype": "User", "parentfield": "roles", "parent": "empleado@example.com", "role": "Empleado"},
+			],
+		)
 
 	def test_my_profile_employee_lookup_uses_canonical_resolver(self):
 		identity = person_identity.PersonIdentity("EMP-1", "user@example.com", "123", "user@example.com", "employee_link")

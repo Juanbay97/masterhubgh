@@ -780,8 +780,29 @@ def _ensure_user_roles(user_name, user_roles):
 	if not missing:
 		return
 	for role in missing:
-		user_doc.append("roles", {"role": role})
-	user_doc.save(ignore_permissions=True)
+		_ensure_role_exists(role)
+		frappe.get_doc(
+			{
+				"doctype": "Has Role",
+				"parenttype": "User",
+				"parentfield": "roles",
+				"parent": user_name,
+				"role": role,
+			}
+		).insert(ignore_permissions=True)
+
+
+def _ensure_role_exists(role_name):
+	if not role_name or frappe.db.exists("Role", role_name):
+		return
+	frappe.get_doc(
+		{
+			"doctype": "Role",
+			"role_name": role_name,
+			"desk_access": 1,
+			"read_only": 0,
+		}
+	).insert(ignore_permissions=True)
 
 
 def _identity_log_payload(identity: PersonIdentity):
