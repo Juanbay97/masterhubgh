@@ -11,24 +11,41 @@ SITE             := $(FRAPPE_SITE_NAME)
 
 DOCKER_COMPOSE := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
 COMPOSE = $(DOCKER_COMPOSE) -f docker/docker-compose.yml --env-file .env
+COMPOSE_DEPLOY = $(DOCKER_COMPOSE) -f docker/docker-compose.deploy.yml --env-file .env
 
-.PHONY: up down restart logs shell init-site migrate build ps destroy e2e-install e2e-candidato
+.PHONY: up down restart logs shell init-site migrate build ps destroy e2e-install e2e-candidato up-deploy down-deploy restart-deploy logs-deploy ps-deploy
 
 ## Levantar todos los servicios (primera vez: ~15 min por bench init)
 up:
 	$(COMPOSE) up -d
 
+## Levantar stack publico con Caddy al frente (HTTPS)
+up-deploy:
+	$(COMPOSE_DEPLOY) up -d
+
 ## Detener y eliminar contenedores (los volumes con datos persisten)
 down:
 	$(COMPOSE) down
+
+## Bajar stack publico con Caddy
+down-deploy:
+	$(COMPOSE_DEPLOY) down
 
 ## Reiniciar solo el backend (para aplicar cambios de codigo)
 restart:
 	$(COMPOSE) restart backend
 
+## Reiniciar backend y proxy publico
+restart-deploy:
+	$(COMPOSE_DEPLOY) restart backend caddy
+
 ## Ver logs del backend en tiempo real
 logs:
 	$(COMPOSE) logs -f backend
+
+## Ver logs del backend y proxy publico
+logs-deploy:
+	$(COMPOSE_DEPLOY) logs -f backend caddy
 
 ## Abrir shell dentro del contenedor backend
 shell:
@@ -37,6 +54,10 @@ shell:
 ## Estado de los contenedores
 ps:
 	$(COMPOSE) ps
+
+## Estado del stack publico
+ps-deploy:
+	$(COMPOSE_DEPLOY) ps
 
 ## Crear sitio e instalar app hubgh (solo la primera vez, despues de "make up")
 init-site:

@@ -1,0 +1,68 @@
+services:
+  mariadb:
+    image: mariadb:10.6
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-frappe}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MARIADB_ROOT_PASSWORD:-frappe}"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  redis-cache:
+    image: redis:7-alpine
+
+  redis-queue:
+    image: redis:7-alpine
+
+  backend:
+    image: frappe/bench:latest
+    env_file:
+      - ../.env
+    environment:
+      SHELL: /bin/bash
+    volumes:
+      - bench_data:/home/frappe/frappe-bench
+      - ../hubgh:/home/frappe/frappe-bench/apps/hubgh
+      - sites_data:/home/frappe/frappe-bench/sites
+      - ./entrypoint.sh:/entrypoint.sh
+      - ./create-site.sh:/create-site.sh
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+    expose:
+      - "8000"
+      - "9000"
+    command: ["bash", "/entrypoint.sh"]
+
+  caddy:
+    image: caddy:2.8-alpine
+    depends_on:
+      backend:
+        condition: service_started
+    env_file:
+      - ../.env
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  mariadb_data:
+  bench_data:
+  sites_data:
+  caddy_data:
+  caddy_config:

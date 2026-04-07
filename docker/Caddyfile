@@ -1,0 +1,24 @@
+{$PUBLIC_DOMAIN} {
+	encode gzip zstd
+
+	@forbidden path /.env /.git* /sites/* /private/* /backups/* /logs/* /terraform* /helm/*
+	respond @forbidden 404
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy interest-cohort=()
+		-Server
+	}
+
+	request_body {
+		max_size 25MB
+	}
+
+	@socketio path /socket.io/*
+	reverse_proxy @socketio backend:9000
+	reverse_proxy backend:8000
+
+	tls {$ACME_EMAIL}
+}
