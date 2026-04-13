@@ -5,7 +5,7 @@ from frappe import _
 from frappe.integrations.utils import make_post_request
 from frappe.utils import cint
 
-from hubgh.hubgh.public_url import build_public_url, override_public_base_url_for_frappe
+from hubgh.public_url import build_public_url, override_public_base_url_for_frappe
 
 
 _FORCE_PASSWORD_RESET_CACHE_KEY = "hubgh:onboarding:force_password_reset"
