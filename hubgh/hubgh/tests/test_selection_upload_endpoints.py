@@ -83,6 +83,25 @@ def tearDownModule():
 
 
 class TestSelectionUploadEndpoints(TestCase):
+	def test_validate_selection_access_allows_gestion_humana_actor(self):
+		with patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.user_has_any_role",
+			side_effect=lambda user, *roles: "Gestión Humana" in roles,
+		):
+			seleccion_documentos._validate_selection_access()
+
+	def test_attach_contract_allows_relaciones_laborales_jefe(self):
+		with patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.user_has_any_role",
+			side_effect=lambda user, *roles: "Relaciones Laborales Jefe" in roles,
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.upload_person_document",
+			return_value=SimpleNamespace(name="PD-003"),
+		):
+			result = seleccion_documentos.attach_contract("666666", "/private/files/contract.pdf")
+
+		self.assertEqual(result, "PD-003")
+
 	def test_upload_candidate_document_clears_stale_message_log(self):
 		frappe_module = sys.modules["frappe"]
 		frappe_module.local.message_log = ["No se pudo encontrar Persona: 666666"]

@@ -15,7 +15,7 @@ from hubgh.hubgh.role_matrix import user_has_any_role
 def _validate_folder_access(employee=None):
 	if frappe.session.user == "Administrator":
 		return
-	if user_has_any_role(frappe.session.user, "Gestión Humana", "HR Labor Relations", "System Manager"):
+	if user_has_any_role(frappe.session.user, "System Manager", "Relaciones Laborales Jefe"):
 		return
 	if employee and user_has_any_role(frappe.session.user, "Empleado"):
 		user_employee = frappe.db.get_value("User", frappe.session.user, "employee")

@@ -150,6 +150,7 @@ def _build_contextual_actions(user, employee_id, is_gh, is_jefe, is_emp, can_vie
     can_create_disciplinary = bool(can_manage_disciplinary and can_view_sensitive)
     can_create_wellbeing = bool(is_gh or is_jefe)
     can_view_documents = bool(is_gh or is_jefe or is_emp)
+    can_manage_retirement = bool(user_has_any_role(user, "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe"))
 
     return {
         "can_create_novedad": can_create_novedad,
@@ -190,6 +191,13 @@ def _build_contextual_actions(user, employee_id, is_gh, is_jefe, is_emp, can_vie
                 "prefill": {"ficha_empleado": employee_id},
             },
             {
+                "key": "manage_retirement",
+                "label": "Gestionar Retiro",
+                "visible": can_manage_retirement,
+                "route": "/app/bandeja-retiros-empleados",
+                "prefill": {"employee": employee_id},
+            },
+            {
                 "key": "view_documents",
                 "label": "Ver Expediente Documental",
                 "visible": can_view_documents,
@@ -208,11 +216,11 @@ def _build_contextual_actions(user, employee_id, is_gh, is_jefe, is_emp, can_vie
 
 
 def _can_access_retirado(user):
-    return user_has_any_role(user, "System Manager", "HR Labor Relations", "GH - RRLL", "Gerente GH")
+    return user_has_any_role(user, "System Manager", "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe", "Gerente GH")
 
 
 def _can_manage_disciplinary(user):
-    return user_has_any_role(user, "System Manager", "HR Labor Relations", "GH - RRLL", "Gerente GH")
+    return user_has_any_role(user, "System Manager", "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe", "Gerente GH")
 
 @frappe.whitelist()
 def get_persona_stats(
@@ -237,7 +245,7 @@ def get_persona_stats(
     is_gh = user_has_any_role(user, "Gestión Humana", "System Manager")
     is_jefe = user_has_any_role(user, "Jefe_PDV")
     is_emp = user_has_any_role(user, "Empleado")
-    is_rrll = user_has_any_role(user, "HR Labor Relations", "GH - RRLL")
+    is_rrll = user_has_any_role(user, "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe")
     is_gerente_gh = user_has_any_role(user, "Gerente GH")
 
     if (emp.estado or "") == "Retirado" and not _can_access_retirado(user):

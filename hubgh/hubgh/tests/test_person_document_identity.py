@@ -89,6 +89,40 @@ def tearDownModule():
 
 
 class TestPersonDocumentIdentity(TestCase):
+	def test_can_user_read_person_document_grants_full_employee_access_only_to_rrll_jefe(self):
+		doc = SimpleNamespace(person_type="Empleado", document_access=[], document_type="Contrato", person="EMP-001")
+		with patch("hubgh.hubgh.document_service.user_has_any_role", side_effect=lambda user, *roles: "Relaciones Laborales Jefe" in roles), patch(
+			"hubgh.hubgh.document_service.frappe.get_roles",
+			return_value=[],
+		), patch(
+			"hubgh.hubgh.document_service._get_document_type_rules",
+			return_value={"allowed_roles": []},
+		), patch(
+			"hubgh.hubgh.document_service.resolve_document_dimension",
+			return_value="operational",
+		), patch(
+			"hubgh.hubgh.document_service.evaluate_dimension_access",
+			return_value={"effective_allowed": False},
+		):
+			self.assertTrue(document_service.can_user_read_person_document(doc, user="rrll.jefe@example.com"))
+
+	def test_can_user_read_person_document_does_not_bypass_employee_access_for_plain_rrll(self):
+		doc = SimpleNamespace(person_type="Empleado", document_access=[], document_type="Contrato", person="EMP-001")
+		with patch("hubgh.hubgh.document_service.user_has_any_role", return_value=False), patch(
+			"hubgh.hubgh.document_service.frappe.get_roles",
+			return_value=[],
+		), patch(
+			"hubgh.hubgh.document_service._get_document_type_rules",
+			return_value={"allowed_roles": []},
+		), patch(
+			"hubgh.hubgh.document_service.resolve_document_dimension",
+			return_value="operational",
+		), patch(
+			"hubgh.hubgh.document_service.evaluate_dimension_access",
+			return_value={"effective_allowed": False},
+		):
+			self.assertFalse(document_service.can_user_read_person_document(doc, user="rrll@example.com"))
+
 	def test_new_person_document_sets_candidate_identity_fields(self):
 		captured = {}
 
@@ -199,3 +233,47 @@ class TestPersonDocumentIdentity(TestCase):
 			updates[0][0][2],
 			{"person": "CAND-0002", "person_doctype": "Candidato"},
 		)
+
+	def test_ensure_person_document_reuses_legacy_pending_multi_upload_row_by_document_number(self):
+		rules = {
+			"document_type": "2 cartas de referencias personales.",
+			"allows_multiple": 1,
+			"requires_approval": 0,
+		}
+		pending_rows = [
+			{
+				"name": "PD-LEGACY",
+				"person": "333333",
+				"candidate": "",
+				"employee": "",
+				"file": None,
+			}
+		]
+
+		def _exists(doctype, name=None, *args, **kwargs):
+			if doctype == "Candidato" and name == "CAND-0001":
+				return True
+			return False
+
+		def _get_value(doctype, filters=None, fieldname=None, *args, **kwargs):
+			if doctype == "Candidato" and filters == {"numero_documento": "333333"}:
+				return "CAND-0001"
+			if doctype == "Candidato" and filters == "CAND-0001" and fieldname == "numero_documento":
+				return "333333"
+			return None
+
+		with patch("hubgh.hubgh.document_service._get_document_type_rules", return_value=rules), patch(
+			"hubgh.hubgh.document_service.frappe.db.exists", side_effect=_exists
+		), patch(
+			"hubgh.hubgh.document_service.frappe.db.get_value", side_effect=_get_value
+		), patch(
+			"hubgh.hubgh.document_service.frappe.get_all", return_value=pending_rows
+		), patch(
+			"hubgh.hubgh.document_service.frappe.get_doc", return_value=SimpleNamespace(name="PD-LEGACY")) as get_doc_mock, patch(
+			"hubgh.hubgh.document_service._new_person_document"
+		) as new_doc_mock:
+			doc = document_service.ensure_person_document("Candidato", "CAND-0001", "2 cartas de referencias personales.")
+
+		self.assertEqual(doc.name, "PD-LEGACY")
+		get_doc_mock.assert_called_once_with("Person Document", "PD-LEGACY")
+		new_doc_mock.assert_not_called()

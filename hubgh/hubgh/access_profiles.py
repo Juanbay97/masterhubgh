@@ -10,7 +10,7 @@ ROLE_PROFILES = {
 	"HubGH Coordinador Zona": ["Empleado", "Employee", "LMS Student", "Coordinador Zona"],
 	"HubGH GH Seleccion": ["Empleado", "Employee", "Gestión Humana", "HR Selection", "GH - Bandeja General"],
 	"HubGH GH SST": ["Empleado", "Employee", "Gestión Humana", "HR SST", "GH - SST"],
-	"HubGH GH RRLL": ["Empleado", "Employee", "Gestión Humana", "HR Labor Relations", "GH - RRLL"],
+	"HubGH GH RRLL": ["Empleado", "Employee", "Gestión Humana", "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe"],
 	"HubGH GH Formacion y Bienestar": [
 		"Empleado",
 		"Employee",
@@ -30,7 +30,7 @@ ROLE_PROFILES = {
 		"HR SST",
 		"HR Labor Relations",
 		"HR Training & Wellbeing",
-		"GH Gerente",
+		"Gerente GH",
 	],
 	"HubGH Candidato": ["Candidato"],
 	"HubGH Admin": ["System Manager"],
@@ -52,11 +52,11 @@ WORKSPACE_ROLE_MAP = {
 	"Mi Perfil": ["Empleado", "Employee", "LMS Student", "Jefe_PDV", "Coordinador Zona", "Gestión Humana", "System Manager"],
 	"Mi Postulación": ["Candidato"],
 	"Mi Punto": ["Jefe_PDV", "Coordinador Zona", "System Manager"],
-	"Operación": ["Jefe_PDV", "Coordinador Zona", "System Manager", "GH Gerente"],
-	"Gestión Humana": ["Gestión Humana", "System Manager", "GH - Bandeja General", "GH - SST", "GH - RRLL", "GH Gerente"],
-	"Selección": ["HR Selection", "Gestión Humana", "System Manager", "GH Gerente"],
-	"Relaciones Laborales": ["HR Labor Relations", "Gestión Humana", "System Manager", "GH - RRLL", "GH Gerente"],
-	"SST": ["HR SST", "Gestión Humana", "System Manager", "GH - SST", "GH Gerente"],
+	"Operación": ["Jefe_PDV", "Coordinador Zona", "System Manager", "Gerente GH"],
+	"Gestión Humana": ["Gestión Humana", "System Manager", "GH - Bandeja General", "GH - SST", "GH - RRLL", "Gerente GH"],
+	"Selección": ["HR Selection", "Gestión Humana", "System Manager", "GH - Bandeja General", "Gerente GH"],
+	"Relaciones Laborales": ["HR Labor Relations", "Relaciones Laborales Jefe", "Gestión Humana", "System Manager", "GH - RRLL", "Gerente GH"],
+	"SST": ["HR SST", "Gestión Humana", "System Manager", "GH - SST", "Gerente GH"],
 	"Capacitación": [
 		"Empleado",
 		"Employee",
@@ -66,13 +66,13 @@ WORKSPACE_ROLE_MAP = {
 		"HR Training & Wellbeing",
 		"Gestión Humana",
 		"System Manager",
-		"GH Gerente",
+		"Gerente GH",
 	],
 	"Bienestar": [
 		"HR Training & Wellbeing",
 		"Gestión Humana",
 		"System Manager",
-		"GH Gerente",
+		"Gerente GH",
 	],
 	"Nómina": [
 		"Gestión Humana",
@@ -86,7 +86,7 @@ WORKSPACE_ROLE_MAP = {
 
 SEED_ROLES = {
 	"Coordinador Zona",
-	"GH Gerente",
+	"Gerente GH",
 	"Operación",
 	"GH - Bandeja General",
 	"GH - SST",
@@ -94,6 +94,7 @@ SEED_ROLES = {
 	"HR Selection",
 	"HR SST",
 	"HR Labor Relations",
+	"Relaciones Laborales Jefe",
 	"HR Training & Wellbeing",
 	"Operativo Nómina",
 	"TP Nómina",
@@ -145,7 +146,7 @@ def sync_user_access_profile(user):
 	elif roles_have_any(canonical_roles, {"Operativo Nómina"}):
 		_target_role_profile = "HubGH Nómina Operativa"
 		_target_module_profile = "HubGH Nómina"
-	elif "GH Gerente" in canonical_roles:
+	elif "Gerente GH" in canonical_roles:
 		_target_role_profile = "HubGH GH Gerente"
 		_target_module_profile = "HubGH GH"
 	elif roles_have_any(canonical_roles, {"HR Training & Wellbeing"}):

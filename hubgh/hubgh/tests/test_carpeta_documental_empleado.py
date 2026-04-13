@@ -1,5 +1,6 @@
 import sys
 import types
+from pathlib import Path
 from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import patch
@@ -63,6 +64,20 @@ def tearDownModule():
 
 
 class TestCarpetaDocumentalEmpleado(TestCase):
+	def test_folder_access_requires_relaciones_laborales_jefe_for_full_rrll_access(self):
+		with patch(
+			"hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.user_has_any_role",
+			return_value=False,
+		), self.assertRaisesRegex(Exception, "No autorizado"):
+			carpeta_documental_empleado._validate_folder_access("EMP-001")
+
+	def test_folder_access_allows_relaciones_laborales_jefe(self):
+		with patch(
+			"hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.user_has_any_role",
+			side_effect=lambda user, *roles: "Relaciones Laborales Jefe" in roles,
+		):
+			carpeta_documental_empleado._validate_folder_access("EMP-001")
+
 	def test_persona_documento_legacy_placeholder_is_excluded(self):
 		rows = [
 			SimpleNamespace(name="LEG-IGNORE", tipo_documento="Carpeta", archivo="/files/folder.pdf", estado_documento="Vigente", modified="2026-04-01 08:00:00", owner="legacy@example.com"),
@@ -198,3 +213,13 @@ class TestCarpetaDocumentalEmpleado(TestCase):
 			"hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado._validate_folder_access"
 		), self.assertRaisesRegex(Exception, "proceso origen"):
 			carpeta_documental_empleado.upload_document("EMP-001", "Examen Médico", "/files/exam.pdf")
+
+	def test_folder_js_exposes_bulk_documental_and_sst_batch_actions(self):
+		js_path = Path(__file__).resolve().parents[1] / "hubgh" / "page" / "carpeta_documental_empleado" / "carpeta_documental_empleado.js"
+		content = js_path.read_text(encoding="utf-8")
+
+		self.assertIn("subir documentos masivos", content)
+		self.assertIn("Documentos Empleado", content)
+		self.assertIn("Estado SST Empleado", content)
+		self.assertIn("template_documentos_masivos_manifest.csv", content)
+		self.assertIn("template_estados_sst_opciones.csv", content)

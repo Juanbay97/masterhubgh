@@ -11,7 +11,7 @@ from hubgh.user_groups import ensure_contextual_groups, sync_all_user_groups
 from hubgh.hubgh.bienestar_automation import ensure_ingreso_followups_for_employee
 
 
-RRLL_RETIREMENT_ROLES = {"System Manager", "HR Labor Relations", "GH - RRLL", "Gerente GH"}
+RRLL_RETIREMENT_ROLES = {"System Manager", "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe", "Gerente GH"}
 
 
 def finalize_hiring(contract_doc) -> dict[str, Any]:
@@ -95,6 +95,14 @@ def apply_retirement(*, employee, source_doctype, source_name, retirement_date=N
 
 	retirement_date = str(retirement_date or nowdate())
 	frappe.db.set_value("Ficha Empleado", employee, "estado", "Retirado", update_modified=False)
+	_sync_ficha_retirement_metadata(
+		employee,
+		retirement_date=retirement_date,
+		reason=reason,
+		source_doctype=source_doctype,
+		source_name=source_name,
+		flow_status="Ejecutado",
+	)
 	identity = resolve_user_for_employee(employee)
 	user_name = identity.user if identity else None
 	if user_name:
@@ -131,6 +139,13 @@ def reverse_retirement_if_clear(*, employee, source_doctype, source_name) -> dic
 		return {"reversed": False, "reason": "other_sources_active"}
 
 	frappe.db.set_value("Ficha Empleado", employee, "estado", "Activo", update_modified=False)
+	_sync_ficha_retirement_metadata(
+		employee,
+		retirement_date=nowdate(),
+		source_doctype=source_doctype,
+		source_name=source_name,
+		flow_status="Revertido",
+	)
 	identity = resolve_user_for_employee(employee)
 	user_name = identity.user if identity else None
 	if user_name:
@@ -279,3 +294,28 @@ def _build_trace_description(action, source_doctype, source_name, reason=None):
 	if cstr(reason).strip():
 		return f"{base}. {cstr(reason).strip()}"
 	return base
+
+
+def _sync_ficha_retirement_metadata(*, employee, retirement_date, source_doctype, source_name, flow_status, reason=None):
+	try:
+		meta = frappe.get_meta("Ficha Empleado")
+	except Exception:
+		return
+	fields = {field.fieldname for field in getattr(meta, "fields", [])}
+	updates = {}
+	if "fecha_retiro_efectiva" in fields:
+		updates["fecha_retiro_efectiva"] = retirement_date
+	if "fecha_ultimo_dia_laborado" in fields:
+		updates["fecha_ultimo_dia_laborado"] = retirement_date
+	if "estado_retiro_operacion" in fields:
+		updates["estado_retiro_operacion"] = flow_status
+	if "motivo_retiro" in fields and cstr(reason).strip():
+		updates["motivo_retiro"] = cstr(reason).strip().split(".")[0].strip()
+	if "detalle_retiro" in fields and cstr(reason).strip():
+		updates["detalle_retiro"] = cstr(reason).strip()
+	if "retiro_fuente_doctype" in fields:
+		updates["retiro_fuente_doctype"] = source_doctype
+	if "retiro_fuente_name" in fields:
+		updates["retiro_fuente_name"] = source_name
+	if updates:
+		frappe.db.set_value("Ficha Empleado", employee, updates, update_modified=False)

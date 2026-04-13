@@ -1,0 +1,8 @@
+paso,detalle
+1,Descargá template_documentos_masivos_manifest.csv y completá una fila por documento.
+2,Creá un ZIP que incluya el manifest CSV y todos los archivos referenciados en la columna archivo.
+3,Podés guardar el manifest como documentos.csv o manifest.csv en la raíz del ZIP.
+4,La columna archivo debe coincidir EXACTAMENTE con la ruta interna del ZIP. Ejemplo: documentos/12345678_hoja_vida.pdf.
+5,document_type debe ser el nombre del Document Type configurado en Hubgh. Usá la carpeta documental para tipos gestionados por RRLL.
+6,issue_date y valid_until usan formato YYYY-MM-DD. valid_until puede quedar vacío.
+7,El ZIP final se sube desde Carpeta Documental del Empleado o Centro de Datos en la opción Documentos Empleado.

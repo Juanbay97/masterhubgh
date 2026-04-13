@@ -1,6 +1,8 @@
 import csv
+import os
 import re
 import uuid
+import zipfile
 from copy import deepcopy
 from datetime import datetime, timezone
 from io import BytesIO, StringIO
@@ -8,7 +10,9 @@ from io import BytesIO, StringIO
 import frappe
 from frappe import _
 from frappe.utils import getdate, validate_email_address
+from frappe.utils.file_manager import save_file
 
+from hubgh.hubgh.document_service import upload_person_document
 from hubgh.person_identity import normalize_document, reconcile_person_identity
 
 
@@ -18,20 +22,26 @@ IMPORT_STATUS_TTL_SEC = 60 * 60 * 24
 _IMPORT_STATUS_FALLBACK = {}
 
 ALLOWED_BULK_DOCTYPES = {
+	"Documentos Empleado": "bulk_upload_employee_documents",
 	"Punto de Venta": "create_punto",
 	"Ficha Empleado": "create_empleado",
 	"Actualización Empleado": "update_empleado",
 	"Novedad SST": "create_novedad",
+	"Estado SST Empleado": "upsert_employee_sst_status",
 	"User": "create_user",
 }
 
 EXPECTED_CSV_COLUMNS = {
+	"Documentos Empleado": {"cedula", "document_type", "archivo"},
 	"Punto de Venta": {"nombre_pdv"},
 	"Ficha Empleado": {"cedula", "pdv"},
 	"Actualización Empleado": {"cedula"},
 	"Novedad SST": {"cedula_empleado", "tipo_novedad", "fecha_inicio", "fecha_fin"},
+	"Estado SST Empleado": {"cedula_empleado", "tipo_novedad", "fecha_inicio", "fecha_fin"},
 	"User": {"email"},
 }
+
+ZIP_BULK_DOCTYPES = {"Documentos Empleado"}
 
 
 def _stable_error(code, detail=""):
@@ -167,6 +177,82 @@ def _read_csv_rows(doctype, file_url):
 	return [(index, row) for index, row in enumerate(reader, start=2) if not _row_is_effectively_empty(row)]
 
 
+def _read_bulk_rows(doctype, file_url):
+	if doctype in ZIP_BULK_DOCTYPES:
+		return _read_zip_rows(doctype, file_url)
+	return _read_csv_rows(doctype, file_url)
+
+
+def _read_uploaded_file(file_url):
+	file_doc = frappe.get_doc("File", {"file_url": file_url})
+	content = file_doc.get_content()
+	if not content:
+		frappe.throw(_(_stable_error("empty_file")))
+	return file_doc, content
+
+
+def _normalize_zip_member_name(value):
+	return str(value or "").strip().replace("\\", "/").lstrip("/")
+
+
+def _resolve_manifest_name(zip_file):
+	candidates = []
+	for info in zip_file.infolist():
+		if info.is_dir():
+			continue
+		member_name = _normalize_zip_member_name(info.filename)
+		if not member_name.lower().endswith(".csv"):
+			continue
+		base_name = member_name.rsplit("/", 1)[-1].lower()
+		priority = 0 if base_name in {"documentos.csv", "manifest.csv", "manifest_documentos.csv"} else 1
+		candidates.append((priority, len(member_name.split("/")), member_name))
+	if not candidates:
+		frappe.throw("El ZIP debe incluir un manifest CSV (por ejemplo documentos.csv o manifest.csv).")
+	return sorted(candidates)[0][2]
+
+
+def _read_zip_rows(doctype, file_url):
+	if doctype not in ALLOWED_BULK_DOCTYPES:
+		frappe.throw(_stable_error("unsupported_doctype", doctype))
+
+	_file_doc, content = _read_uploaded_file(file_url)
+	buffer = BytesIO(content if isinstance(content, bytes) else str(content).encode("utf-8"))
+	try:
+		archive = zipfile.ZipFile(buffer)
+	except zipfile.BadZipFile:
+		frappe.throw("La carga masiva documental debe venir en un archivo ZIP válido.")
+
+	with archive:
+		manifest_name = _resolve_manifest_name(archive)
+		manifest_content = _decode_csv_content(archive.read(manifest_name))
+		reader = _build_csv_reader(manifest_content)
+		columns_error = _validate_expected_columns(doctype, reader.fieldnames)
+		if columns_error:
+			frappe.throw(columns_error)
+
+		available_files = {
+			_normalize_zip_member_name(info.filename): info
+			for info in archive.infolist()
+			if not info.is_dir() and _normalize_zip_member_name(info.filename) != manifest_name
+		}
+		rows = []
+		for index, row in enumerate(reader, start=2):
+			if _row_is_effectively_empty(row):
+				continue
+			attachment_name = _normalize_zip_member_name(row.get("archivo"))
+			if not attachment_name:
+				raise Exception(f"Fila {index}: el campo 'archivo' es obligatorio para documentos masivos.")
+			zip_info = available_files.get(attachment_name)
+			if not zip_info:
+				raise Exception(f"Fila {index}: archivo '{attachment_name}' no encontrado dentro del ZIP.")
+			row_payload = dict(row)
+			row_payload["__attachment_name"] = attachment_name
+			row_payload["__attachment_filename"] = os.path.basename(attachment_name)
+			row_payload["__attachment_content"] = archive.read(zip_info)
+			rows.append((index, row_payload))
+		return rows
+
+
 def _chunked(rows, chunk_size):
 	for offset in range(0, len(rows), chunk_size):
 		yield rows[offset: offset + chunk_size]
@@ -240,7 +326,7 @@ def get_supported_doctypes():
 
 @frappe.whitelist()
 def start_upload_data(doctype, file_url, chunk_size=DEFAULT_IMPORT_CHUNK_SIZE):
-	rows = _read_csv_rows(doctype, file_url)
+	rows = _read_bulk_rows(doctype, file_url)
 	chunk_size = _coerce_chunk_size(chunk_size)
 	import_id = uuid.uuid4().hex
 	state = _new_import_status(import_id, doctype, file_url, len(rows), chunk_size)
@@ -271,7 +357,7 @@ def get_upload_status(import_id):
 
 
 def process_upload_data_job(import_id, doctype, file_url, chunk_size=DEFAULT_IMPORT_CHUNK_SIZE):
-	rows = _read_csv_rows(doctype, file_url)
+	rows = _read_bulk_rows(doctype, file_url)
 	state = _load_import_status(import_id) or _new_import_status(import_id, doctype, file_url, len(rows), _coerce_chunk_size(chunk_size))
 	state["status"] = "running"
 	state["started_at"] = state.get("started_at") or _utcnow_iso()
@@ -362,7 +448,7 @@ def upload_data(doctype, file_url):
 		}
 
 	try:
-		rows = _read_csv_rows(doctype, file_url)
+		rows = _read_bulk_rows(doctype, file_url)
 	except Exception as exc:
 		return {
 			"success": 0,
@@ -418,6 +504,45 @@ def _update_value(doc, fieldname, value, changed_fields):
 	changed_fields.append(fieldname)
 
 
+def _first_present(row, *fieldnames):
+	for fieldname in fieldnames:
+		value = row.get(fieldname)
+		if value is None:
+			continue
+		if isinstance(value, str):
+			trimmed = value.strip()
+			if trimmed:
+				return trimmed
+			continue
+		return value
+	return None
+
+
+def _coerce_bool(value, *, default=None):
+	if value in (None, ""):
+		return default
+	if isinstance(value, bool):
+		return int(value)
+	text = str(value).strip().lower()
+	if text in {"1", "si", "sí", "s", "true", "x", "yes"}:
+		return 1
+	if text in {"0", "no", "n", "false"}:
+		return 0
+	raise Exception(f"Valor booleano inválido: {value}. Usá Sí/No, 1/0 o True/False.")
+
+
+def _coerce_date_value(value):
+	if value in (None, ""):
+		return None
+	return getdate(str(value).strip())
+
+
+def _coerce_int_value(value, *, default=None):
+	if value in (None, ""):
+		return default
+	return int(str(value).strip())
+
+
 def _resolve_pdv_name(pdv_nombre, *, cedula=None, required=False):
 	pdv_nombre = (pdv_nombre or "").strip()
 	if not pdv_nombre:
@@ -458,10 +583,10 @@ def _apply_employee_payload(doc, row, *, is_new=False):
 
 
 def _upsert_novedad_for_employee(employee_name, row, *, optional=False):
-	tipo_novedad = (row.get("tipo_novedad") or row.get("novedad_tipo") or "").strip()
-	fecha_inicio = (row.get("fecha_inicio") or row.get("novedad_fecha_inicio") or "").strip()
-	fecha_fin = (row.get("fecha_fin") or row.get("novedad_fecha_fin") or "").strip()
-	descripcion = (row.get("descripcion") or row.get("novedad_descripcion") or "").strip()
+	tipo_novedad = _first_present(row, "tipo_novedad", "novedad_tipo") or ""
+	fecha_inicio = _first_present(row, "fecha_inicio", "novedad_fecha_inicio") or ""
+	fecha_fin = _first_present(row, "fecha_fin", "novedad_fecha_fin") or ""
+	descripcion = _first_present(row, "descripcion", "novedad_descripcion") or ""
 
 	if optional and not any([tipo_novedad, fecha_inicio, fecha_fin, descripcion]):
 		return None
@@ -471,6 +596,52 @@ def _upsert_novedad_for_employee(employee_name, row, *, optional=False):
 
 	fecha_inicio_value = getdate(fecha_inicio)
 	fecha_fin_value = getdate(fecha_fin)
+	novedad_payload = {
+		"descripcion": descripcion,
+		"titulo_resumen": _first_present(row, "titulo_resumen"),
+		"descripcion_resumen": _first_present(row, "descripcion_resumen"),
+		"estado": _first_present(row, "estado_novedad", "novedad_estado", "estado"),
+		"prioridad": _first_present(row, "prioridad"),
+		"estado_destino": _first_present(row, "estado_destino", "novedad_estado_destino"),
+		"tipo_alerta": _first_present(row, "tipo_alerta"),
+		"frecuencia_alerta": _first_present(row, "frecuencia_alerta"),
+		"causa_evento": _first_present(row, "causa_evento"),
+		"causa_raiz": _first_present(row, "causa_raiz"),
+		"origen_incapacidad": _first_present(row, "origen_incapacidad"),
+		"diagnostico_corto": _first_present(row, "diagnostico_corto"),
+		"recomendaciones_detalle": _first_present(row, "recomendaciones_detalle"),
+		"aforado_motivo": _first_present(row, "aforado_motivo"),
+		"categoria_seguimiento": _first_present(row, "categoria_seguimiento"),
+	}
+	for fieldname, raw_value in {
+		"fecha_accidente": _first_present(row, "fecha_accidente"),
+		"aforado_desde": _first_present(row, "aforado_desde"),
+		"proxima_alerta_fecha": _first_present(row, "proxima_alerta_fecha"),
+	}.items():
+		novedad_payload[fieldname] = _coerce_date_value(raw_value)
+	for fieldname, raw_value in {
+		"es_accidente_trabajo": _first_present(row, "es_accidente_trabajo"),
+		"accidente_tuvo_incapacidad": _first_present(row, "accidente_tuvo_incapacidad"),
+		"reportado_arl": _first_present(row, "reportado_arl"),
+		"en_radar": _first_present(row, "en_radar"),
+		"alerta_activa": _first_present(row, "alerta_activa"),
+		"crear_alerta": _first_present(row, "crear_alerta"),
+		"impacta_estado": _first_present(row, "impacta_estado"),
+	}.items():
+		value = _coerce_bool(raw_value, default=None)
+		if value is not None:
+			novedad_payload[fieldname] = value
+	for fieldname, raw_value in {
+		"dias_para_alerta": _first_present(row, "dias_para_alerta"),
+		"dias_alerta_post_incapacidad": _first_present(row, "dias_alerta_post_incapacidad"),
+	}.items():
+		value = _coerce_int_value(raw_value, default=None)
+		if value is not None:
+			novedad_payload[fieldname] = value
+	if novedad_payload.get("estado_destino") and "impacta_estado" not in novedad_payload:
+		novedad_payload["impacta_estado"] = 1
+	if _first_present(row, "evidencia_incapacidad"):
+		novedad_payload["evidencia_incapacidad"] = _first_present(row, "evidencia_incapacidad")
 	existing_name = frappe.db.get_value(
 		"Novedad SST",
 		{
@@ -484,8 +655,10 @@ def _upsert_novedad_for_employee(employee_name, row, *, optional=False):
 	if existing_name:
 		doc = frappe.get_doc("Novedad SST", existing_name)
 		changed_fields = []
-		if descripcion:
-			_update_value(doc, "descripcion", descripcion, changed_fields)
+		for fieldname, value in novedad_payload.items():
+			if value in (None, ""):
+				continue
+			_update_value(doc, fieldname, value, changed_fields)
 		if changed_fields:
 			doc.save(ignore_permissions=True)
 			return {"action": "updated", "name": existing_name}
@@ -496,9 +669,69 @@ def _upsert_novedad_for_employee(employee_name, row, *, optional=False):
 	doc.tipo_novedad = tipo_novedad
 	doc.fecha_inicio = fecha_inicio_value
 	doc.fecha_fin = fecha_fin_value
-	doc.descripcion = descripcion
+	for fieldname, value in novedad_payload.items():
+		if value in (None, ""):
+			continue
+		setattr(doc, fieldname, value)
 	doc.insert()
 	return {"action": "created", "name": doc.name}
+
+
+def _resolve_employee_by_cedula(cedula):
+	cedula = (cedula or "").strip()
+	if not cedula:
+		raise Exception("El campo 'cedula' o 'cedula_empleado' es requerido.")
+	emp_name = frappe.db.get_value("Ficha Empleado", {"cedula": cedula}, "name")
+	if not emp_name:
+		raise Exception(f"Empleado con cédula {cedula} no encontrado.")
+	return emp_name
+
+
+def bulk_upload_employee_documents(row):
+	emp_name = _resolve_employee_by_cedula(_first_present(row, "cedula", "cedula_empleado"))
+	document_type = _first_present(row, "document_type", "tipo_documento")
+	if not document_type:
+		raise Exception("El campo 'document_type' es requerido para documentos masivos.")
+	attachment_content = row.get("__attachment_content")
+	attachment_filename = row.get("__attachment_filename")
+	if not attachment_content or not attachment_filename:
+		raise Exception("No encontramos el archivo adjunto para esta fila documental.")
+
+	resolved_document_type = document_type.strip()
+	existing_name = frappe.db.get_value(
+		"Person Document",
+		{"employee": emp_name, "document_type": resolved_document_type},
+		"name",
+	)
+	file_doc = save_file(attachment_filename, attachment_content, "Ficha Empleado", emp_name, is_private=1)
+	doc = upload_person_document(
+		person_type="Empleado",
+		person=emp_name,
+		document_type=resolved_document_type,
+		file_url=file_doc.file_url,
+		notes=_first_present(row, "notes", "notas"),
+	)
+	issue_date = _coerce_date_value(_first_present(row, "issue_date", "fecha_emision"))
+	valid_until = _coerce_date_value(_first_present(row, "valid_until", "fecha_vencimiento"))
+	changed_fields = []
+	if issue_date is not None:
+		_update_value(doc, "issue_date", issue_date, changed_fields)
+	if _first_present(row, "valid_until", "fecha_vencimiento") is not None:
+		_update_value(doc, "valid_until", valid_until, changed_fields)
+	if changed_fields:
+		doc.save(ignore_permissions=True)
+	return {
+		"action": "updated" if existing_name else "created",
+		"employee": emp_name,
+		"document": doc.name,
+		"file_url": file_doc.file_url,
+	}
+
+
+def upsert_employee_sst_status(row):
+	emp_name = _resolve_employee_by_cedula(_first_present(row, "cedula_empleado", "cedula"))
+	result = _upsert_novedad_for_employee(emp_name, row)
+	return {"action": result.get("action", "skipped"), "employee": emp_name, "novedad": result.get("name")}
 
 
 def _log_identity_state(event, identity):

@@ -253,6 +253,7 @@ scheduler_events = {
 	"daily": [
 		"hubgh.tasks.revertir_novedades_expiradas",
 		"hubgh.tasks.dispatch_sst_alertas_diarias",
+		"hubgh.tasks.procesar_retiros_empleados_programados",
 		"hubgh.tasks.bienestar_generar_seguimientos_ingreso_diarios",
 		"hubgh.tasks.bienestar_marcar_vencidos_diario",
 		"hubgh.hubgh.people_ops_event_publishers.reconcile_people_ops_events_warn",

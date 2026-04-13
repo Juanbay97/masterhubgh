@@ -1,0 +1,3 @@
+cedula,document_type,archivo,issue_date,valid_until,notes
+12345678,Hoja de vida,documentos/12345678_hoja_vida.pdf,2026-04-01,,Carga inicial expediente laboral
+87654321,Cédula,documentos/87654321_cedula.pdf,2026-04-01,2031-04-01,Documento de identidad legible

@@ -1,0 +1,3 @@
+cedula_empleado,tipo_novedad,fecha_inicio,fecha_fin,estado_novedad,estado_destino,es_accidente_trabajo,accidente_tuvo_incapacidad,causa_evento,origen_incapacidad,diagnostico_corto,en_radar,categoria_seguimiento,crear_alerta,tipo_alerta,proxima_alerta_fecha,alerta_activa,descripcion_resumen,descripcion
+12345678,Accidente,2026-04-01,2026-04-10,En seguimiento,Incapacitado,Sí,Sí,Acto inseguro,Accidente laboral,Esguince de tobillo,Sí,AT abierto,Sí,Examen post incapacidad,2026-04-08,Sí,Seguimiento accidente abril,Accidente con incapacidad reportado a SST
+87654321,Recomendación Médica,2026-04-05,2026-04-30,Cerrada,Recomendación Médica,,,,,Sí,Condición médica,Sí,Vencimiento recomendación médica,2026-04-23,Sí,Control de recomendación médica,Seguimiento a restricción temporal

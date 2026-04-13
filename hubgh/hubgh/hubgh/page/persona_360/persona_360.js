@@ -321,11 +321,16 @@ function render_contextual_action_buttons(page, contextual_actions, emp_id) {
     clear_contextual_action_buttons(page);
 
     const actions = (contextual_actions.quick_actions || []).filter(a => a && a.visible);
-    actions.forEach(action => {
-        const btn = page.add_inner_button(action.label, function () {
-            if (action.key === 'view_documents') {
-                frappe.route_options = { persona: emp_id };
-                frappe.set_route('query-report', 'Person Documents');
+		actions.forEach(action => {
+			const btn = page.add_inner_button(action.label, function () {
+				if (action.route) {
+					frappe.route_options = Object.assign({}, action.prefill || {}, { employee: emp_id });
+					frappe.set_route(...String(action.route || '').replace(/^\/app\//, '').split('/'));
+					return;
+				}
+				if (action.key === 'view_documents') {
+					frappe.route_options = { persona: emp_id };
+					frappe.set_route('query-report', 'Person Documents');
                 return;
             }
             if (action.doctype) {
@@ -360,6 +365,12 @@ function bind_contextual_action_panel($container, contextual_actions, emp_id) {
 	$container.off('click', '.persona-action-btn').on('click', '.persona-action-btn', function () {
 		const action = actionMap[$(this).data('action-key')];
 		if (!action) return;
+
+		if (action.route) {
+			frappe.route_options = Object.assign({}, action.prefill || {}, { employee: emp_id });
+			frappe.set_route(...String(action.route || '').replace(/^\/app\//, '').split('/'));
+			return;
+		}
 
 		if (action.key === 'view_documents') {
 			frappe.route_options = { persona: emp_id };

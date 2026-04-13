@@ -23,11 +23,13 @@ TIPO_RECOMENDACION = "Recomendación Médica"
 TIPO_AFORADO = "Aforado"
 TIPO_INCAPACIDAD_EG = "Incapacidad por enfermedad general"
 TIPO_SEGUIMIENTO = "Seguimiento SST"
+TIPO_PRORROGA_INCAPACIDAD = "Prórroga incapacidad"
 
 
 class NovedadSST(Document):
 	def validate(self):
 		self.sync_incapacidad_controls()
+		self.normalize_prorroga_rows()
 		self.sync_pdv_from_employee()
 		self.relocate_incapacidad_files_to_employee_folder()
 		self.normalize_estado_fields()
@@ -180,10 +182,65 @@ class NovedadSST(Document):
 
 	def ensure_prorroga_consistency(self):
 		has_prorrogas = bool(getattr(self, "prorrogas_incapacidad", None) and len(self.prorrogas_incapacidad))
+		if has_prorrogas and not self.is_incapacidad_case():
+			frappe.throw("Las prórrogas solo aplican a novedades con incapacidad asociada.")
 		if cint(getattr(self, "prorroga", 0)) and not has_prorrogas:
 			frappe.throw("Marcaste prórroga, pero no registraste filas en Prórrogas Incapacidad.")
 		if has_prorrogas:
 			self.prorroga = 1
+
+	def normalize_prorroga_rows(self):
+		legacy_prorrogas = []
+		seguimientos_normales = []
+
+		for row in list(getattr(self, "seguimientos", []) or []):
+			payload = self._build_sst_followup_payload(row)
+			if payload["tipo_seguimiento"] == TIPO_PRORROGA_INCAPACIDAD:
+				legacy_prorrogas.append(payload)
+				continue
+			seguimientos_normales.append(payload)
+
+		prorrogas = []
+		seen = set()
+		for row in list(getattr(self, "prorrogas_incapacidad", []) or []):
+			payload = self._build_sst_followup_payload(row, forced_type=TIPO_PRORROGA_INCAPACIDAD)
+			fingerprint = self._sst_followup_fingerprint(payload)
+			if fingerprint in seen:
+				continue
+			seen.add(fingerprint)
+			prorrogas.append(payload)
+
+		for payload in legacy_prorrogas:
+			fingerprint = self._sst_followup_fingerprint(payload)
+			if fingerprint in seen:
+				continue
+			seen.add(fingerprint)
+			prorrogas.append(payload)
+
+		self.set("seguimientos", seguimientos_normales)
+		self.set("prorrogas_incapacidad", prorrogas)
+
+	def _build_sst_followup_payload(self, row, forced_type=None):
+		return {
+			"fecha_seguimiento": getattr(row, "fecha_seguimiento", None),
+			"tipo_seguimiento": forced_type or cstr(getattr(row, "tipo_seguimiento", None)).strip() or TIPO_SEGUIMIENTO,
+			"detalle": getattr(row, "detalle", None),
+			"estado_resultante": getattr(row, "estado_resultante", None),
+			"proxima_accion_fecha": getattr(row, "proxima_accion_fecha", None),
+			"responsable": getattr(row, "responsable", None),
+			"adjunto": getattr(row, "adjunto", None),
+		}
+
+	def _sst_followup_fingerprint(self, payload):
+		return (
+			cstr(payload.get("fecha_seguimiento")).strip(),
+			cstr(payload.get("tipo_seguimiento")).strip(),
+			cstr(payload.get("detalle")).strip(),
+			cstr(payload.get("estado_resultante")).strip(),
+			cstr(payload.get("proxima_accion_fecha")).strip(),
+			cstr(payload.get("responsable")).strip(),
+			cstr(payload.get("adjunto")).strip(),
+		)
 
 	def ensure_incapacidad_fields_required(self):
 		if not cstr(getattr(self, "diagnostico_corto", "")).strip():

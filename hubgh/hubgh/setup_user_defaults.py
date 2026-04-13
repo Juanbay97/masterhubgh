@@ -26,7 +26,7 @@ def _resolve_home_workspace(user_roles: set[str]) -> str:
 	if roles_have_any(canonical_roles, {"HR Training & Wellbeing", "Formación y Bienestar", "Formacion y Bienestar"}):
 		return "Bienestar"
 
-	if roles_have_any(canonical_roles, {"GH Gerente"}):
+	if roles_have_any(canonical_roles, {"Gerente GH"}):
 		return "Gestión Humana"
 
 	if roles_have_any(canonical_roles, {"Empleado", "LMS Student", "Employee"}):

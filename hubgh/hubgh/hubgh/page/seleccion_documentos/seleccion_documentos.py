@@ -50,7 +50,7 @@ def _normalize_text(value):
 def _validate_selection_access(candidate=None):
 	if frappe.session.user == "Administrator":
 		return
-	if user_has_any_role(frappe.session.user, "HR Selection"):
+	if _has_selection_access(frappe.session.user):
 		return
 	if user_has_any_role(frappe.session.user, "Candidato"):
 		if not candidate:
@@ -64,7 +64,22 @@ def _validate_selection_access(candidate=None):
 
 def _can_manage_candidates(user=None):
 	user = user or frappe.session.user
-	return user == "Administrator" or user_has_any_role(user, "HR Selection")
+	return user == "Administrator" or _has_selection_access(user)
+
+
+def _has_selection_access(user=None):
+	user = user or frappe.session.user
+	return user_has_any_role(user, "HR Selection", "Gestión Humana", "GH - Bandeja General", "Gerente GH")
+
+
+def _has_medical_exam_access(user=None):
+	user = user or frappe.session.user
+	return user_has_any_role(user, "HR SST", "SST", "HR Selection", "Gestión Humana", "GH - Bandeja General", "Gerente GH")
+
+
+def _has_labor_relations_access(user=None):
+	user = user or frappe.session.user
+	return user_has_any_role(user, "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe", "Gerente GH")
 
 
 def _candidate_apellidos_fallback(row):
@@ -444,7 +459,7 @@ def _medical_alert_responsible():
 
 @frappe.whitelist()
 def list_medical_exam_candidates(search=None):
-	if frappe.session.user != "Administrator" and not user_has_any_role(frappe.session.user, "HR SST", "SST", "HR Selection"):
+	if frappe.session.user != "Administrator" and not _has_medical_exam_access(frappe.session.user):
 		frappe.throw("No autorizado")
 	can_view_clinical = user_can_access_dimension("clinical", frappe.session.user)
 
@@ -499,7 +514,7 @@ def list_medical_exam_candidates(search=None):
 
 @frappe.whitelist()
 def list_medical_exam_history(search=None):
-	if frappe.session.user != "Administrator" and not user_has_any_role(frappe.session.user, "HR SST", "SST", "HR Selection"):
+	if frappe.session.user != "Administrator" and not _has_medical_exam_access(frappe.session.user):
 		frappe.throw("No autorizado")
 	can_view_clinical = user_can_access_dimension("clinical", frappe.session.user)
 
@@ -549,7 +564,7 @@ def list_medical_exam_history(search=None):
 
 @frappe.whitelist()
 def upload_medical_exam_document(candidate, file_url, notes=None, document_type=None):
-	if frappe.session.user != "Administrator" and not user_has_any_role(frappe.session.user, "HR SST", "SST", "HR Selection"):
+	if frappe.session.user != "Administrator" and not _has_medical_exam_access(frappe.session.user):
 		frappe.throw("No autorizado")
 	doc_type = _resolve_medical_document_type(document_type=document_type)
 	logger.info(
@@ -576,7 +591,7 @@ def upload_medical_exam_document(candidate, file_url, notes=None, document_type=
 
 @frappe.whitelist()
 def set_medical_concept(candidate, concepto_medico, notes=None):
-	if frappe.session.user != "Administrator" and not user_has_any_role(frappe.session.user, "HR SST", "SST", "HR Selection"):
+	if frappe.session.user != "Administrator" and not _has_medical_exam_access(frappe.session.user):
 		frappe.throw("No autorizado")
 	concept = (concepto_medico or "").strip().title()
 	if concept not in MEDICAL_CONCEPTS:
@@ -605,7 +620,7 @@ def set_medical_concept(candidate, concepto_medico, notes=None):
 
 @frappe.whitelist()
 def list_rejected_candidates(search=None):
-	if frappe.session.user != "Administrator" and not user_has_any_role(frappe.session.user, "HR Selection", "Gestión Humana"):
+	if frappe.session.user != "Administrator" and not _has_selection_access(frappe.session.user):
 		frappe.throw("No autorizado")
 
 	filters = {"estado_proceso": "Rechazado"}
@@ -661,7 +676,7 @@ def reactivate_candidate(candidate):
 
 @frappe.whitelist()
 def labor_relations_candidates():
-	if frappe.session.user != "Administrator" and not user_has_any_role(frappe.session.user, "HR Labor Relations"):
+	if frappe.session.user != "Administrator" and not _has_labor_relations_access(frappe.session.user):
 		frappe.throw("No autorizado")
 
 	rows = frappe.get_all(
@@ -681,7 +696,7 @@ def labor_relations_candidates():
 
 @frappe.whitelist()
 def attach_contract(candidate, file_url, notes=None):
-	if frappe.session.user != "Administrator" and not user_has_any_role(frappe.session.user, "HR Labor Relations"):
+	if frappe.session.user != "Administrator" and not _has_labor_relations_access(frappe.session.user):
 		frappe.throw("No autorizado")
 	return upload_person_document("Candidato", candidate, "Contrato", file_url, notes).name
 

@@ -28,6 +28,16 @@ Pre-commit is configured to use the following tools for checking and formatting 
 - prettier
 - pyupgrade
 
+### Public URL for outbound emails
+
+For canonical links in reset-password and other outbound flows, configure the site with a public base URL:
+
+```bash
+bench --site <site-name> set-config hubgh_public_base_url https://intranet.comidasmarpel.com
+```
+
+If `hubgh_public_base_url` is not set, HubGH falls back to Frappe's `host_name`.
+
 ### License
 
 mit

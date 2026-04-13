@@ -22,6 +22,7 @@ from hubgh.hubgh.role_matrix import (
 class TestHubghPhase8RolePermissions(FrappeTestCase):
 	def test_role_catalog_has_expected_legacy_aliases(self):
 		self.assertEqual(canonicalize_role("Gestion Humana"), "Gestión Humana")
+		self.assertEqual(canonicalize_role("GH Gerente"), "Gerente GH")
 		self.assertEqual(canonicalize_role("Selección"), "HR Selection")
 		self.assertEqual(canonicalize_role("Seleccion"), "HR Selection")
 		self.assertEqual(canonicalize_role("Relaciones Laborales"), "HR Labor Relations")
@@ -36,7 +37,7 @@ class TestHubghPhase8RolePermissions(FrappeTestCase):
 		self.assertIn("Selección", selection_effective)
 		self.assertIn("HR Selection", selection_effective)
 		self.assertIn("Relaciones Laborales", rl_effective)
-		self.assertIn("Gestión Humana", rl_effective)
+		self.assertIn("Relaciones Laborales Jefe", rl_effective)
 		self.assertIn("SST", sst_effective)
 
 	def test_roles_have_any_supports_aliases_for_selection_rl_and_ops(self):
@@ -83,6 +84,22 @@ class TestHubghPhase8RolePermissions(FrappeTestCase):
 			query = permissions.get_affiliation_permission_query("legacy.rl@example.com")
 
 		self.assertEqual(query, "")
+
+	def test_person_document_query_limits_rrll_to_candidate_records_without_dossier_role(self):
+		with patch("hubgh.hubgh.role_matrix.frappe.get_roles", return_value=["HR Labor Relations"]):
+			query = permissions.get_person_document_permission_query("rrll@example.com")
+
+		self.assertEqual(query, "`tabPerson Document`.person_type = 'Candidato'")
+
+	def test_person_document_query_grants_full_access_to_relaciones_laborales_jefe(self):
+		with patch("hubgh.hubgh.role_matrix.frappe.get_roles", return_value=["Relaciones Laborales Jefe"]), patch(
+			"hubgh.hubgh.permissions.frappe.db.escape",
+			side_effect=lambda value: f"'{value}'",
+		):
+			query = permissions.get_person_document_permission_query("rrll.jefe@example.com")
+
+		self.assertIn("`tabPerson Document`.person_type = 'Empleado'", query)
+		self.assertIn("cand.estado_proceso in", query)
 
 	def test_permissions_selection_query_allows_legacy_selection_alias(self):
 		with patch("hubgh.hubgh.role_matrix.frappe.get_roles", return_value=["Selección"]):
@@ -141,6 +158,7 @@ class TestHubghPhase8RolePermissions(FrappeTestCase):
 
 	def test_migration_map_is_idempotent_source_of_truth(self):
 		self.assertEqual(ROLE_MIGRATION_CANONICAL_MAP["GH_Central"], "Gestión Humana")
+		self.assertEqual(ROLE_MIGRATION_CANONICAL_MAP["GH Gerente"], "Gerente GH")
 		self.assertEqual(ROLE_MIGRATION_CANONICAL_MAP["Seleccion"], "HR Selection")
 		self.assertEqual(ROLE_MIGRATION_CANONICAL_MAP["Relaciones Laborales"], "HR Labor Relations")
 		self.assertEqual(ROLE_MIGRATION_CANONICAL_MAP["SST"], "HR SST")
@@ -149,6 +167,10 @@ class TestHubghPhase8RolePermissions(FrappeTestCase):
 		aliases = expand_role_aliases("Gestión Humana")
 		self.assertIn("Gestión Humana", aliases)
 		self.assertIn("GH_Central", aliases)
+
+		manager_aliases = expand_role_aliases("Gerente GH")
+		self.assertIn("Gerente GH", manager_aliases)
+		self.assertIn("GH Gerente", manager_aliases)
 
 		canonical = canonicalize_roles({"GH_Central", "Selección", "Jefe de tienda"})
 		self.assertIn("Gestión Humana", canonical)

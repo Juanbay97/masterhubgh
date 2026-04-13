@@ -378,7 +378,7 @@ function render_dashboard(page) {
 function renderPuntoQuickActions() {
 	return `
 		<button class="btn btn-sm btn-default punto-action-btn" data-action-key="novedad_sst">Registrar novedad SST</button>
-		<button class="btn btn-sm btn-default punto-action-btn" data-action-key="caso">Abrir caso</button>
+		<button class="btn btn-sm btn-default punto-action-btn" data-action-key="caso">Abrir caso disciplinario</button>
 		<button class="btn btn-sm btn-default punto-action-btn" data-action-key="feedback">Registrar feedback</button>
 	`;
 }
@@ -402,25 +402,7 @@ function bindPuntoQuickActions($container, pdvId) {
 		}
 
 		if (actionKey === 'caso') {
-			let d = new frappe.ui.Dialog({
-				title: 'Abrir caso operativo',
-				fields: [
-					{
-						label: 'Tipo de caso',
-						fieldname: 'tipo',
-						fieldtype: 'Select',
-						options: 'Disciplinario\nSST',
-						reqd: 1
-					}
-				],
-				primary_action_label: 'Continuar',
-				primary_action: function (values) {
-					let doctype = values.tipo === 'Disciplinario' ? 'Caso Disciplinario' : 'Caso SST';
-					frappe.new_doc(doctype, { pdv: pdvId });
-					d.hide();
-				}
-			});
-			d.show();
+			frappe.new_doc('Caso Disciplinario', { pdv: pdvId });
 		}
 	});
 }

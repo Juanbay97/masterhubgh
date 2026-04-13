@@ -53,6 +53,7 @@ Configurar en `sites/<site>/site_config.json`:
 
 ```json
 {
+	"hubgh_public_base_url": "https://intranet.comidasmarpel.com",
   "hubgh_onboarding_rate_limit_enabled": 1,
   "hubgh_onboarding_rate_limit_limit": 10,
   "hubgh_onboarding_rate_limit_window_seconds": 60,
@@ -61,6 +62,12 @@ Configurar en `sites/<site>/site_config.json`:
   "hubgh_onboarding_captcha_verify_url": "https://www.google.com/recaptcha/api/siteverify"
 }
 ```
+
+Precedencia para links salientes de activación/reset:
+
+1. `hubgh_public_base_url`
+2. `hubgh_canonical_base_url` (alias compatible)
+3. `host_name` de Frappe
 
 ### Recomendación por ambiente
 

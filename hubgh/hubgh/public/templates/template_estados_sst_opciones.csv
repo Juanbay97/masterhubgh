@@ -1,0 +1,40 @@
+campo,valor_permitido,notas
+tipo_novedad,Seguimiento SST,Tipo base SST
+tipo_novedad,Accidente,Permite campos de accidente
+tipo_novedad,Incapacidad,Compatibilidad histórica
+tipo_novedad,Incapacidad por enfermedad general,Tipo recomendado para incapacidad común
+tipo_novedad,Recomendación Médica,Requiere recomendaciones_detalle si se usa completo
+tipo_novedad,Aforado,Activa seguimiento/radar
+tipo_novedad,Otro,Usar solo si no aplica un tipo existente
+estado_novedad,Abierta,Estado inicial
+estado_novedad,En seguimiento,Seguimiento activo
+estado_novedad,Cerrada,Cierre operativo
+estado_destino,Vacaciones,Impacta estado del empleado
+estado_destino,Incapacitado,Impacta estado del empleado
+estado_destino,Licencia,Impacta estado del empleado
+estado_destino,Suspensión,Impacta estado del empleado
+estado_destino,Separación del Cargo,Impacta estado del empleado
+estado_destino,Recomendación Médica,Impacta estado del empleado
+estado_destino,Embarazo,Impacta estado del empleado
+estado_destino,Retirado,Solo si la novedad queda cerrada
+causa_evento,Condición insegura,Accidente
+causa_evento,Acto inseguro,Accidente
+causa_evento,Causa fortuita,Accidente
+origen_incapacidad,Enfermedad General,Incapacidad
+origen_incapacidad,Accidente no laboral,Incapacidad
+origen_incapacidad,Accidente laboral,Incapacidad
+categoria_seguimiento,Gestante,Radar SST
+categoria_seguimiento,Lactante,Radar SST
+categoria_seguimiento,Condición médica,Radar SST
+categoria_seguimiento,AT abierto,Radar SST
+categoria_seguimiento,Incapacidad larga,Radar SST
+categoria_seguimiento,Padre gestante,Radar SST
+categoria_seguimiento,Otro,Radar SST
+tipo_alerta,Seguimiento,Alerta SST
+tipo_alerta,Examen post incapacidad,Alerta SST
+tipo_alerta,Vencimiento recomendación médica,Alerta SST
+tipo_alerta,Seguimiento aforado semestral,Alerta SST
+tipo_alerta,Otro,Alerta SST
+frecuencia_alerta,Única,Alerta SST
+frecuencia_alerta,Recurrente,Alerta SST
+booleanos,Sí | No,Aplicable a es_accidente_trabajo accidente_tuvo_incapacidad en_radar crear_alerta alerta_activa impacta_estado reportado_arl

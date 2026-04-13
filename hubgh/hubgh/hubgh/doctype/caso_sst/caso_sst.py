@@ -7,7 +7,8 @@ from frappe.model.document import Document
 
 class CasoSST(Document):
 	def validate(self):
-		frappe.throw("Caso SST quedó en desuso operativo. Registra la novedad en Novedad SST (categoría SST).")
+		if self.is_new():
+			frappe.throw("Caso SST quedó en desuso operativo. Registra la novedad en Novedad SST (categoría SST).")
 
 	def on_submit(self):
 		self.create_novedad_relacionada()

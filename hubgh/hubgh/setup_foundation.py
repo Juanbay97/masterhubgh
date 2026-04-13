@@ -6,8 +6,10 @@ from hubgh.hubgh.role_matrix import get_transitional_roles
 def setup_roles():
     roles = [
         "Gestión Humana",
+        "Gerente GH",
         "HR Selection",
         "HR Labor Relations",
+        "Relaciones Laborales Jefe",
         "HR SST",
         "HR Training & Wellbeing",
         "Jefe_PDV",

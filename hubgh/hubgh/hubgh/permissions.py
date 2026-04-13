@@ -1,5 +1,6 @@
 import frappe
 
+from hubgh.hubgh.candidate_states import candidate_status_filter_values
 from hubgh.person_identity import resolve_employee_for_user
 from hubgh.hubgh.document_service import can_user_read_person_document
 from hubgh.hubgh.people_ops_policy import (
@@ -18,7 +19,26 @@ from hubgh.hubgh.role_matrix import (
 
 GH_ADMIN_ROLES = GH_ADMIN_CANONICAL_ROLES
 OPS_POINT_ROLES = OPS_POINT_CANONICAL_ROLES
-DISCIPLINARY_MANAGER_ROLES = {"System Manager", "HR Labor Relations", "GH - RRLL", "Gerente GH"}
+DISCIPLINARY_MANAGER_ROLES = {"System Manager", "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe", "Gerente GH"}
+
+
+def _user_has_employee_documental_access(user):
+	return user in {"Administrator"} or user_has_any_role(user, "System Manager", "Relaciones Laborales Jefe")
+
+
+def _employee_documental_query():
+	admitted_states = ", ".join(
+		frappe.db.escape(value)
+		for value in candidate_status_filter_values("En afiliación", "Listo para contratar", "Contratado")
+	)
+	return (
+		"(`tabPerson Document`.person_type = 'Empleado' "
+		"or exists("
+		"select 1 from `tabCandidato` cand "
+		"where cand.name = `tabPerson Document`.person "
+		f"and cand.estado_proceso in ({admitted_states})"
+		"))"
+	)
 
 
 def get_user_dimension_access(user=None):
@@ -37,7 +57,7 @@ def get_candidato_permission_query(user=None):
 	user = user or frappe.session.user
 	if user == "Administrator":
 		return ""
-	if user_has_any_role(user, "HR Selection") or user_has_any_role(user, "HR Labor Relations"):
+	if user_has_any_role(user, "HR Selection") or user_has_any_role(user, "HR Labor Relations", "Relaciones Laborales Jefe"):
 		return ""
 	return f"`tabCandidato`.user = {frappe.db.escape(user)}"
 
@@ -46,7 +66,7 @@ def candidato_has_permission(doc, user=None):
 	user = user or frappe.session.user
 	if user == "Administrator":
 		return True
-	if user_has_any_role(user, "HR Selection") or user_has_any_role(user, "HR Labor Relations"):
+	if user_has_any_role(user, "HR Selection") or user_has_any_role(user, "HR Labor Relations", "Relaciones Laborales Jefe"):
 		return True
 	return doc.user == user
 
@@ -55,8 +75,10 @@ def get_person_document_permission_query(user=None):
 	user = user or frappe.session.user
 	if user == "Administrator":
 		return ""
-	if user_has_any_role(user, "HR Labor Relations"):
-		return ""
+	if _user_has_employee_documental_access(user):
+		return _employee_documental_query()
+	if user_has_any_role(user, "HR Labor Relations", "Relaciones Laborales Jefe"):
+		return "`tabPerson Document`.person_type = 'Candidato'"
 
 	roles = frappe.get_roles(user)
 	roles_escaped = ", ".join(frappe.db.escape(r) for r in roles)
@@ -81,6 +103,7 @@ def _is_hr(user):
 	return (
 		user == "Administrator"
 		or user_has_any_role(user, "HR Labor Relations")
+		or user_has_any_role(user, "Relaciones Laborales Jefe")
 		or user_has_any_role(user, "HR Selection")
 	)
 

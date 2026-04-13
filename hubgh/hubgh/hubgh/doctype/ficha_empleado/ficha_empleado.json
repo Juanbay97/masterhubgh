@@ -14,9 +14,18 @@
     "pdv",
     "cargo",
     "tipo_jornada",
-    "fecha_ingreso",
-   "estado",
-   "email",
+   "fecha_ingreso",
+    "estado",
+    "retirement_section",
+    "estado_retiro_operacion",
+    "motivo_retiro",
+    "fecha_ultimo_dia_laborado",
+    "fecha_retiro_efectiva",
+    "fecha_cierre_retiro",
+    "detalle_retiro",
+    "retiro_fuente_doctype",
+    "retiro_fuente_name",
+    "email",
    "numero_cuenta_bancaria",
    "tipo_cuenta_bancaria",
    "banco_siesa",
@@ -77,12 +86,62 @@
    "fieldtype": "Date",
    "label": "Fecha Ingreso"
   },
-   {
-    "default": "Activo",
-    "fieldname": "estado",
-    "fieldtype": "Select",
-    "label": "Estado",
-    "options": "Activo\nInactivo\nVacaciones\nIncapacitado\nLicencia\nSuspensi\u00f3n\nSeparaci\u00f3n del Cargo\nRecomendaci\u00f3n M\u00e9dica\nEmbarazo\nRetirado"
+  {
+   "default": "Activo",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "label": "Estado",
+   "options": "Activo\nInactivo\nVacaciones\nIncapacitado\nLicencia\nSuspensi\u00f3n\nSeparaci\u00f3n del Cargo\nRecomendaci\u00f3n M\u00e9dica\nEmbarazo\nRetirado"
+  },
+  {
+   "fieldname": "retirement_section",
+   "fieldtype": "Section Break",
+   "label": "Retiro"
+  },
+  {
+   "fieldname": "estado_retiro_operacion",
+   "fieldtype": "Select",
+   "label": "Estado Operaci\u00f3n Retiro",
+   "options": "\nProgramado\nEjecutado\nRevertido",
+   "read_only": 1
+  },
+  {
+   "fieldname": "motivo_retiro",
+   "fieldtype": "Select",
+   "label": "Motivo Retiro",
+   "options": "\nRenuncia\nTerminaci\u00f3n con justa causa\nTerminaci\u00f3n sin justa causa\nMutuo acuerdo\nFin de contrato\nJubilaci\u00f3n\nFallecimiento\nAbandono\nOtro"
+  },
+  {
+   "fieldname": "fecha_ultimo_dia_laborado",
+   "fieldtype": "Date",
+   "label": "\u00daltimo D\u00eda Laborado"
+  },
+  {
+   "fieldname": "fecha_retiro_efectiva",
+   "fieldtype": "Date",
+   "label": "Fecha Retiro Efectiva"
+  },
+  {
+   "fieldname": "fecha_cierre_retiro",
+   "fieldtype": "Date",
+   "label": "Fecha Cierre Retiro"
+  },
+  {
+   "fieldname": "detalle_retiro",
+   "fieldtype": "Small Text",
+   "label": "Detalle Cierre Retiro"
+  },
+  {
+   "fieldname": "retiro_fuente_doctype",
+   "fieldtype": "Data",
+   "label": "Fuente Retiro DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "retiro_fuente_name",
+   "fieldtype": "Data",
+   "label": "Fuente Retiro Registro",
+   "read_only": 1
   },
   {
    "fieldname": "email",

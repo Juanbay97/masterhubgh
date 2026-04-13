@@ -1,4 +1,4 @@
-const CENTRO_DATOS_SUPPORTED = ["Ficha Empleado", "Actualización Empleado", "Punto de Venta", "Novedad SST", "User"];
+const CENTRO_DATOS_SUPPORTED = ["Documentos Empleado", "Ficha Empleado", "Actualización Empleado", "Punto de Venta", "Novedad SST", "Estado SST Empleado", "User"];
 const OPERATIONAL_PERSON_IDENTITY_TRAY_ROUTE = 'operational_person_identity_tray';
 
 frappe.pages['centro_de_datos'].on_page_load = function (wrapper) {
@@ -26,10 +26,22 @@ frappe.pages['centro_de_datos'].on_page_load = function (wrapper) {
 			<div class="col-md-12">
 				<p class="text-muted small" style="margin-bottom: 16px;">Catálogo canónico de cargas críticas: ${CENTRO_DATOS_SUPPORTED.join(', ')}</p>
 			</div>
+			${render_card("Documental · Subir documentos masivos", "Documentos Empleado", "template_documentos_masivos_manifest.csv", "folder-open", {
+				description: "ZIP con manifest CSV + archivos PDF/JPG/PNG para carpeta documental del empleado.",
+				extraLinks: [
+					{ href: "/assets/hubgh/templates/template_documentos_masivos_instrucciones.csv", label: "Ver estructura ZIP" }
+				]
+			})}
 			${render_card("Empleados", "Ficha Empleado", "template_empleados.csv", "users")}
 			${render_card("Actualización Empleados", "Actualización Empleado", "template_actualizacion_empleados.csv", "refresh")}
 			${render_card("Puntos de Venta", "Punto de Venta", "template_puntos.csv", "map-pin")}
 			${render_card("Novedades", "Novedad SST", "template_novedades.csv", "calendar")}
+			${render_card("Estados SST empleados", "Estado SST Empleado", "template_estados_sst_empleados.csv", "heartbeat", {
+				description: "Alta/actualización masiva de novedades SST con estado, alertas y opciones de accidente/incapacidad.",
+				extraLinks: [
+					{ href: "/assets/hubgh/templates/template_estados_sst_opciones.csv", label: "Valores permitidos SST" }
+				]
+			})}
             ${render_card("Usuarios Sistema", "User", "template_usuarios.csv", "lock")}
 			${render_report_card()}
         </div>
@@ -188,7 +200,13 @@ function render_report_card() {
 	`;
 }
 
-function render_card(title, doctype, template, icon) {
+function render_card(title, doctype, template, icon, options = {}) {
+	const description = options.description || `Carga masiva de ${title.toLowerCase()}`;
+	const extraLinks = (options.extraLinks || []).map((link) => `
+		<a href="${link.href}" download class="btn btn-default btn-sm btn-block">
+			<i class="fa fa-book"></i> ${link.label}
+		</a>
+	`).join("");
     return `
         <div class="col-md-3">
             <div class="frappe-card" style="border: 1px solid #d1d8dd; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
@@ -196,7 +214,7 @@ function render_card(title, doctype, template, icon) {
                     <i class="fa fa-${icon}"></i>
                 </div>
                 <h4>${title}</h4>
-                <p class="text-muted small">Carga masiva de ${title.toLowerCase()}</p>
+                <p class="text-muted small">${description}</p>
                 
                 <hr>
                 
@@ -204,6 +222,7 @@ function render_card(title, doctype, template, icon) {
                     <a href="/assets/hubgh/templates/${template}" download class="btn btn-default btn-sm btn-block">
                         <i class="fa fa-download"></i> Descargar Plantilla
                     </a>
+					${extraLinks}
                     <button class="btn btn-primary btn-sm btn-block btn-upload" data-doctype="${doctype}">
                         <i class="fa fa-upload"></i> Subir Archivo
                     </button>

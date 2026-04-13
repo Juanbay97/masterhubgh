@@ -53,6 +53,8 @@ class TestHubghModuleDashboardsApi(FrappeTestCase):
 	def test_dashboard_contract_nomina(self):
 		payload = module_dashboards.get_module_dashboard("nomina")
 		self._assert_contract(payload, "nomina")
+		routes = {item.get("route") for item in payload.get("actions", [])}
+		self.assertIn("app/payroll_incapacity_tray", routes)
 
 	def test_dashboard_nomina_recobro_weighted_contract(self):
 		original_getdate = _frappe_getdate

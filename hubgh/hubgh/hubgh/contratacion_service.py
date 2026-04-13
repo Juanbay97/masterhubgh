@@ -91,12 +91,12 @@ MANDATORY_INGRESO_FIELDS = [
 
 def _user_is_hr():
 	user = frappe.session.user
-	return user == "Administrator" or user_has_any_role(user, "Gestión Humana", "HR Labor Relations", "System Manager")
+	return user == "Administrator" or user_has_any_role(user, "Gestión Humana", "HR Labor Relations", "Relaciones Laborales Jefe", "System Manager")
 
 
 def _user_is_rrll_authority():
 	user = frappe.session.user
-	return user == "Administrator" or user_has_any_role(user, "HR Labor Relations", "System Manager")
+	return user == "Administrator" or user_has_any_role(user, "HR Labor Relations", "Relaciones Laborales Jefe", "System Manager")
 
 
 def validate_hr_access():
@@ -655,6 +655,13 @@ def validar_candidato_para_siesa(candidate):
 		errors.append("Falta género")
 	if _missing(_value("estado_civil")):
 		errors.append("Falta estado civil")
+	nivel_educativo = _value("nivel_educativo_siesa")
+	if _missing(nivel_educativo):
+		errors.append("Falta nivel educativo SIESA")
+	else:
+		ensure_reference_catalog("Nivel Educativo Siesa")
+		if not _resolve_siesa_catalog_name("Nivel Educativo Siesa", [nivel_educativo]):
+			errors.append("Nivel educativo SIESA inválido")
 	if _missing(_value("direccion")):
 		errors.append("Falta dirección de residencia")
 	if _missing(_value("ciudad_residencia_siesa", "ciudad")):

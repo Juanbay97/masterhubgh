@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"sstHeader\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">SEGURIDAD Y SALUD EN EL TRABAJO</span>\",\"col\":12}},{\"id\":\"sstBand\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Bandeja SST\",\"col\":4}},{\"id\":\"sstNov\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Novedades SST\",\"col\":4}},{\"id\":\"sstCaso\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Casos SST\",\"col\":4}},{\"id\":\"sstExam\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Ex\\u00e1menes m\\u00e9dicos SST\",\"col\":4}},{\"id\":\"sstSeg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Seguimientos SST\",\"col\":4}},{\"id\":\"sstAlert\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Alertas SST\",\"col\":4}}]",
+ "content": "[{\"id\":\"sstHeader\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">SEGURIDAD Y SALUD EN EL TRABAJO</span>\",\"col\":12}},{\"id\":\"sstBand\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Bandeja SST\",\"col\":4}},{\"id\":\"sstNov\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Novedades SST\",\"col\":4}},{\"id\":\"sstExam\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Ex\\u00e1menes m\\u00e9dicos SST\",\"col\":4}},{\"id\":\"sstSeg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Seguimientos SST\",\"col\":4}},{\"id\":\"sstAlert\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Alertas SST\",\"col\":4}}]",
  "creation": "2026-01-28 00:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -45,13 +45,6 @@
    "doc_view": "List",
    "label": "Novedades SST",
    "link_to": "Novedad SST",
-   "type": "DocType"
-  },
-  {
-   "color": "Red",
-   "doc_view": "List",
-   "label": "Casos SST",
-   "link_to": "Caso SST",
    "type": "DocType"
   },
   {

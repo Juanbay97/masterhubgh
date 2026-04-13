@@ -3,6 +3,41 @@ set -euo pipefail
 # Entrypoint del contenedor backend.
 
 BENCH_DIR="/home/frappe/frappe-bench"
+PUBLIC_DOMAIN="${PUBLIC_DOMAIN:-}"
+
+resolve_host_name() {
+  local domain="$1"
+  if [ -z "$domain" ]; then
+    return 0
+  fi
+
+  case "$domain" in
+    http://*|https://*)
+      printf '%s' "$domain"
+      ;;
+    *)
+      printf 'https://%s' "$domain"
+      ;;
+  esac
+}
+
+sync_site_host_name() {
+  local host_name="$1"
+  local current_site_file="$BENCH_DIR/sites/currentsite.txt"
+  local current_site=""
+
+  if [ -z "$host_name" ] || [ ! -f "$current_site_file" ]; then
+    return
+  fi
+
+  current_site="$(tr -d '\n' < "$current_site_file")"
+  if [ -z "$current_site" ] || [ "$current_site" = "" ]; then
+    return
+  fi
+
+  echo "==> Asegurando host_name público para $current_site: $host_name"
+  bench --site "$current_site" set-config host_name "$host_name"
+}
 
 ensure_asset_link() {
   local app="$1"
@@ -118,6 +153,7 @@ bench set-config -g redis_cache redis://redis-cache:6379
 bench set-config -g redis_queue redis://redis-queue:6379
 bench set-config -g redis_socketio redis://redis-queue:6379
 bench set-config -g webserver_port 8000
+sync_site_host_name "$(resolve_host_name "$PUBLIC_DOMAIN")"
 rebuild_asset_links
 
 echo "==> Arrancando bench..."

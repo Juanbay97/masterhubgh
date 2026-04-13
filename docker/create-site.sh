@@ -17,7 +17,24 @@ set -e
 SITE_NAME="${FRAPPE_SITE_NAME:-hubgh.local}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin}"
 DB_ROOT_PASSWORD="${MARIADB_ROOT_PASSWORD:-frappe}"
+PUBLIC_DOMAIN="${PUBLIC_DOMAIN:-}"
 BENCH_DIR="/home/frappe/frappe-bench"
+
+resolve_host_name() {
+  local domain="$1"
+  if [ -z "$domain" ]; then
+    return 0
+  fi
+
+  case "$domain" in
+    http://*|https://*)
+      printf '%s' "$domain"
+      ;;
+    *)
+      printf 'https://%s' "$domain"
+      ;;
+  esac
+}
 
 echo "==> Configurando bench..."
 cd "$BENCH_DIR"
@@ -27,6 +44,8 @@ bench set-config -g redis_cache redis://redis-cache:6379
 bench set-config -g redis_queue redis://redis-queue:6379
 bench set-config -g redis_socketio redis://redis-queue:6379
 bench set-config -g webserver_port 8000
+
+HOST_NAME="$(resolve_host_name "$PUBLIC_DOMAIN")"
 
 # Crear sitio si no existe
 if bench --site "$SITE_NAME" show-config > /dev/null 2>&1; then
@@ -50,6 +69,11 @@ else
 fi
 
 bench use "$SITE_NAME"
+
+if [ -n "$HOST_NAME" ]; then
+  echo "==> Configurando host_name público del sitio: $HOST_NAME"
+  bench --site "$SITE_NAME" set-config host_name "$HOST_NAME"
+fi
 
 echo ""
 echo "✓ Setup completo."

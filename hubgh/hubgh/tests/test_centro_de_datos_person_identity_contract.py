@@ -53,8 +53,24 @@ def _install_frappe_stub():
 		lambda value, throw=False: "@" in (value or ""),
 	)
 
+	frappe_file_manager = sys.modules.get("frappe.utils.file_manager") or types.ModuleType("frappe.utils.file_manager")
+	frappe_file_manager.save_file = getattr(
+		frappe_file_manager,
+		"save_file",
+		lambda file_name, content, doctype, docname, is_private=1: types.SimpleNamespace(file_url=f"/private/files/{file_name}"),
+	)
+
+	document_service = sys.modules.get("hubgh.hubgh.document_service") or types.ModuleType("hubgh.hubgh.document_service")
+	document_service.upload_person_document = getattr(
+		document_service,
+		"upload_person_document",
+		lambda **kwargs: types.SimpleNamespace(name="PD-TEST", issue_date=None, valid_until=None, save=lambda **k: None),
+	)
+
 	sys.modules["frappe"] = frappe_module
 	sys.modules["frappe.utils"] = frappe_utils
+	sys.modules["frappe.utils.file_manager"] = frappe_file_manager
+	sys.modules["hubgh.hubgh.document_service"] = document_service
 
 
 _install_frappe_stub()
@@ -74,6 +90,9 @@ class TestCentroDeDatosPersonIdentityContract(TestCase):
 		self.assertIn("start_upload_data", content)
 		self.assertIn("get_upload_status", content)
 		self.assertIn("template_actualizacion_empleados.csv", content)
+		self.assertIn("template_documentos_masivos_manifest.csv", content)
+		self.assertIn("template_estados_sst_empleados.csv", content)
+		self.assertIn("template_estados_sst_opciones.csv", content)
 		self.assertIn("download_employee_master_report", content)
 
 	def test_operational_person_identity_tray_assets_expose_basic_page_contract(self):
@@ -254,6 +273,56 @@ class TestCentroDeDatosPersonIdentityContract(TestCase):
 
 		employee_doc.save.assert_called_once()
 		novedad_doc.insert.assert_called_once()
+		self.assertEqual(result["action"], "updated")
+
+	def test_upsert_employee_sst_status_updates_extended_fields(self):
+		novedad_doc = SimpleNamespace(
+			name="NOV-1",
+			estado="Abierta",
+			estado_destino=None,
+			accidente_tuvo_incapacidad=0,
+			es_accidente_trabajo=0,
+			causa_evento=None,
+			crear_alerta=0,
+			alerta_activa=0,
+			save=MagicMock(),
+		)
+
+		def fake_get_value(doctype, filters=None, fieldname=None, as_dict=False):
+			if doctype == "Ficha Empleado":
+				return "EMP-1"
+			if doctype == "Novedad SST":
+				return "NOV-1"
+			return None
+
+		with patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.get_value", side_effect=fake_get_value), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.get_doc",
+			return_value=novedad_doc,
+		):
+			result = centro_de_datos.upsert_employee_sst_status(
+				{
+					"cedula_empleado": "123",
+					"tipo_novedad": "Accidente",
+					"fecha_inicio": "2026-04-01",
+					"fecha_fin": "2026-04-10",
+					"estado_novedad": "En seguimiento",
+					"estado_destino": "Incapacitado",
+					"es_accidente_trabajo": "Sí",
+					"accidente_tuvo_incapacidad": "Sí",
+					"causa_evento": "Acto inseguro",
+					"crear_alerta": "Sí",
+					"alerta_activa": "Sí",
+				}
+			)
+
+		novedad_doc.save.assert_called_once()
+		self.assertEqual(novedad_doc.estado, "En seguimiento")
+		self.assertEqual(novedad_doc.estado_destino, "Incapacitado")
+		self.assertEqual(novedad_doc.es_accidente_trabajo, 1)
+		self.assertEqual(novedad_doc.accidente_tuvo_incapacidad, 1)
+		self.assertEqual(novedad_doc.causa_evento, "Acto inseguro")
+		self.assertEqual(novedad_doc.crear_alerta, 1)
+		self.assertEqual(novedad_doc.alerta_activa, 1)
 		self.assertEqual(result["action"], "updated")
 
 	def test_create_user_raises_explicit_pending_for_invalid_email(self):

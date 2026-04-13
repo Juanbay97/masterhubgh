@@ -51,6 +51,41 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 		return "hub-badge hub-badge--neutral";
 	};
 
+	const renderBulkBatchPanel = () => `
+		<div class='hub-card' style='margin-bottom:16px;'>
+			<div class='hub-card__head' style='margin-bottom:12px;'>
+				<div>
+					<div class='hub-card__title'>Documental · subir documentos masivos</div>
+					<div class='hub-card__meta'>Usá un ZIP con manifest CSV + archivos. También podés actualizar estados SST masivos desde acá.</div>
+				</div>
+			</div>
+			<div class='hub-card__badges' style='margin-bottom:12px;'>
+				<span class='${badgeClass("neutral")}'><i class='fa fa-folder-open-o'></i> Carpeta documental</span>
+				<span class='${badgeClass("positive")}'><i class='fa fa-heartbeat'></i> SST masivo</span>
+			</div>
+			<div style='display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;'>
+				<div class='hub-doc-card'>
+					<div class='hub-doc-card__title'>Documentos masivos</div>
+					<div class='hub-doc-card__meta'>Descargá manifest + guía del ZIP y luego subí el paquete documental.</div>
+					<div class='hub-doc-card__actions' style='margin-top:10px; gap:8px; flex-wrap:wrap;'>
+						<a class='hub-btn' href='/assets/hubgh/templates/template_documentos_masivos_manifest.csv' download><i class='fa fa-download'></i> Manifest</a>
+						<a class='hub-btn' href='/assets/hubgh/templates/template_documentos_masivos_instrucciones.csv' download><i class='fa fa-book'></i> Estructura ZIP</a>
+						<button class='hub-btn hub-btn--primary btn-bulk-upload' data-doctype='Documentos Empleado'><i class='fa fa-upload'></i> Subir ZIP</button>
+					</div>
+				</div>
+				<div class='hub-doc-card'>
+					<div class='hub-doc-card__title'>Estados SST empleados</div>
+					<div class='hub-doc-card__meta'>Plantilla para estado de novedad, estado destino, alertas y opciones de accidente/incapacidad.</div>
+					<div class='hub-doc-card__actions' style='margin-top:10px; gap:8px; flex-wrap:wrap;'>
+						<a class='hub-btn' href='/assets/hubgh/templates/template_estados_sst_empleados.csv' download><i class='fa fa-download'></i> Plantilla SST</a>
+						<a class='hub-btn' href='/assets/hubgh/templates/template_estados_sst_opciones.csv' download><i class='fa fa-list'></i> Valores permitidos</a>
+						<button class='hub-btn hub-btn--primary btn-bulk-upload' data-doctype='Estado SST Empleado'><i class='fa fa-upload'></i> Subir CSV</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	`;
+
 	const renderList = () => {
 		const cards = (state.rows || []).map((row) => {
 			const missing = Number(row.missing_count || 0);
@@ -270,6 +305,50 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 		});
 	};
 
+	const openBulkUpload = (doctype) => {
+		if (!doctype) return;
+		new frappe.ui.FileUploader({
+			on_success(file) {
+				frappe.call({
+					method: "hubgh.hubgh.page.centro_de_datos.centro_de_datos.start_upload_data",
+					args: {
+						doctype,
+						file_url: file.file_url,
+						chunk_size: 25,
+					},
+					freeze: true,
+					freeze_message: doctype === "Documentos Empleado" ? "Encolando ZIP documental..." : "Encolando actualización SST...",
+					callback: (r) => {
+						const status = r?.message || {};
+						frappe.show_alert({ indicator: "blue", message: `${doctype} encolado` });
+						if (!status.import_id) return;
+						const poll = () => {
+							frappe.call({
+								method: "hubgh.hubgh.page.centro_de_datos.centro_de_datos.get_upload_status",
+								args: { import_id: status.import_id },
+								callback: (response) => {
+									const payload = response?.message || {};
+									if (payload.status === "completed" || payload.status === "failed") {
+										frappe.msgprint({
+											title: doctype,
+											indicator: payload.status === "completed" ? (payload.counts?.errors ? "orange" : "green") : "red",
+											message: `Procesadas ${payload.processed_rows || 0}/${payload.total_rows || 0}. Creados: ${payload.counts?.created || 0}. Actualizados: ${payload.counts?.updated || 0}. Errores: ${payload.counts?.errors || 0}.`,
+										});
+										loadList();
+										if (state.selectedEmployee) loadDetail(state.selectedEmployee);
+										return;
+									}
+									setTimeout(poll, 2500);
+								},
+							});
+						};
+						poll();
+					},
+				});
+			},
+		});
+	};
+
 	const downloadZip = () => {
 		if (!state.selectedEmployee) return;
 		frappe.call({
@@ -283,6 +362,7 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 	};
 
 	$root.html(frappe.render_template("carpeta_documental_empleado"));
+	$root.find(".hub-shell").prepend(renderBulkBatchPanel());
 
 	$root.on("click", ".btn-search", () => {
 		state.search = ($root.find(".hub-search").val() || "").trim();
@@ -334,6 +414,9 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 	});
 
 	$root.on("click", ".btn-download-zip", downloadZip);
+	$root.on("click", ".btn-bulk-upload", function() {
+		openBulkUpload($(this).data("doctype"));
+	});
 
 	loadList();
 };

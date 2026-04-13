@@ -34,6 +34,63 @@ class TestNovedadSST(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			doc.validate_incapacidad_payload()
 
+	def test_normalize_prorrogas_moves_legacy_rows_out_of_seguimientos(self):
+		doc = frappe.get_doc({"doctype": "Novedad SST"})
+		doc.tipo_novedad = "Incapacidad por enfermedad general"
+		doc.append(
+			"seguimientos",
+			{
+				"fecha_seguimiento": "2026-03-10 08:00:00",
+				"tipo_seguimiento": "Prórroga incapacidad",
+				"detalle": "Extensión por control médico",
+			},
+		)
+		doc.append(
+			"seguimientos",
+			{
+				"fecha_seguimiento": "2026-03-11 08:00:00",
+				"tipo_seguimiento": "Llamada",
+				"detalle": "Confirmación con empleado",
+			},
+		)
+
+		doc.normalize_prorroga_rows()
+
+		self.assertEqual(len(doc.prorrogas_incapacidad), 1)
+		self.assertEqual(doc.prorrogas_incapacidad[0].tipo_seguimiento, "Prórroga incapacidad")
+		self.assertEqual(len(doc.seguimientos), 1)
+		self.assertEqual(doc.seguimientos[0].tipo_seguimiento, "Llamada")
+
+	def test_normalize_prorrogas_forces_prorroga_type_on_child_rows(self):
+		doc = frappe.get_doc({"doctype": "Novedad SST"})
+		doc.tipo_novedad = "Incapacidad por enfermedad general"
+		doc.append(
+			"prorrogas_incapacidad",
+			{
+				"fecha_seguimiento": "2026-03-10 08:00:00",
+				"tipo_seguimiento": "Llamada",
+				"detalle": "Se cargó desde UI antigua",
+			},
+		)
+
+		doc.normalize_prorroga_rows()
+
+		self.assertEqual(doc.prorrogas_incapacidad[0].tipo_seguimiento, "Prórroga incapacidad")
+
+	def test_prorrogas_only_allowed_for_incapacidad_cases(self):
+		doc = frappe.get_doc({"doctype": "Novedad SST"})
+		doc.tipo_novedad = "Aforado"
+		doc.append(
+			"prorrogas_incapacidad",
+			{
+				"fecha_seguimiento": "2026-03-10 08:00:00",
+				"tipo_seguimiento": "Prórroga incapacidad",
+			},
+		)
+
+		with self.assertRaises(frappe.ValidationError):
+			doc.ensure_prorroga_consistency()
+
 	def test_alert_assignee_prefers_hr_sst(self):
 		doc = frappe.get_doc({"doctype": "Novedad SST"})
 		with patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.frappe.get_all") as get_all_mock:

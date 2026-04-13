@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import io
 import sys
 import types
+import zipfile
 from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import patch
@@ -42,8 +44,24 @@ def _install_frappe_stub():
 		lambda value, throw=False: "@" in (value or ""),
 	)
 
+	frappe_file_manager = sys.modules.get("frappe.utils.file_manager") or types.ModuleType("frappe.utils.file_manager")
+	frappe_file_manager.save_file = getattr(
+		frappe_file_manager,
+		"save_file",
+		lambda file_name, content, doctype, docname, is_private=1: SimpleNamespace(file_url=f"/private/files/{file_name}"),
+	)
+
+	document_service = sys.modules.get("hubgh.hubgh.document_service") or types.ModuleType("hubgh.hubgh.document_service")
+	document_service.upload_person_document = getattr(
+		document_service,
+		"upload_person_document",
+		lambda **kwargs: SimpleNamespace(name="PD-TEST", issue_date=None, valid_until=None, save=lambda **k: None),
+	)
+
 	sys.modules["frappe"] = frappe_module
 	sys.modules["frappe.utils"] = frappe_utils
+	sys.modules["frappe.utils.file_manager"] = frappe_file_manager
+	sys.modules["hubgh.hubgh.document_service"] = document_service
 
 
 _install_frappe_stub()
@@ -142,3 +160,28 @@ class TestCentroDeDatosCsvImport(TestCase):
 		self.assertEqual(result["status"], "queued")
 		self.assertEqual(result["total_rows"], 1)
 		self.assertEqual(result["chunk_size"], 25)
+
+	def test_upload_data_accepts_document_zip_manifest(self):
+		buffer = io.BytesIO()
+		with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+			archive.writestr(
+				"documentos.csv",
+				"cedula,document_type,archivo,issue_date,valid_until,notes\n123,Hoja de vida,documentos/hv.pdf,2026-04-01,,Carga inicial\n",
+			)
+			archive.writestr("documentos/hv.pdf", b"fake-pdf")
+		file_doc = SimpleNamespace(get_content=lambda: buffer.getvalue())
+
+		with patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.get_doc", return_value=file_doc), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.bulk_upload_employee_documents",
+			return_value={"action": "created", "document": "PD-1"},
+		) as bulk_upload, patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.commit"), patch(
+			"hubgh.hubgh.page.centro_de_datos.centro_de_datos.frappe.db.sql",
+			create=True,
+		):
+			res = centro_de_datos.upload_data("Documentos Empleado", "/private/files/documentos.zip")
+
+		self.assertEqual(res["success"], 1)
+		self.assertEqual(res["committed"], 1)
+		self.assertEqual(res["errors"], [])
+		self.assertEqual(bulk_upload.call_args.args[0]["archivo"], "documentos/hv.pdf")
+		self.assertEqual(bulk_upload.call_args.args[0]["__attachment_filename"], "hv.pdf")

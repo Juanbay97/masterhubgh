@@ -121,6 +121,27 @@ def _resolve_person_name(person_type, person):
 	return person_name
 
 
+def _person_identity_aliases(person_type, person):
+	aliases = []
+	requested = str(person or "").strip()
+	resolved = _resolve_person_name(person_type, requested)
+
+	for value in (resolved, requested):
+		if value and value not in aliases:
+			aliases.append(value)
+
+	if person_type == "Candidato" and resolved:
+		numero_documento = str(frappe.db.get_value("Candidato", resolved, "numero_documento") or "").strip()
+		if numero_documento and numero_documento not in aliases:
+			aliases.append(numero_documento)
+	elif person_type == "Empleado" and resolved:
+		cedula = str(frappe.db.get_value("Ficha Empleado", resolved, "cedula") or "").strip()
+		if cedula and cedula not in aliases:
+			aliases.append(cedula)
+
+	return aliases
+
+
 def _get_file_doc_from_url(file_url):
 	if not file_url:
 		return None
@@ -289,7 +310,9 @@ def can_user_read_person_document(doc, user=None):
 	if user == "Administrator":
 		return True
 
-	if user_has_any_role(user, "HR Labor Relations"):
+	if _has_full_employee_documental_access(user, doc):
+		return True
+	if _has_candidate_rrll_access(user, doc):
 		return True
 
 	# Access list explícito por usuario o rol
@@ -310,7 +333,7 @@ def can_user_read_person_document(doc, user=None):
 	)
 	if not policy.get("effective_allowed"):
 		return False
-	if dimension == "clinical" and user_has_any_role(user, "HR SST", "HR Labor Relations", "System Manager"):
+	if dimension == "clinical" and user_has_any_role(user, "HR SST", "HR Labor Relations", "Relaciones Laborales Jefe", "System Manager"):
 		return True
 
 	if roles_have_any(roles, set(rules["allowed_roles"])):
@@ -341,20 +364,76 @@ def _candidate_has_uploaded_document(candidate, document_type):
 	return bool(rows)
 
 
-def _find_pending_document_row(person_type, person, document_type):
+def _matches_person_alias(row, aliases):
+	alias_set = {str(value or "").strip() for value in aliases if str(value or "").strip()}
+	if not alias_set:
+		return False
+	for fieldname in ("person", "candidate", "employee"):
+		value = str(_row_get(row, fieldname) or "").strip()
+		if value and value in alias_set:
+			return True
+	return False
+
+
+def _has_full_employee_documental_access(user, doc):
+	if not user_has_any_role(user, "System Manager", "Relaciones Laborales Jefe"):
+		return False
+	return _is_employee_document_record(doc) or _is_admitted_candidate_document_record(doc)
+
+
+def _has_candidate_rrll_access(user, doc):
+	return _is_candidate_document_record(doc) and user_has_any_role(user, "HR Labor Relations", "Relaciones Laborales Jefe")
+
+
+def _is_employee_document_record(doc):
+	person_type = str(getattr(doc, "person_type", "") or (doc.get("person_type") if hasattr(doc, "get") else "")).strip()
+	return person_type == "Empleado"
+
+
+def _is_candidate_document_record(doc):
+	person_type = str(getattr(doc, "person_type", "") or (doc.get("person_type") if hasattr(doc, "get") else "")).strip()
+	return person_type == "Candidato"
+
+
+def _is_admitted_candidate_document_record(doc):
+	if not _is_candidate_document_record(doc):
+		return False
+	candidate = getattr(doc, "person", None) or (doc.get("person") if hasattr(doc, "get") else None)
+	if not candidate:
+		return False
+	status = frappe.db.get_value("Candidato", candidate, "estado_proceso")
+	return str(status or "").strip() in {
+		"En afiliación",
+		"En Afiliación",
+		"Afiliacion",
+		"En Proceso de Contratación",
+		"Listo para contratar",
+		"Listo para Contratar",
+		"Contratado",
+	}
+
+
+def _find_existing_person_document(person_type, person, document_type, *, pending_only=False):
+	aliases = _person_identity_aliases(person_type, person)
 	rows = frappe.get_all(
 		"Person Document",
 		filters={
 			"person_type": person_type,
-			"person": person,
 			"document_type": document_type,
-			"file": ["is", "not set"],
 		},
-		fields=["name"],
+		fields=["name", "person", "candidate", "employee", "file"],
 		order_by="modified desc",
-		limit_page_length=1,
 	)
-	return rows[0].name if rows else None
+	for row in rows:
+		if pending_only and _row_get(row, "file"):
+			continue
+		if _matches_person_alias(row, aliases):
+			return _row_get(row, "name")
+	return None
+
+
+def _find_pending_document_row(person_type, person, document_type):
+	return _find_existing_person_document(person_type, person, document_type, pending_only=True)
 
 
 def _row_get(row, key, default=None):
@@ -536,10 +615,7 @@ def ensure_person_document(person_type, person, document_type):
 	rules = _get_document_type_rules(document_type)
 	resolved_document_type = rules["document_type"]
 	if not rules["allows_multiple"]:
-		existing = frappe.db.get_value(
-			"Person Document",
-			{"person_type": person_type, "person": person, "document_type": resolved_document_type},
-		)
+		existing = _find_existing_person_document(person_type, person, resolved_document_type)
 		if existing:
 			return frappe.get_doc("Person Document", existing)
 		return _new_person_document(person_type, person, resolved_document_type)
@@ -665,7 +741,7 @@ def upload_person_document(person_type, person, document_type, file_url, notes=N
 
 	doc.file = renamed_file_url
 	doc.status = "Subido"
-	if rules["requires_approval"] and user_has_any_role(frappe.session.user, "HR Labor Relations"):
+	if rules["requires_approval"] and user_has_any_role(frappe.session.user, "HR Labor Relations", "Relaciones Laborales Jefe"):
 		doc.status = "Aprobado"
 		doc.approved_by = frappe.session.user
 		doc.approved_on = now()
@@ -735,7 +811,7 @@ def send_candidate_to_labor_relations(candidate, pdv_destino=None, fecha_tentati
 
 
 def hire_candidate(candidate):
-	if not user_has_any_role(frappe.session.user, "HR Labor Relations") and frappe.session.user != "Administrator":
+	if not user_has_any_role(frappe.session.user, "HR Labor Relations", "Relaciones Laborales Jefe") and frappe.session.user != "Administrator":
 		frappe.throw(_("No autorizado para contratar."))
 
 	cand = frappe.get_doc("Candidato", candidate)

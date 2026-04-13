@@ -1,21 +1,22 @@
 import json
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from uuid import uuid4
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils.password import check_password
 
 from hubgh.hubgh.onboarding_security import (
 	clear_force_password_reset_flag,
 	enforce_onboarding_rate_limit,
 	enforce_password_reset_on_login,
 	mark_user_for_first_login_password_reset,
+	send_user_activation_email,
 	should_force_password_reset,
 	validate_candidate_duplicates,
 	validate_onboarding_captcha,
 )
+from hubgh.hubgh.public_url import build_public_url, get_public_base_url
 from hubgh.www.candidato import create_candidate, get_procedencia_siesa_catalog
 
 
@@ -24,8 +25,15 @@ class TestOnboardingSecurityPhase5(FrappeTestCase):
 		super().setUp()
 		self._created_candidates = []
 		self._created_users = []
+		self.activation_email_patcher = patch(
+			"hubgh.hubgh.doctype.candidato.candidato.send_user_activation_email",
+			return_value="/update-password?key=test-reset",
+		)
+		self.mock_send_user_activation_email = self.activation_email_patcher.start()
 
 	def tearDown(self):
+		self.activation_email_patcher.stop()
+
 		for candidate_name in self._created_candidates:
 			if frappe.db.exists("Candidato", candidate_name):
 				frappe.delete_doc("Candidato", candidate_name, force=1, ignore_permissions=True)
@@ -127,14 +135,57 @@ class TestOnboardingSecurityPhase5(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			validate_candidate_duplicates(numero_documento=f"4{suffix}", email=f"EXISTING.{suffix}@EXAMPLE.COM")
 
-	def test_ensure_user_link_generates_non_document_password_and_marks_reset(self):
+	def test_send_user_activation_email_uses_native_frappe_reset_flow(self):
+		reset_password = Mock(return_value="/update-password?key=native")
+		with patch("hubgh.hubgh.onboarding_security.frappe.get_doc", return_value=SimpleNamespace(reset_password=reset_password)) as get_doc:
+			result = send_user_activation_email("test@example.com")
+
+		get_doc.assert_called_once_with("User", "test@example.com")
+		reset_password.assert_called_once_with(send_email=True)
+		self.assertEqual(result, "/update-password?key=native")
+
+	def test_send_user_activation_email_uses_configured_public_base_url(self):
+		seen_host_names = []
+
+		def _reset_password(**kwargs):
+			seen_host_names.append(frappe.conf.get("host_name"))
+			return "http://localhost:8000/update-password?key=canonical"
+
+		original_host_name = frappe.conf.get("host_name")
+		with patch.dict(
+			frappe.conf,
+			{"hubgh_public_base_url": "intranet.comidasmarpel.com", "host_name": "http://localhost:8000"},
+			clear=False,
+		), patch(
+			"hubgh.hubgh.onboarding_security.frappe.get_doc",
+			return_value=SimpleNamespace(reset_password=_reset_password),
+		):
+			result = send_user_activation_email("test@example.com")
+
+		self.assertEqual(seen_host_names, ["https://intranet.comidasmarpel.com"])
+		self.assertEqual(result, "https://intranet.comidasmarpel.com/update-password?key=canonical")
+		self.assertEqual(frappe.conf.get("host_name"), original_host_name)
+
+	def test_public_base_url_prefers_explicit_hubgh_setting(self):
+		with patch.dict(
+			frappe.conf,
+			{"hubgh_public_base_url": "intranet.comidasmarpel.com", "host_name": "https://legacy.example.com"},
+			clear=False,
+		):
+			self.assertEqual(get_public_base_url(), "https://intranet.comidasmarpel.com")
+			self.assertEqual(
+				build_public_url("http://localhost:8000/update-password?key=abc"),
+				"https://intranet.comidasmarpel.com/update-password?key=abc",
+			)
+
+	def test_ensure_user_link_sends_activation_email_and_skips_force_reset_flag(self):
 		payload, result = self._create_candidate_for_tests()
 		user = result["user"]
 
-		with self.assertRaises(frappe.AuthenticationError):
-			check_password(user, payload["numero_documento"])
-
-		self.assertTrue(should_force_password_reset(user))
+		self.mock_send_user_activation_email.assert_called_once_with(user)
+		self.assertFalse(should_force_password_reset(user))
+		self.assertEqual(result.get("activation_email_sent"), 1)
+		self.assertNotIn("initial_password", result)
 
 	def test_create_candidate_disables_welcome_email_for_new_user(self):
 		_, result = self._create_candidate_for_tests()
@@ -166,6 +217,7 @@ class TestOnboardingSecurityPhase5(FrappeTestCase):
 	def test_enforce_password_reset_on_login_sets_redirect(self):
 		_, result = self._create_candidate_for_tests()
 		user = result["user"]
+		mark_user_for_first_login_password_reset(user)
 
 		frappe.local.response = {}
 		login_manager = SimpleNamespace(user=user)

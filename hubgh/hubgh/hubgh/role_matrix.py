@@ -11,6 +11,10 @@ CANONICAL_ROLE_ALIASES = {
 		"GH_Central",
 		"GH Central",
 	},
+	"Gerente GH": {
+		"Gerente GH",
+		"GH Gerente",
+	},
 	"HR Selection": {
 		"HR Selection",
 		"Selección",
@@ -23,9 +27,9 @@ CANONICAL_ROLE_ALIASES = {
 		"Relaciones Laborales GH",
 		"RRLL",
 		"Sensible RRLL",
-		# Compatibilidad operativa: Gestión Humana históricamente cubría RL.
-		"Gestión Humana",
-		"Gestion Humana",
+	},
+	"Relaciones Laborales Jefe": {
+		"Relaciones Laborales Jefe",
 	},
 	"HR Training & Wellbeing": {
 		"HR Training & Wellbeing",
@@ -74,6 +78,7 @@ ROLE_MIGRATION_CANONICAL_MAP = {
 	"Gestion Humana": "Gestión Humana",
 	"GH_Central": "Gestión Humana",
 	"GH Central": "Gestión Humana",
+	"GH Gerente": "Gerente GH",
 	"Selección": "HR Selection",
 	"Seleccion": "HR Selection",
 	"Relaciones Laborales": "HR Labor Relations",
@@ -100,7 +105,7 @@ ROLE_MIGRATION_CANONICAL_MAP = {
 
 AREA_ROLE_ALIASES = {
 	"HR Selection": sorted(CANONICAL_ROLE_ALIASES["HR Selection"]),
-	"HR Labor Relations": sorted(CANONICAL_ROLE_ALIASES["HR Labor Relations"]),
+	"HR Labor Relations": sorted(set(CANONICAL_ROLE_ALIASES["HR Labor Relations"]) | {"Relaciones Laborales Jefe"}),
 	"HR Training & Wellbeing": sorted(CANONICAL_ROLE_ALIASES["HR Training & Wellbeing"]),
 	"HR SST": sorted(CANONICAL_ROLE_ALIASES["HR SST"]),
 }
@@ -110,8 +115,10 @@ SHELL_ACCESS_CANONICAL_ROLES = {
 	"Empleado",
 	"Jefe_PDV",
 	"Gestión Humana",
+	"Gerente GH",
 	"HR Selection",
 	"HR Labor Relations",
+	"Relaciones Laborales Jefe",
 	"HR Training & Wellbeing",
 	"HR SST",
 	"GH - Bandeja General",
@@ -122,6 +129,7 @@ SHELL_ACCESS_CANONICAL_ROLES = {
 GH_ADMIN_CANONICAL_ROLES = {
 	"System Manager",
 	"Gestión Humana",
+	"Gerente GH",
 	"GH - Bandeja General",
 	"GH - SST",
 	"GH - RRLL",

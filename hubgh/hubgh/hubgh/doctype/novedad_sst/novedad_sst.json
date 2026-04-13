@@ -228,17 +228,19 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)",
-   "fieldname": "prorroga",
-   "fieldtype": "Check",
-   "label": "Prórroga"
+    "depends_on": "eval:doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)",
+    "description": "Actívalo cuando la incapacidad tenga ampliaciones posteriores.",
+    "fieldname": "prorroga",
+    "fieldtype": "Check",
+    "label": "¿Tiene prórrogas de incapacidad?"
   },
   {
-   "depends_on": "eval:(doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)) && doc.prorroga",
-   "fieldname": "prorrogas_incapacidad",
-   "fieldtype": "Table",
-   "label": "Prórrogas Incapacidad",
-   "options": "SST Seguimiento"
+    "depends_on": "eval:(doc.es_incapacidad || doc.tipo_novedad in ['Incapacidad','Incapacidad por enfermedad general'] || (doc.tipo_novedad=='Accidente' && doc.accidente_tuvo_incapacidad)) && doc.prorroga",
+    "description": "Cada fila se guarda como Prórroga incapacidad. No registres este historial en Seguimientos SST.",
+    "fieldname": "prorrogas_incapacidad",
+    "fieldtype": "Table",
+    "label": "Prórrogas de incapacidad",
+    "options": "SST Seguimiento"
   },
   {
    "depends_on": "eval:doc.tipo_novedad=='Recomendación Médica'",
@@ -353,15 +355,16 @@
    "label": "Alerta Activa"
   },
   {
-   "fieldname": "section_seguimientos",
-   "fieldtype": "Section Break",
-   "label": "Seguimientos"
+    "fieldname": "section_seguimientos",
+    "fieldtype": "Section Break",
+    "label": "Seguimientos generales"
   },
   {
-   "fieldname": "seguimientos",
-   "fieldtype": "Table",
-   "label": "Seguimientos SST",
-   "options": "SST Seguimiento"
+    "description": "Usa esta tabla para seguimientos SST que no sean prórrogas de incapacidad.",
+    "fieldname": "seguimientos",
+    "fieldtype": "Table",
+    "label": "Seguimientos SST (no prórrogas)",
+    "options": "SST Seguimiento"
   },
   {
    "fieldname": "column_break_legacy",

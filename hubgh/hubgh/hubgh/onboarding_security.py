@@ -5,6 +5,8 @@ from frappe import _
 from frappe.integrations.utils import make_post_request
 from frappe.utils import cint
 
+from hubgh.hubgh.public_url import build_public_url, override_public_base_url_for_frappe
+
 
 _FORCE_PASSWORD_RESET_CACHE_KEY = "hubgh:onboarding:force_password_reset"
 
@@ -168,6 +170,17 @@ def clear_force_password_reset_flag(user_id):
 	if not user_id:
 		return
 	frappe.cache.hdel(_FORCE_PASSWORD_RESET_CACHE_KEY, user_id)
+
+
+def send_user_activation_email(user_id):
+	if not user_id:
+		return None
+
+	user_doc = frappe.get_doc("User", user_id)
+	with override_public_base_url_for_frappe():
+		reset_url = user_doc.reset_password(send_email=True)
+
+	return build_public_url(reset_url)
 
 
 def enforce_password_reset_on_login(login_manager=None):

@@ -135,6 +135,7 @@ def _build_nomina_dashboard():
 	actions = [
 		{"label": "Bandeja TC", "route": "app/payroll_tc_tray", "style": "primary"},
 		{"label": "Bandeja TP", "route": "app/payroll_tp_tray", "style": "secondary"},
+		{"label": "Bandeja Incapacidades", "route": "app/payroll_incapacity_tray", "style": "secondary"},
 		{"label": "Cargador Nómina", "route": "app/payroll_import_upload", "style": "secondary"},
 	]
 
