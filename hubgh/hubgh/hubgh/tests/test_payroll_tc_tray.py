@@ -62,6 +62,9 @@ class TestPayrollTCTray(FrappeTestCase):
 		self.test_batch = frappe.get_doc({
 			"doctype": "Payroll Import Batch",
 			"name": "TEST-TC-BATCH-001",
+			"run_id": "TEST-TC-RUN-001",
+			"run_label": "Marzo 2026 · TEST-TC-RUN-001",
+			"run_source_count": 1,
 			"source_file": "test_clonk.xlsx", 
 			"source_type": "CLONK",
 			"nomina_period": "2026-03",
@@ -86,7 +89,11 @@ class TestPayrollTCTray(FrappeTestCase):
 			"amount": 0,
 			"status": "Válido",
 			"tc_status": "Pendiente",
-			"source_sheet": "Ausentismos"
+			"source_sheet": "Ausentismos",
+			"source_file": "test_clonk.xlsx",
+			"source_type_code": "CLONK",
+			"source_row_number": 1,
+			"source_concept_code": "INC-EG"
 		})
 		line1.insert(ignore_permissions=True)
 		self.test_lines.append(line1)
@@ -106,6 +113,10 @@ class TestPayrollTCTray(FrappeTestCase):
 			"status": "Válido",
 			"tc_status": "Pendiente",
 			"source_sheet": "Resumen",
+			"source_file": "test_clonk.xlsx",
+			"source_type_code": "CLONK",
+			"source_row_number": 2,
+			"source_concept_code": "HN",
 			"source_row_data": json.dumps({
 				"turno_fin": "22:30",
 				"tipo_hora": "nocturno",
@@ -129,7 +140,11 @@ class TestPayrollTCTray(FrappeTestCase):
 			"amount": 750000,  # Above deduction cap
 			"status": "Válido",
 			"tc_status": "Pendiente",
-			"source_sheet": "Deducciones"
+			"source_sheet": "Deducciones",
+			"source_file": "test_clonk.xlsx",
+			"source_type_code": "CLONK",
+			"source_row_number": 3,
+			"source_concept_code": "PAYFLOW"
 		})
 		line3.insert(ignore_permissions=True)
 		self.test_lines.append(line3)
@@ -165,6 +180,18 @@ class TestPayrollTCTray(FrappeTestCase):
 		self.assertEqual(test_employee["employee_name"], "Juan Pérez")
 		self.assertGreater(test_employee["line_count"], 0)
 		self.assertEqual(test_employee["overall_tc_status"], "Pendiente")
+
+	def test_tc_tray_run_filter_keeps_provenance_visible(self):
+		"""TC run filtering should keep provenance fields available for review."""
+		service = PayrollTCTrayService()
+		result = service.query_pending_lines(run_filter="TEST-TC-RUN-001")
+
+		self.assertEqual(result["status"], "success")
+		self.assertEqual(result["total_lines"], 3)
+		for line in result["lines"]:
+			self.assertEqual(line["run_id"], "TEST-TC-RUN-001")
+			self.assertTrue(line.get("source_sheet"))
+			self.assertIn("source_row_data", line)
 	
 	def test_tc_tray_consolidate_by_employee(self):
 		"""Test employee consolidation logic."""

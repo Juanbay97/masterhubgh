@@ -1,7 +1,7 @@
 import frappe
 
 from hubgh.hubgh.document_service import ensure_person_document, upload_person_document
-from hubgh.hubgh.siesa_reference_matrix import ensure_social_security_reference_catalogs
+from hubgh.hubgh.siesa_reference_matrix import ensure_reference_catalog, ensure_social_security_reference_catalogs
 
 
 META_FIELDS_BY_DOC = {
@@ -18,6 +18,7 @@ CATALOG_SOURCES = {
 	"afp": ("Entidad AFP Siesa", "afp_siesa"),
 	"cesantias": ("Entidad Cesantias Siesa", "cesantias_siesa"),
 	"bancos": ("Banco Siesa", "banco_siesa"),
+	"educacion": ("Nivel Educativo Siesa", "nivel_educativo_siesa"),
 }
 
 
@@ -46,6 +47,7 @@ FIELD_TO_CATALOG_DOCTYPE = {
 	"afp_siesa": "Entidad AFP Siesa",
 	"cesantias_siesa": "Entidad Cesantias Siesa",
 	"banco_siesa": "Banco Siesa",
+	"nivel_educativo_siesa": "Nivel Educativo Siesa",
 }
 
 
@@ -220,11 +222,13 @@ def _catalog_rows(doctype):
 def get_siesa_options():
 	_get_my_candidate_name()
 	ensure_social_security_reference_catalogs()
+	ensure_reference_catalog("Nivel Educativo Siesa")
 	return {
 		"eps": _catalog_rows(CATALOG_SOURCES["eps"][0]),
 		"afp": _catalog_rows(CATALOG_SOURCES["afp"][0]),
 		"cesantias": _catalog_rows(CATALOG_SOURCES["cesantias"][0]),
 		"bancos": _catalog_rows(CATALOG_SOURCES["bancos"][0]),
+		"educacion": _catalog_rows(CATALOG_SOURCES["educacion"][0]),
 	}
 
 
@@ -233,7 +237,7 @@ def _normalize_link_catalog_value(fieldname, value):
 		return value
 
 	value = str(value).strip()
-	if fieldname not in {"eps_siesa", "afp_siesa", "cesantias_siesa", "banco_siesa"}:
+	if fieldname not in {"eps_siesa", "afp_siesa", "cesantias_siesa", "banco_siesa", "nivel_educativo_siesa"}:
 		return value
 
 	doctype = FIELD_TO_CATALOG_DOCTYPE[fieldname]

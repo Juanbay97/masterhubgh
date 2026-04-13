@@ -50,3 +50,5 @@ class TestSocialSecurityCatalogSeed(TestCase):
 		self.assertTrue(any(payload["description"] == "EPS SURA" for payload, _ in inserted))
 		self.assertTrue(any(payload["description"] == "COLPENSIONES" for payload, _ in inserted))
 		self.assertTrue(any(payload["description"] == "FONDO NACIONAL DEL AHORRO" for payload, _ in inserted))
+		self.assertTrue(all(str(payload["code"]).isdigit() for payload, _ in inserted))
+		self.assertTrue(any(payload["code"] == "230301" and payload["description"] == "COLPENSIONES" for payload, _ in inserted))

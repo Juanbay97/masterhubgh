@@ -144,12 +144,14 @@ def _install_support_stubs():
 	candidate_states_module = types.ModuleType("hubgh.hubgh.candidate_states")
 	candidate_states_module.STATE_AFILIACION = "Afiliacion"
 	candidate_states_module.STATE_DOCUMENTACION = "Documentacion"
+	candidate_states_module.get_candidate_status_options = lambda meta=None: []
 	candidate_states_module.is_candidate_status = lambda current, expected: current == expected
 	candidate_states_module.normalize_candidate_status = lambda status, default=None: status or default
+	candidate_states_module.resolve_candidate_status_for_storage = lambda status, options=None, default=None: status or default
 	sys.modules["hubgh.hubgh.candidate_states"] = candidate_states_module
 
 	onboarding_security_module = types.ModuleType("hubgh.hubgh.onboarding_security")
-	onboarding_security_module.mark_user_for_first_login_password_reset = lambda *args, **kwargs: None
+	onboarding_security_module.send_user_activation_email = lambda *args, **kwargs: None
 	sys.modules["hubgh.hubgh.onboarding_security"] = onboarding_security_module
 
 

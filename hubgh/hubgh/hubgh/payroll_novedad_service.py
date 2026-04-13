@@ -23,6 +23,61 @@ class PayrollNovedadService:
 	
 	def __init__(self):
 		self.rules_cache = {}
+
+	def prepare_import_lines(self, canonical_rows: List[Dict[str, Any]], batch_doc) -> List[Dict[str, Any]]:
+		"""Normalize + enrich canonical exogenous rows before persistence."""
+		normalized_rows = self.normalize_canonical_rows(canonical_rows, batch_doc)
+		return self.enrich_canonical_rows(normalized_rows, batch_doc)
+
+	def normalize_canonical_rows(self, canonical_rows: List[Dict[str, Any]], batch_doc) -> List[Dict[str, Any]]:
+		normalized = []
+		for row in canonical_rows:
+			payload = row.copy()
+			payload["batch"] = payload.get("batch") or batch_doc.name
+			payload["run_id"] = payload.get("run_id") or getattr(batch_doc, "run_id", None)
+			payload["source_file"] = payload.get("source_file") or getattr(batch_doc, "source_file", None)
+			payload["source_type_code"] = payload.get("source_type_code") or getattr(batch_doc, "source_type", None)
+			payload["source_row_number"] = payload.get("source_row_number") or payload.get("row_number")
+			payload["parser_version"] = payload.get("parser_version") or "unknown"
+			payload["source_row_data"] = self._ensure_json_string(payload.get("source_row_data"))
+			payload["raw_payload_json"] = self._ensure_json_string(payload.get("raw_payload_json"))
+			normalized.append(payload)
+		return normalized
+
+	def enrich_canonical_rows(self, canonical_rows: List[Dict[str, Any]], batch_doc) -> List[Dict[str, Any]]:
+		enriched = []
+		for row in canonical_rows:
+			payload = row.copy()
+			employee_id = payload.get("employee_id")
+			if employee_id:
+				context = get_payroll_employee_context(employee_id)
+				employee = context.get("employee") or {}
+				if employee:
+					payload["matched_employee"] = employee.get("name")
+					payload["matched_employee_doctype"] = employee.get("doctype")
+					payload["employee_name"] = payload.get("employee_name") or employee.get("employee_name")
+				else:
+					payload["validation_errors"] = (
+						payload.get("validation_errors")
+						or f"Sin match automático para {employee_id}. La novedad queda pendiente para revisión."
+					)
+
+				param_warning = build_employee_parametrization_message(
+					context,
+					required_fields=["contrato", "salary", "pdv"],
+				)
+				if param_warning:
+					existing = payload.get("rule_notes") or ""
+					payload["rule_notes"] = f"{existing}\n{param_warning}".strip()
+			enriched.append(payload)
+		return enriched
+
+	def _ensure_json_string(self, value):
+		if not value:
+			return json.dumps({}, ensure_ascii=False)
+		if isinstance(value, str):
+			return value
+		return json.dumps(value, ensure_ascii=False, default=str)
 		
 	def apply_business_rules(self, import_lines: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 		"""

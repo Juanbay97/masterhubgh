@@ -1,12 +1,9 @@
 # Copyright (c) 2026, Antigravity and contributors
 # For license information, please see license.txt
 
-import secrets
-
 import frappe
 from frappe.model.document import Document
 from frappe.utils import validate_email_address
-from frappe.utils.password import update_password
 
 from hubgh.person_identity import reconcile_person_identity
 from hubgh.hubgh.candidate_states import (
@@ -17,7 +14,7 @@ from hubgh.hubgh.candidate_states import (
 	resolve_candidate_status_for_storage,
 )
 from hubgh.hubgh.document_service import ensure_candidate_required_documents, set_candidate_status_from_progress
-from hubgh.hubgh.onboarding_security import mark_user_for_first_login_password_reset
+from hubgh.hubgh.onboarding_security import send_user_activation_email
 
 
 class Candidato(Document):
@@ -88,7 +85,7 @@ class Candidato(Document):
 		logger = frappe.logger("hubgh.candidato")
 		self.flags.onboarding_user_created = False
 		self.flags.onboarding_login_user = None
-		self.flags.onboarding_initial_password = None
+		self.flags.onboarding_activation_email_sent = False
 		logger.info(
 			"ensure_user_link:start", extra={
 				"candidato": self.name,
@@ -142,17 +139,15 @@ class Candidato(Document):
 				"roles": [{"role": "Candidato"}],
 			})
 			user_doc.insert(ignore_permissions=True)
-			temp_password = secrets.token_urlsafe(24)
-			update_password(user_doc.name, temp_password)
+			send_user_activation_email(user_doc.name)
 			logger.info(
-				"ensure_user_link:initial_password_generated",
-				extra={"user": user_doc.name, "derived_from_document": 0},
+				"ensure_user_link:activation_email_sent",
+				extra={"user": user_doc.name},
 			)
 			frappe.db.set_value("User", user_doc.name, "last_password_reset_date", None, update_modified=False)
-			mark_user_for_first_login_password_reset(user_doc.name)
 			self.flags.onboarding_user_created = True
 			self.flags.onboarding_login_user = user_doc.name
-			self.flags.onboarding_initial_password = temp_password
+			self.flags.onboarding_activation_email_sent = True
 			logger.info("ensure_user_link:user_created", extra={"user": user_doc.name})
 		self.user = user_doc.name
 		if not self.flags.onboarding_login_user:
@@ -175,7 +170,10 @@ class Candidato(Document):
 	def _get_candidate_email(self, user_id):
 		if self.email and validate_email_address(self.email, throw=False):
 			return self.email
-		return f"{user_id}@candidato.local"
+		frappe.throw(
+			"Debes registrar un correo electrónico válido para activar la cuenta del candidato.",
+			frappe.ValidationError,
+		)
 
 	def _ensure_candidato_role(self, user_id):
 		if not user_id:

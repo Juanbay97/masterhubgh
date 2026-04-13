@@ -11,6 +11,8 @@ class PayrollImportLine(Document):
 	def validate(self):
 		if not self.batch:
 			frappe.throw("Debe asociar la línea a un lote de importación.")
+		if not self.run_id and self.batch:
+			self.run_id = frappe.db.get_value("Payroll Import Batch", self.batch, "run_id")
 			
 		# Validate employee exists
 		if self.employee_id:
@@ -43,7 +45,7 @@ class PayrollImportLine(Document):
 				f"No se encontro una Ficha Empleado para el identificador {self.employee_id}. "
 				"Verifique cedula, documento o vinculacion de contrato antes de continuar."
 			)
-			if self.status == "Pendiente":
+			if self.status == "Pendiente" and not self.raw_payload_json:
 				self.status = "Error"
 				
 	def validate_novedad_type(self):
@@ -54,8 +56,11 @@ class PayrollImportLine(Document):
 		)
 		
 		if not novedad:
-			self.validation_errors = f"Tipo de novedad {self.novedad_type} no existe en catálogo"
-			if self.status == "Pendiente":
+			message = f"Tipo de novedad {self.novedad_type} no existe en catálogo"
+			if self.source_concept_code:
+				message = f"{message}. La novedad exógena queda almacenada para revisión y homologación."
+			self.validation_errors = message
+			if self.status == "Pendiente" and not self.source_concept_code:
 				self.status = "Error"
 		else:
 			# Check if support is required for certain types
@@ -65,6 +70,8 @@ class PayrollImportLine(Document):
 					self.rule_notes = "Requiere documento de soporte"
 					
 	def before_save(self):
+		if not self.run_id and self.batch:
+			self.run_id = frappe.db.get_value("Payroll Import Batch", self.batch, "run_id")
 		if self.matched_employee and not self.matched_employee_doctype:
 			matched = get_payroll_employee_context(self.matched_employee).get("employee")
 			if matched:

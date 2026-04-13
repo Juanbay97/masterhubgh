@@ -23,29 +23,13 @@ frappe.pages["mis_documentos_candidato"].on_page_load = function (wrapper) {
 	});
 
 	const $root = $("<div class='mis-documentos-candidato'></div>").appendTo(page.body);
-	let siesaOptions = { eps: [], afp: [], cesantias: [], bancos: [] };
+	let siesaOptions = { eps: [], afp: [], cesantias: [], bancos: [], educacion: [] };
 
 	const toSelectOptions = (rows) =>
 		(rows || [])
 			.map((row) => row?.label || row?.value)
 			.filter(Boolean)
 			.join("\n");
-
-	const NIVEL_EDUCATIVO_SIESA_OPTIONS = [
-		"PREESCOLAR",
-		"BÁSICA PRIMARIA",
-		"BÁSICA SECUNDARIA",
-		"MEDIA",
-		"TÉCNICO LABORAL",
-		"FORMACIÓN TÉCNICA PROFESIONAL",
-		"TECNOLÓGICA",
-		"UNIVERSITARIA",
-		"ESPECIALIZACIÓN",
-		"MAESTRÍA",
-		"DOCTORADO",
-		"SIN DEFINIR",
-		"OTROS",
-	].join("\n");
 
 	const mapStoredCodeToLabel = (fieldname, storedValue) => {
 		if (!storedValue) return storedValue;
@@ -54,6 +38,7 @@ frappe.pages["mis_documentos_candidato"].on_page_load = function (wrapper) {
 			afp_siesa: siesaOptions.afp,
 			cesantias_siesa: siesaOptions.cesantias,
 			banco_siesa: siesaOptions.bancos,
+			nivel_educativo_siesa: siesaOptions.educacion,
 		};
 		const list = catalogMap[fieldname] || [];
 		const row = list.find((r) => (r?.value || "") === storedValue);
@@ -151,7 +136,7 @@ frappe.pages["mis_documentos_candidato"].on_page_load = function (wrapper) {
 					fieldname: "nivel_educativo_siesa",
 					label: "Nivel educativo",
 					fieldtype: "Select",
-					options: NIVEL_EDUCATIVO_SIESA_OPTIONS,
+					options: toSelectOptions(siesaOptions.educacion),
 					reqd: 1,
 				},
 			],

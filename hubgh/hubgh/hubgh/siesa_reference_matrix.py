@@ -1,11 +1,15 @@
 import frappe
 
 
+REFERENCE_MATRIX_VERSION = "2026.04"
+
+
 CODE_PAD_BY_DOCTYPE = {
 	"Grupo Empleados Siesa": 3,
 	"Centro Trabajo Siesa": 3,
 	"Centro Costos Siesa": 6,
 	"Cargo": 3,
+	"Nivel Educativo Siesa": 2,
 }
 
 
@@ -51,33 +55,48 @@ OFFICIAL_SIESA_CATALOGS = {
 		("004", "Nivel Riesgo 4 (4,35%)"),
 		("005", "Nivel Riesgo 5 (6,96%)"),
 	],
+	"Nivel Educativo Siesa": [
+		("01", "PREESCOLAR"),
+		("02", "BÁSICA PRIMARIA"),
+		("03", "BÁSICA SECUNDARIA"),
+		("04", "MEDIA"),
+		("05", "TÉCNICO LABORAL"),
+		("06", "FORMACIÓN TÉCNICA PROFESIONAL"),
+		("07", "TECNOLÓGICA"),
+		("08", "UNIVERSITARIA"),
+		("09", "ESPECIALIZACIÓN"),
+		("10", "MAESTRÍA"),
+		("11", "DOCTORADO"),
+		("12", "SIN DEFINIR"),
+		("13", "OTROS"),
+	],
 }
 
 
 SOCIAL_SECURITY_REFERENCE_CATALOGS = {
 	"Entidad EPS Siesa": [
-		("EPS_SURA", "EPS SURA"),
-		("NUEVA_EPS", "NUEVA EPS"),
-		("SANITAS_EPS", "EPS SANITAS"),
-		("SALUD_TOTAL_EPS", "SALUD TOTAL EPS"),
-		("COMPENSAR_EPS", "COMPENSAR EPS"),
-		("FAMISANAR_EPS", "FAMISANAR EPS"),
-		("COOSALUD_EPS", "COOSALUD EPS"),
-		("ALIANSALUD_EPS", "ALIANSALUD EPS"),
+		("210101", "EPS SURA"),
+		("210102", "NUEVA EPS"),
+		("210103", "EPS SANITAS"),
+		("210104", "SALUD TOTAL EPS"),
+		("210105", "COMPENSAR EPS"),
+		("210106", "FAMISANAR EPS"),
+		("210107", "COOSALUD EPS"),
+		("210108", "ALIANSALUD EPS"),
 	],
 	"Entidad AFP Siesa": [
-		("COLPENSIONES_AFP", "COLPENSIONES"),
-		("PORVENIR_AFP", "PORVENIR"),
-		("PROTECCION_AFP", "PROTECCIÓN"),
-		("COLFONDOS_AFP", "COLFONDOS"),
-		("SKANDIA_AFP", "SKANDIA"),
+		("230301", "COLPENSIONES"),
+		("230302", "PORVENIR"),
+		("230303", "PROTECCIÓN"),
+		("230304", "COLFONDOS"),
+		("230305", "SKANDIA"),
 	],
 	"Entidad Cesantias Siesa": [
-		("PORVENIR_CES", "PORVENIR CESANTÍAS"),
-		("PROTECCION_CES", "PROTECCIÓN CESANTÍAS"),
-		("COLFONDOS_CES", "COLFONDOS CESANTÍAS"),
-		("SKANDIA_CES", "SKANDIA CESANTÍAS"),
-		("FNA_CES", "FONDO NACIONAL DEL AHORRO"),
+		("240301", "PORVENIR CESANTÍAS"),
+		("240302", "PROTECCIÓN CESANTÍAS"),
+		("240303", "COLFONDOS CESANTÍAS"),
+		("240304", "SKANDIA CESANTÍAS"),
+		("240305", "FONDO NACIONAL DEL AHORRO"),
 	],
 }
 
@@ -339,6 +358,28 @@ def ensure_official_centro_trabajo_catalog(strict_disable_others=True):
 			frappe.db.set_value(doctype, row["name"], "enabled", 0, update_modified=False)
 
 
+def ensure_official_nivel_educativo_catalog(strict_disable_others=True):
+	doctype = "Nivel Educativo Siesa"
+	ensure_reference_catalog(doctype)
+	_repoint_to_official_catalog(
+		doctype,
+		[
+			("Candidato", "nivel_educativo_siesa"),
+			("Datos Contratacion", "nivel_educativo_siesa"),
+		],
+		fallback_code="12",
+	)
+
+	if not strict_disable_others:
+		return
+
+	official_codes = {code for code, _ in OFFICIAL_SIESA_CATALOGS.get(doctype, [])}
+	for row in frappe.get_all(doctype, fields=["name", "code", "enabled"]):
+		code = str(row.get("code") or "").strip()
+		if code not in official_codes and int(row.get("enabled") or 0) == 1:
+			frappe.db.set_value(doctype, row["name"], "enabled", 0, update_modified=False)
+
+
 def ensure_banco_reference_catalog():
 	for bank_name, bank_code in OFFICIAL_BANCO_BANCOLOMBIA_CODES:
 		code = str(bank_code or "").strip()
@@ -421,6 +462,7 @@ def sync_reference_masters():
 	ensure_official_ccf_catalog(strict_disable_others=True)
 	ensure_official_unidad_negocio_catalog(strict_disable_others=True)
 	ensure_official_centro_trabajo_catalog(strict_disable_others=True)
+	ensure_official_nivel_educativo_catalog(strict_disable_others=True)
 	ensure_banco_reference_catalog()
 	ensure_official_cargo_matrix()
 	frappe.db.commit()

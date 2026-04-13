@@ -30,6 +30,7 @@ class PayrollTCTrayService:
 		self,
 		employee_filter: str = None,
 		batch_filter: str = None,
+		run_filter: str = None,
 		period_filter: str = None,
 		status_filter: str = None,
 		limit: int = 100,
@@ -61,6 +62,8 @@ class PayrollTCTrayService:
 				filters["employee_name"] = ["like", f"%{employee_filter}%"]
 			if batch_filter:
 				filters["batch"] = batch_filter
+			elif run_filter:
+				filters["run_id"] = run_filter
 			elif period_filter:
 				batches = frappe.get_all(
 					"Payroll Import Batch",
@@ -83,7 +86,7 @@ class PayrollTCTrayService:
 			lines = frappe.get_all("Payroll Import Line",
 				filters=filters,
 				fields=[
-					"name", "batch", "employee_id", "employee_name", "matched_employee", "matched_employee_doctype",
+					"name", "batch", "run_id", "employee_id", "employee_name", "matched_employee", "matched_employee_doctype",
 					"novedad_type", "novedad_date", "quantity", "amount", 
 					"rule_applied", "rule_notes", "tc_status", "validation_errors",
 					"source_sheet", "source_row_data"
@@ -144,6 +147,7 @@ class PayrollTCTrayService:
 					"line_count": 0,
 					"total_amount": 0,
 					"batches": set(),
+					"run_ids": set(),
 					"novelty_types": set(), 
 					"has_errors": False,
 					"has_rules": False,
@@ -156,6 +160,7 @@ class PayrollTCTrayService:
 			emp_summary["line_count"] += 1
 			emp_summary["total_amount"] += flt(line.get("amount", 0))
 			emp_summary["batches"].add(line.get("batch"))
+			emp_summary["run_ids"].add(line.get("run_id"))
 			emp_summary["novelty_types"].add(line.get("novedad_type"))
 			
 			# Track status indicators
@@ -172,6 +177,7 @@ class PayrollTCTrayService:
 		result = []
 		for emp_data in employee_map.values():
 			emp_data["batches"] = list(emp_data["batches"])
+			emp_data["run_ids"] = [run_id for run_id in emp_data["run_ids"] if run_id]
 			emp_data["novelty_types"] = list(emp_data["novelty_types"])
 			
 			# Determine overall TC status
@@ -204,6 +210,7 @@ class PayrollTCTrayService:
 			if batch not in batch_map:
 				batch_map[batch] = {
 					"batch": batch,
+					"run_ids": set(),
 					"line_count": 0,
 					"employee_count": set(),
 					"total_amount": 0,
@@ -213,6 +220,7 @@ class PayrollTCTrayService:
 			summary = batch_map[batch]
 			summary["line_count"] += 1
 			summary["employee_count"].add(line.get("matched_employee") or line.get("employee_id"))
+			summary["run_ids"].add(line.get("run_id"))
 			summary["total_amount"] += flt(line.get("amount", 0))
 			
 			tc_status = line.get("tc_status", "Pendiente")
@@ -222,6 +230,7 @@ class PayrollTCTrayService:
 		result = []
 		for batch_data in batch_map.values():
 			batch_data["employee_count"] = len(batch_data["employee_count"])
+			batch_data["run_ids"] = [run_id for run_id in batch_data["run_ids"] if run_id]
 			result.append(batch_data)
 			
 		result.sort(key=lambda x: x["batch"], reverse=True)
@@ -409,7 +418,7 @@ class PayrollTCTrayService:
 # =============================================================================
 
 @frappe.whitelist()
-def get_tc_tray_data(employee_filter=None, batch_filter=None, limit=100):
+def get_tc_tray_data(employee_filter=None, batch_filter=None, run_filter=None, period_filter=None, limit=100):
 	"""
 	API endpoint to get TC tray data for UI.
 	
@@ -420,6 +429,8 @@ def get_tc_tray_data(employee_filter=None, batch_filter=None, limit=100):
 	return service.query_pending_lines(
 		employee_filter=employee_filter,
 		batch_filter=batch_filter, 
+		run_filter=run_filter,
+		period_filter=period_filter,
 		limit=int(limit or 100)
 	)
 

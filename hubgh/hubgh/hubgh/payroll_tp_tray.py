@@ -34,6 +34,7 @@ class PayrollTPTrayService:
 		self,
 		period_filter: str = None,
 		batch_filter: str = None,
+		run_filter: str = None,
 		limit: int = 500,
 		jornada_filter: str = None,
 	) -> Dict[str, Any]:
@@ -70,6 +71,8 @@ class PayrollTPTrayService:
 			
 			if batch_filter:
 				filters["batch"] = batch_filter
+			elif run_filter:
+				filters["run_id"] = run_filter
 			
 			# Query TC-approved lines
 			lines = frappe.get_all("Payroll Import Line",
@@ -87,7 +90,7 @@ class PayrollTPTrayService:
 			
 			if not lines:
 				return self._empty_consolidation_result(
-					period_filter,
+					run_filter or period_filter or batch_filter,
 					jornada_filter=jornada_filter,
 					jornada_context=jornada_context,
 				)
@@ -96,14 +99,15 @@ class PayrollTPTrayService:
 			employee_consolidation = self.consolidate_by_employee_with_recargos(lines)
 			
 			# Get period summary statistics
-			period_summary = self.get_period_summary(lines, period_filter or batch_filter)
+			period_identifier = run_filter or period_filter or batch_filter
+			period_summary = self.get_period_summary(lines, period_identifier)
 			
 			# Calculate totals for executive summary
 			executive_summary = self.calculate_executive_summary(employee_consolidation, period_summary)
 			
 			return {
 				"status": "success",
-				"period": period_filter or "Batch Específico",
+				"period": period_identifier or "Batch Específico",
 				"total_lines": len(lines),
 				"total_employees": len(employee_consolidation),
 				"employee_consolidation": employee_consolidation,
@@ -965,7 +969,7 @@ class PayrollTPTrayService:
 # =============================================================================
 
 @frappe.whitelist()
-def get_tp_consolidation(period_filter=None, batch_filter=None, limit=500, jornada_filter=None):
+def get_tp_consolidation(period_filter=None, batch_filter=None, run_filter=None, limit=500, jornada_filter=None):
 	"""
 	API endpoint to get TP tray consolidation data for UI.
 	
@@ -977,6 +981,7 @@ def get_tp_consolidation(period_filter=None, batch_filter=None, limit=500, jorna
 	return service.consolidate_by_period(
 		period_filter=period_filter,
 		batch_filter=batch_filter,
+		run_filter=run_filter,
 		limit=int(limit or 500),
 		jornada_filter=jornada_filter,
 	)

@@ -72,7 +72,7 @@ def _install_support_stubs():
 	sys.modules["hubgh.hubgh.document_service"] = document_service_module
 
 	onboarding_security_module = types.ModuleType("hubgh.hubgh.onboarding_security")
-	onboarding_security_module.mark_user_for_first_login_password_reset = lambda *args, **kwargs: None
+	onboarding_security_module.send_user_activation_email = lambda *args, **kwargs: None
 	sys.modules["hubgh.hubgh.onboarding_security"] = onboarding_security_module
 
 

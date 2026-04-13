@@ -355,10 +355,10 @@
                     <h1 class="text-4xl font-black text-black mb-4 uppercase">¡Listo!</h1>
 					<p id="success-message" class="text-gray-600 text-lg mb-3 font-medium">Recibimos tu información. Revisaremos tu perfil y te contactaremos muy pronto.</p>
 					<div id="credentials-box" class="hidden w-full max-w-md border border-gray-200 bg-gray-50 text-left p-4 rounded mb-4">
-						<p class="text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Credenciales iniciales</p>
+						<p class="text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Activación de cuenta</p>
 						<p class="text-sm text-gray-700 mb-1"><span class="font-bold">Usuario:</span> <span id="credential-user"></span></p>
-						<p class="text-sm text-gray-700 mb-2"><span class="font-bold">Contraseña temporal:</span> <span id="credential-password"></span></p>
-						<p class="text-xs text-gray-500">Por seguridad, en el primer ingreso el sistema te solicitará cambiar la contraseña.</p>
+						<p class="text-sm text-gray-700 mb-2"><span class="font-bold">Correo:</span> <span id="credential-password"></span></p>
+						<p class="text-xs text-gray-500">Te enviamos un enlace para definir tu contraseña con el flujo nativo de recuperación de Frappe.</p>
 					</div>
 					<p id="redirect-note" class="text-xs tracking-wide uppercase text-gray-400 mb-8"></p>
 					<button id="resetBtn" class="border-2 border-black px-8 py-3 text-black font-bold uppercase hover:bg-black hover:text-white transition-colors tracking-widest text-sm">
@@ -962,14 +962,13 @@
             });
             const res = await callCreateCandidate(payload);
             if (res && res.message && res.message.name) {
-                data._created_candidate = res.message.name;
-                data._login_user = res.message.login_user || data.numero_documento || '';
-                data._user_created = !!res.message.user_created;
-                data._initial_password = res.message.initial_password || '';
-                data._password_must_be_changed = !!res.message.password_must_be_changed;
-                saveDraft(data);
-                saved = true;
-                return true;
+				data._created_candidate = res.message.name;
+				data._login_user = res.message.login_user || data.numero_documento || '';
+				data._user_created = !!res.message.user_created;
+				data._activation_email_sent = !!res.message.activation_email_sent;
+				saveDraft(data);
+				saved = true;
+				return true;
             }
             alert("No se pudo registrar. El servidor no devolvió confirmación de creación.");
             return false;
@@ -1221,10 +1220,10 @@
 		successMessage.textContent = `Excelente ${firstName}, recibimos tu información correctamente. Estás un paso más cerca.`;
 		loginButton.classList.remove('hidden');
 		if (credentialsBox && credentialUser && credentialPassword) {
-			const hasGeneratedPassword = !!(data._user_created && data._initial_password);
-			if (hasGeneratedPassword) {
+			const hasActivationEmail = !!(data._user_created && data._activation_email_sent);
+			if (hasActivationEmail) {
 				credentialUser.textContent = data._login_user || data.numero_documento || '';
-				credentialPassword.textContent = data._initial_password;
+				credentialPassword.textContent = data.email || '';
 				credentialsBox.classList.remove('hidden');
 			} else {
 				credentialsBox.classList.add('hidden');
@@ -1232,7 +1231,7 @@
 		}
 		localStorage.removeItem(STORAGE_KEY);
 		redirectNote.textContent = data._user_created
-			? 'Copia tus credenciales y luego usa el botón "Iniciar sesión" cuando estés listo.'
+			? 'Revisá tu correo, activá la cuenta y luego usá el botón "Iniciar sesión" cuando ya hayas definido tu contraseña.'
 			: 'Tu cuenta ya existe. Usa el botón "Iniciar sesión" para entrar o recuperar tu contraseña.';
 	}
 

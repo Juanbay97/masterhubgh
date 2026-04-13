@@ -173,8 +173,9 @@
   },
   {
    "fieldname": "nivel_educativo_siesa",
-   "fieldtype": "Data",
-   "label": "Nivel Educativo (Siesa)"
+   "fieldtype": "Link",
+   "label": "Nivel Educativo (Siesa)",
+   "options": "Nivel Educativo Siesa"
   },
   {
    "default": "0",

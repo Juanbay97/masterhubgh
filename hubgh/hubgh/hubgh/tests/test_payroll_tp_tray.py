@@ -74,6 +74,9 @@ class TestPayrollTPTray(FrappeTestCase):
 		# Create test batch
 		batch_doc = frappe.new_doc("Payroll Import Batch")
 		batch_doc.name = "TEST-TP-BATCH-001"
+		batch_doc.run_id = "TEST-TP-RUN-001"
+		batch_doc.run_label = "Marzo 2026 · TEST-TP-RUN-001"
+		batch_doc.run_source_count = 1
 		batch_doc.source_type = "CLONK"
 		batch_doc.source_file = "test_clonk_file.xlsx"
 		batch_doc.nomina_period = "2026-03"
@@ -141,6 +144,7 @@ class TestPayrollTPTray(FrappeTestCase):
 		for i, line_data in enumerate(test_lines):
 			line_doc = frappe.new_doc("Payroll Import Line")
 			line_doc.batch = "TEST-TP-BATCH-001"
+			line_doc.run_id = "TEST-TP-RUN-001"
 			line_doc.row_number = i + 1
 			line_doc.status = "Válido"
 			line_doc.tc_status = "Aprobado"  # Key: TC-approved for TP processing
@@ -194,6 +198,19 @@ class TestPayrollTPTray(FrappeTestCase):
 		self.assertEqual(result["total_employees"], 2)
 		
 		# Verify batch filter worked
+		for emp in result["employee_consolidation"]:
+			self.assertIn(self.test_batch, emp["batches"])
+
+	def test_consolidate_by_run(self):
+		"""TP consolidation should support run-level filtering."""
+		service = PayrollTPTrayService()
+
+		result = service.consolidate_by_period(run_filter="TEST-TP-RUN-001")
+
+		self.assertEqual(result["status"], "success")
+		self.assertEqual(result["period"], "TEST-TP-RUN-001")
+		self.assertEqual(result["period_summary"]["period_identifier"], "TEST-TP-RUN-001")
+		self.assertEqual(result["total_employees"], 2)
 		for emp in result["employee_consolidation"]:
 			self.assertIn(self.test_batch, emp["batches"])
 		
@@ -345,6 +362,11 @@ class TestPayrollTPTray(FrappeTestCase):
 		# Test consolidation endpoint
 		result = get_tp_consolidation(batch_filter=self.test_batch)
 		self.assertEqual(result["status"], "success")
+
+		# Test run consolidation endpoint
+		result = get_tp_consolidation(run_filter="TEST-TP-RUN-001")
+		self.assertEqual(result["status"], "success")
+		self.assertEqual(result["period"], "TEST-TP-RUN-001")
 		
 		# Test available periods endpoint
 		result = get_available_periods()
@@ -420,6 +442,9 @@ class TestPrenominaExport(FrappeTestCase):
 		# Create test batch
 		batch_doc = frappe.new_doc("Payroll Import Batch")
 		batch_doc.name = "TEST-EXPORT-BATCH-001"
+		batch_doc.run_id = "TEST-EXPORT-RUN-001"
+		batch_doc.run_label = "Marzo 2026 · TEST-EXPORT-RUN-001"
+		batch_doc.run_source_count = 2
 		batch_doc.source_type = "CLONK"
 		batch_doc.nomina_period = "2026-03"
 		batch_doc.aprobado_tc_por = "Administrator"
@@ -473,6 +498,7 @@ class TestPrenominaExport(FrappeTestCase):
 		for i, line_data in enumerate(test_lines):
 			line_doc = frappe.new_doc("Payroll Import Line")
 			line_doc.batch = "TEST-EXPORT-BATCH-001"
+			line_doc.run_id = "TEST-EXPORT-RUN-001"
 			line_doc.row_number = i + 1
 			line_doc.employee_id = "EMP-EXPORT-001"
 			line_doc.employee_name = "Ana Rodríguez Export Test"
@@ -489,6 +515,36 @@ class TestPrenominaExport(FrappeTestCase):
 		
 		frappe.db.commit()
 		self.test_export_batch = "TEST-EXPORT-BATCH-001"
+
+		secondary_batch = frappe.new_doc("Payroll Import Batch")
+		secondary_batch.name = "TEST-EXPORT-BATCH-002"
+		secondary_batch.run_id = "TEST-EXPORT-RUN-001"
+		secondary_batch.run_label = "Marzo 2026 · TEST-EXPORT-RUN-001"
+		secondary_batch.run_source_count = 2
+		secondary_batch.source_type = "CLONK"
+		secondary_batch.nomina_period = "2026-03"
+		secondary_batch.aprobado_tc_por = "Administrator"
+		secondary_batch.aprobado_tc_fecha = now_datetime()
+		secondary_batch.insert(ignore_permissions=True)
+
+		second_line = frappe.new_doc("Payroll Import Line")
+		second_line.batch = "TEST-EXPORT-BATCH-002"
+		second_line.run_id = "TEST-EXPORT-RUN-001"
+		second_line.row_number = 1
+		second_line.employee_id = "EMP-EXPORT-001"
+		second_line.employee_name = "Ana Rodríguez Export Test"
+		second_line.matched_employee = "EMP-EXPORT-001"
+		second_line.status = "Válido"
+		second_line.tc_status = "Aprobado"
+		second_line.tp_status = "Aprobado"
+		second_line.novedad_type = "HEN"
+		second_line.quantity = 4
+		second_line.amount = 80000
+		second_line.novedad_date = "2026-03-17"
+		second_line.insert(ignore_permissions=True)
+
+		frappe.db.commit()
+		self.test_export_run = "TEST-EXPORT-RUN-001"
 		
 	def test_prenomina_service_initialization(self):
 		"""Test Prenomina export service initialization."""
@@ -503,7 +559,7 @@ class TestPrenominaExport(FrappeTestCase):
 		"""Test retrieval of TP-approved lines."""
 		try:
 			service = PrenominaExportService()
-			lines = service._get_tp_approved_lines(self.test_export_batch)
+			lines, _ = service._get_tp_approved_lines(self.test_export_batch)
 			
 			self.assertGreater(len(lines), 0)
 			
@@ -519,7 +575,7 @@ class TestPrenominaExport(FrappeTestCase):
 		"""Test consolidation of employee data for export."""
 		try:
 			service = PrenominaExportService()
-			lines = service._get_tp_approved_lines(self.test_export_batch)
+			lines, _ = service._get_tp_approved_lines(self.test_export_batch)
 			employee_data = service._consolidate_employee_data(lines)
 			
 			self.assertEqual(len(employee_data), 1)
@@ -584,7 +640,7 @@ class TestPrenominaExport(FrappeTestCase):
 		"""Test Prenomina preview functionality."""
 		try:
 			service = PrenominaExportService()
-			lines = service._get_tp_approved_lines(self.test_export_batch)
+			lines, _ = service._get_tp_approved_lines(self.test_export_batch)
 			employee_data = service._consolidate_employee_data(lines)
 			
 			# Test preview data structure
@@ -630,6 +686,50 @@ class TestPrenominaExport(FrappeTestCase):
 			for col in expected_columns:
 				self.assertIn(col, PRENOMINA_COLUMNS)
 				
+		except ImportError:
+			self.skipTest("openpyxl not available")
+
+	def test_get_tp_approved_lines_by_run(self):
+		"""Run-aware export queries should aggregate approved rows across batches."""
+		try:
+			service = PrenominaExportService()
+			lines, _ = service._get_tp_approved_lines(run_id=self.test_export_run)
+
+			self.assertEqual(len(lines), 9)
+			self.assertEqual({line["batch"] for line in lines}, {"TEST-EXPORT-BATCH-001", "TEST-EXPORT-BATCH-002"})
+		except ImportError:
+			self.skipTest("openpyxl not available")
+
+	def test_run_export_creates_single_worksheet(self):
+		"""Grouped run export should still generate exactly one worksheet."""
+		try:
+			import openpyxl
+
+			service = PrenominaExportService()
+			with tempfile.TemporaryDirectory() as temp_dir:
+				result = service.generate_prenomina_export(output_dir=temp_dir, run_id=self.test_export_run)
+
+				self.assertEqual(result["status"], "success")
+				workbook = openpyxl.load_workbook(result["file_path"])
+				self.assertEqual(len(workbook.sheetnames), 1)
+				self.assertEqual(workbook.sheetnames[0], "Prenomina 2026-03")
+				workbook.close()
+		except ImportError:
+			self.skipTest("openpyxl not available")
+
+	def test_single_batch_export_keeps_single_worksheet(self):
+		"""Legacy single-batch export fallback should also keep one worksheet."""
+		try:
+			import openpyxl
+
+			service = PrenominaExportService()
+			with tempfile.TemporaryDirectory() as temp_dir:
+				result = service.generate_prenomina_export(self.test_export_batch, output_dir=temp_dir)
+
+				self.assertEqual(result["status"], "success")
+				workbook = openpyxl.load_workbook(result["file_path"])
+				self.assertEqual(len(workbook.sheetnames), 1)
+				workbook.close()
 		except ImportError:
 			self.skipTest("openpyxl not available")
 

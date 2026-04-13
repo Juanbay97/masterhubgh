@@ -20,7 +20,11 @@ def _install_stubs():
 	frappe_module.whitelist = lambda *args, **kwargs: (lambda fn: fn)
 	frappe_module.session = SimpleNamespace(user="candidate@example.com")
 	frappe_module.local = SimpleNamespace(message_log=["stale warning"])
-	frappe_module.db = SimpleNamespace(get_value=lambda *args, **kwargs: "333333", has_column=lambda *args, **kwargs: False)
+	frappe_module.db = SimpleNamespace(
+		get_value=lambda *args, **kwargs: "333333",
+		has_column=lambda *args, **kwargs: False,
+		exists=lambda *args, **kwargs: True,
+	)
 	frappe_module.get_doc = lambda *args, **kwargs: None
 	frappe_module.get_all = lambda *args, **kwargs: []
 	frappe_module.throw = lambda msg: (_ for _ in ()).throw(Exception(msg))
@@ -33,6 +37,7 @@ def _install_stubs():
 
 	siesa_module = types.ModuleType("hubgh.hubgh.siesa_reference_matrix")
 	siesa_module.ensure_social_security_reference_catalogs = lambda: None
+	siesa_module.ensure_reference_catalog = lambda *args, **kwargs: None
 	sys.modules["hubgh.hubgh.siesa_reference_matrix"] = siesa_module
 
 
@@ -69,3 +74,23 @@ class TestCandidateUploadEndpoint(TestCase):
 
 		self.assertEqual(result, {"name": "PD-001", "status": "Subido"})
 		self.assertEqual(frappe_module.local.message_log, [])
+
+	def test_get_siesa_options_includes_versioned_education_catalog(self):
+		rows = [SimpleNamespace(name="04", description="MEDIA", enabled=1)]
+
+		with patch(
+			"hubgh.hubgh.page.mis_documentos_candidato.mis_documentos_candidato._get_my_candidate_name",
+			return_value="333333",
+		), patch(
+			"hubgh.hubgh.page.mis_documentos_candidato.mis_documentos_candidato.frappe.get_all",
+			return_value=rows,
+		), patch(
+			"hubgh.hubgh.page.mis_documentos_candidato.mis_documentos_candidato.ensure_social_security_reference_catalogs"
+		) as ensure_social_mock, patch(
+			"hubgh.hubgh.page.mis_documentos_candidato.mis_documentos_candidato.ensure_reference_catalog"
+		) as ensure_catalog_mock:
+			result = mis_documentos_candidato.get_siesa_options()
+
+		ensure_social_mock.assert_called_once()
+		ensure_catalog_mock.assert_called_once_with("Nivel Educativo Siesa")
+		self.assertEqual(result["educacion"], [{"value": "04", "label": "MEDIA - 04"}])

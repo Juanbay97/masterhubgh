@@ -436,7 +436,10 @@ def _build_employee_context(data):
 		"pais_expedicion": _str(data.pais_expedicion_siesa),
 		"departamento_expedicion": _str(data.departamento_expedicion_siesa),
 		"ciudad_expedicion": _str(data.ciudad_expedicion_siesa),
-		"nivel_educativo": _str(_first(data.nivel_educativo_siesa, getattr(candidato, "nivel_educativo_siesa", None))),
+		"nivel_educativo": _catalog_code(
+			"Nivel Educativo Siesa",
+			_first(data.nivel_educativo_siesa, getattr(candidato, "nivel_educativo_siesa", None)),
+		),
 		"genero": genero,
 		"estado_civil": estado_civil,
 		"es_extranjero": _yes_no_flag(_first(data.es_extranjero, getattr(candidato, "es_extranjero", 0))),

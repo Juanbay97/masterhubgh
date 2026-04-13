@@ -4,10 +4,14 @@
  "autoname": "format:PIB-{YYYY}-{MM}-{####}",
  "doctype": "DocType",
  "engine": "InnoDB",
-  "field_order": [
-   "source_file",
-   "source_type",
-   "period",
+   "field_order": [
+    "run_id",
+    "run_label",
+    "run_source_count",
+    "export_status",
+    "source_file",
+    "source_type",
+    "period",
    "column_break_1",
    "status",
    "uploaded_by",
@@ -27,10 +31,38 @@
    "original_file",
    "normalized_file"
   ],
- "fields": [
-  {
-   "fieldname": "source_file",
-   "fieldtype": "Attach",
+  "fields": [
+   {
+    "fieldname": "run_id",
+    "fieldtype": "Data",
+    "in_list_view": 1,
+    "label": "Run ID",
+    "read_only": 1
+   },
+   {
+    "fieldname": "run_label",
+    "fieldtype": "Data",
+    "label": "Run Label",
+    "read_only": 1
+   },
+   {
+    "default": "1",
+    "fieldname": "run_source_count",
+    "fieldtype": "Int",
+    "label": "Cantidad Fuentes Run",
+    "read_only": 1
+   },
+   {
+    "default": "Pendiente",
+    "fieldname": "export_status",
+    "fieldtype": "Select",
+    "label": "Estado Exportación",
+    "options": "Pendiente\nListo\nExportado",
+    "read_only": 1
+   },
+   {
+    "fieldname": "source_file",
+    "fieldtype": "Attach",
    "in_list_view": 1,
    "label": "Archivo Fuente",
    "reqd": 1
@@ -60,7 +92,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Estado",
-    "options": "Pendiente\nProcesando\nCompletado\nCompletado con errores\nCompletado con duplicados\nFallido\nConfirmado\nAprobado TC\nRechazado TC",
+    "options": "Pendiente\nProcesando\nCompletado\nCompletado con errores\nCompletado con duplicados\nFuente no soportada\nFallido\nConfirmado\nAprobado TC\nRechazado TC",
    "read_only": 1
   },
   {

@@ -697,7 +697,7 @@
 				<div class="panel-header">
 					<div class="panel-title-block">
 						<span class="badge">Paso 1</span>
-						<h2>Cargar archivo y contexto del lote</h2>
+					<h2>Cargar archivos y contexto del run</h2>
 						<p class="panel-subtitle">Si el sistema no encuentra fuentes o periodos activos, te lo indica con acciones concretas para resolverlo.</p>
 					</div>
 					<span id="formStatusChip" class="status-chip">Preparando formulario...</span>
@@ -708,11 +708,11 @@
 				<form id="uploadForm" novalidate>
 					<div class="form-grid">
 						<div class="form-group form-group-file">
-							<label for="sourceFile">Archivo de nomina</label>
+							<label for="sourceFile">Archivos de nomina</label>
 							<div class="input-shell">
-								<input type="file" id="sourceFile" name="source_file" accept=".xlsx,.xls" required>
+								<input type="file" id="sourceFile" name="source_file" accept=".xlsx,.xls" multiple required>
 							</div>
-							<p class="helper-text">Carga el archivo original recibido desde la fuente. El sistema intenta sugerir la fuente automaticamente segun el nombre del archivo.</p>
+							<p class="helper-text">Carga uno o muchos archivos originales del mismo periodo. El sistema intenta sugerir la fuente automaticamente segun el nombre del primer archivo.</p>
 						</div>
 
 						<div class="form-group form-group-half">
@@ -745,7 +745,7 @@
 					</div>
 
 					<div class="form-actions">
-						<button type="submit" id="previewBtn" class="btn-primary">Generar vista previa</button>
+						<button type="submit" id="previewBtn" class="btn-primary">Generar vista previa agrupada</button>
 						<a class="btn-link btn-secondary" href="/app/payroll-import-batch">Ver lotes existentes</a>
 					</div>
 				</form>
@@ -788,16 +788,16 @@
 
 		<div id="loadingState" class="loading-card hidden">
 			<div class="loading-orb"></div>
-			<h3>Procesando archivo</h3>
-			<p>Estamos cargando el archivo, creando el lote y ejecutando la vista previa. No cierres esta ventana.</p>
+			<h3>Procesando run</h3>
+			<p>Estamos cargando los archivos, creando el run agrupado y ejecutando la vista previa consolidada. No cierres esta ventana.</p>
 		</div>
 
 		<section id="previewSection" class="preview-panel hidden">
 			<div class="preview-header">
 				<div class="preview-title-block">
 					<span class="badge">Paso 2</span>
-					<h2>Vista previa del lote</h2>
-					<p id="previewMeta" class="table-hint">Revisa filas validas, errores y duplicados antes de confirmar la importacion.</p>
+					<h2>Vista previa del run</h2>
+					<p id="previewMeta" class="table-hint">Revisa filas validas, errores y duplicados antes de confirmar la importacion agrupada.</p>
 				</div>
 				<span id="previewStatusChip" class="status-chip">Pendiente</span>
 			</div>
@@ -842,8 +842,8 @@
 			</div>
 
 			<div class="preview-actions" style="margin-top: 18px;">
-				<button type="button" id="commitBtn" class="btn-success" disabled>Confirmar importacion</button>
-				<button type="button" id="cancelBtn" class="btn-secondary">Cancelar lote</button>
+				<button type="button" id="commitBtn" class="btn-success" disabled>Confirmar importacion agrupada</button>
+				<button type="button" id="cancelBtn" class="btn-secondary">Cancelar run</button>
 			</div>
 		</section>
 
@@ -852,7 +852,7 @@
 				<div class="success-title-block">
 					<span class="badge">Listo</span>
 					<h2>Importacion confirmada</h2>
-					<p>El lote quedo registrado y listo para continuar el flujo operativo de nomina.</p>
+					<p>El run quedo registrado y listo para continuar el flujo operativo de nomina.</p>
 				</div>
 			</div>
 			<div class="preview-actions">

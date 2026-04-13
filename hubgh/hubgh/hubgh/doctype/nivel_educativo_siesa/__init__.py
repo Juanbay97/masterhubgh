@@ -1,0 +1,1 @@
+from .nivel_educativo_siesa import NivelEducativoSiesa

@@ -659,8 +659,7 @@ def create_candidate(payload):
 		"name": doc.name,
 		"user": doc.user,
 		"login_user": getattr(doc.flags, "onboarding_login_user", None) or doc.user or data.get("email") or data.get("numero_documento"),
-		"initial_password": getattr(doc.flags, "onboarding_initial_password", None),
-		"password_must_be_changed": 1,
+		"activation_email_sent": 1 if getattr(doc.flags, "onboarding_activation_email_sent", False) else 0,
 		"user_created": 1 if getattr(doc.flags, "onboarding_user_created", False) else 0,
 	}
 

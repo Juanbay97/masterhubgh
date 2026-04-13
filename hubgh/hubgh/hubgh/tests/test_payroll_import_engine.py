@@ -17,8 +17,12 @@ from hubgh.hubgh.payroll_import_engine import (
 	parse_clonk_file,
 	detect_source_type,
 	process_import_batch,
+	process_import_run,
 	check_duplicate_line,
-	generate_dedup_hash
+	generate_dedup_hash,
+	get_source_adapter,
+	register_source_adapter,
+	SOURCE_ADAPTERS,
 )
 
 
@@ -101,7 +105,7 @@ class TestPayrollImportEngine(FrappeTestCase):
 		test_cases = [
 			("CLONK_Marzo_2026.xlsx", "CLONK"),
 			("Toda la empresa marzo.xlsx", "CLONK"),
-			("payflow_resumen.xlsx", "Payflow"),
+			("payflow_resumen.xlsx", "Payflow Resumen"),
 			("fincomercio_datos.xlsx", "Fincomercio"),
 			("fondo_m_home.xlsx", "Fondo FONGIGA"),
 			("libranzas_marzo.xlsx", "Libranzas Bancolombia"),
@@ -145,6 +149,88 @@ class TestPayrollImportEngine(FrappeTestCase):
 				
 		finally:
 			os.unlink(temp_file)
+
+	def test_source_adapter_registry_supports_alias_lookup(self):
+		"""Registry should resolve adapters by canonical code and alias."""
+		class DummyAdapter:
+			code = "dummy-source"
+			parser_version = "dummy.v1"
+
+			def parse(self, file_path, batch_doc):
+				return [], []
+
+		original_adapters = dict(SOURCE_ADAPTERS)
+		try:
+			SOURCE_ADAPTERS.clear()
+			adapter = DummyAdapter()
+			register_source_adapter(adapter, "DUMMY", "Dummy Alias")
+
+			self.assertIs(get_source_adapter("dummy-source"), adapter)
+			self.assertIs(get_source_adapter("ignored", "dummy"), adapter)
+			self.assertIs(get_source_adapter("Dummy Alias"), adapter)
+		finally:
+			SOURCE_ADAPTERS.clear()
+			SOURCE_ADAPTERS.update(original_adapters)
+
+	def test_parse_clonk_file_keeps_run_provenance_in_canonical_payload(self):
+		"""CLONK parsing should keep grouped run provenance in each canonical row."""
+		temp_file = self.create_mock_clonk_file()
+		try:
+			lines, errors = parse_clonk_file(temp_file, "TEST-RUN-BATCH")
+			self.assertEqual(errors, [])
+			self.assertGreater(len(lines), 0)
+
+			first_line = lines[0]
+			self.assertEqual(first_line["run_id"], "TEST-RUN-BATCH")
+			self.assertIn("source_file", first_line)
+			self.assertIn("source_type_code", first_line)
+			raw_payload = json.loads(first_line["raw_payload_json"])
+			self.assertEqual(raw_payload["provenance"]["run_id"], "TEST-RUN-BATCH")
+			self.assertEqual(raw_payload["provenance"]["batch"], "TEST-RUN-BATCH")
+		finally:
+			os.unlink(temp_file)
+
+	@patch("hubgh.hubgh.payroll_import_engine.process_import_batch")
+	@patch("hubgh.hubgh.payroll_import_engine.frappe.db.get_value")
+	@patch("hubgh.hubgh.payroll_import_engine.frappe.get_all")
+	def test_process_import_run_reuses_confirmed_batch_totals(self, mock_get_all, mock_get_value, mock_process_batch):
+		"""Run processing should consolidate fresh and already-confirmed batches coherently."""
+		mock_get_all.return_value = [
+			{
+				"name": "TEST-RUN-BATCH-001",
+				"status": "Confirmado",
+				"nomina_period": "2026-03",
+				"run_label": "Marzo 2026 · RUN-001",
+				"run_source_count": 2,
+			},
+			{
+				"name": "TEST-RUN-BATCH-002",
+				"status": "Pendiente",
+				"nomina_period": "2026-03",
+				"run_label": "Marzo 2026 · RUN-001",
+				"run_source_count": 2,
+			},
+		]
+		mock_get_value.side_effect = [12, 10, 2]
+		mock_process_batch.return_value = {
+			"status": "Completado con duplicados",
+			"total_rows": 8,
+			"valid_rows": 7,
+			"error_rows": 0,
+			"duplicate_rows": 1,
+			"errors": [],
+		}
+
+		result = process_import_run("RUN-001")
+
+		self.assertEqual(result["run_id"], "RUN-001")
+		self.assertEqual(result["status"], "Completado con duplicados")
+		self.assertEqual(result["total_rows"], 20)
+		self.assertEqual(result["valid_rows"], 17)
+		self.assertEqual(result["error_rows"], 2)
+		self.assertEqual(result["duplicate_rows"], 1)
+		self.assertEqual(len(result["batch_results"]), 2)
+		mock_process_batch.assert_called_once_with("TEST-RUN-BATCH-002")
 			
 	def test_deduplication_logic(self):
 		"""Test deduplication hash generation and checking."""

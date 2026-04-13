@@ -8,6 +8,10 @@ class PayrollImportBatch(Document):
 		self.uploaded_by = frappe.session.user
 		self.uploaded_on = now_datetime()
 		self.status = "Pendiente"
+		self.export_status = self.export_status or "Pendiente"
+		self.run_id = (self.run_id or self.name or "").strip() or None
+		self.run_label = (self.run_label or self.run_id or "").strip() or None
+		self.run_source_count = int(self.run_source_count or 1)
 		
 		# Set nomina_period if not provided
 		if not self.nomina_period and self.period:
@@ -19,6 +23,25 @@ class PayrollImportBatch(Document):
 			frappe.throw("Debe adjuntar un archivo fuente.")
 		if not self.source_type:
 			frappe.throw("Debe seleccionar el tipo de fuente.")
+		if not self.run_id:
+			self.run_id = self.name or frappe.generate_hash(length=10)
+		if not self.run_label:
+			period_label = self.nomina_period or self.period or "Sin periodo"
+			self.run_label = f"{period_label} · {self.run_id}"
+		if not self.run_source_count:
+			self.run_source_count = 1
+
+		if self.run_id:
+			existing_batches = frappe.get_all(
+				"Payroll Import Batch",
+				filters={"run_id": self.run_id, "name": ["!=", self.name or ""]},
+				fields=["name", "period", "nomina_period"],
+			)
+			for existing in existing_batches:
+				if (existing.get("period") or "") != (self.period or ""):
+					frappe.throw("Todos los archivos agrupados en un mismo run deben pertenecer al mismo periodo.")
+				if (existing.get("nomina_period") or "") != (self.nomina_period or ""):
+					frappe.throw("Todos los lotes del run deben conservar el mismo contexto de nómina.")
 			
 	def on_update_after_submit(self):
 		# Handle TC approval workflow

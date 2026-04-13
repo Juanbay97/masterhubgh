@@ -116,6 +116,7 @@ class DatosContratacion(Document):
 			"nombres",
 			"primer_apellido",
 			"fecha_nacimiento",
+			"nivel_educativo_siesa",
 			"direccion",
 			"celular",
 			"email",

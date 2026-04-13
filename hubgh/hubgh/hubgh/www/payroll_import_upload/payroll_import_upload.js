@@ -1,6 +1,7 @@
 class PayrollImportUploader {
 	constructor() {
-		this.currentBatch = null;
+		this.currentRun = null;
+		this.currentRunMeta = null;
 		this.formOptions = { sources: [], periods: [] };
 		this.catalogLinks = {
 			sources: "/app/payroll-source-catalog",
@@ -189,12 +190,12 @@ class PayrollImportUploader {
 	}
 
 	autoDetectSource() {
-		const file = this.sourceFile.files[0];
-		if (!file || !this.formOptions.sources.length) {
+		const files = Array.from(this.sourceFile.files || []);
+		if (!files.length || !this.formOptions.sources.length) {
 			return;
 		}
 
-		const filename = file.name.toLowerCase();
+		const filename = files[0].name.toLowerCase();
 		const matchers = [
 			{ match: ["clonk", "toda la empresa"], value: "clonk" },
 			{ match: ["payflow"], value: "payflow" },
@@ -225,9 +226,9 @@ class PayrollImportUploader {
 		event.preventDefault();
 		this.alertContainer.innerHTML = "";
 
-		const file = this.sourceFile.files[0];
-		if (!file) {
-			this.showAlert("Selecciona un archivo Excel antes de continuar.", "warning", "Archivo requerido");
+		const files = Array.from(this.sourceFile.files || []);
+		if (!files.length) {
+			this.showAlert("Selecciona al menos un archivo Excel antes de continuar.", "warning", "Archivo requerido");
 			return;
 		}
 		if (!this.sourceType.value) {
@@ -241,11 +242,12 @@ class PayrollImportUploader {
 
 		try {
 			this.showLoading();
-			const fileUrl = await this.uploadFile(file);
-			const batch = await this.createBatch(fileUrl);
-			this.currentBatch = batch.name;
+			const fileUrls = await Promise.all(files.map((file) => this.uploadFile(file)));
+			const run = await this.createRun(fileUrls);
+			this.currentRun = run.run_id;
+			this.currentRunMeta = run;
 			const result = await this.processPreview();
-			await this.showPreview(result, batch);
+			await this.showPreview(result, run);
 		} catch (error) {
 			this.hideLoading();
 			this.showAlert(this.getErrorMessage(error, "Ocurrio un problema procesando el archivo."), "error", "Error procesando archivo");
@@ -274,11 +276,11 @@ class PayrollImportUploader {
 		return fileUrl;
 	}
 
-	async createBatch(fileUrl) {
+	async createRun(fileUrls) {
 		const response = await frappe.call({
-			method: "hubgh.hubgh.payroll_import_upload_api.create_import_batch",
+			method: "hubgh.hubgh.payroll_import_upload_api.create_import_run",
 			args: {
-				file_url: fileUrl,
+				file_urls_json: JSON.stringify(fileUrls),
 				source_type: this.sourceType.value,
 				period: this.period.value,
 			},
@@ -288,9 +290,9 @@ class PayrollImportUploader {
 
 	async processPreview() {
 		const response = await frappe.call({
-			method: "hubgh.hubgh.payroll_import_engine.process_batch",
+			method: "hubgh.hubgh.payroll_import_upload_api.get_import_run_preview",
 			args: {
-				batch_name: this.currentBatch,
+				run_id: this.currentRun,
 			},
 		});
 		return response.message;
@@ -308,7 +310,7 @@ class PayrollImportUploader {
 		this.uploadForm.closest(".panel").classList.remove("hidden");
 	}
 
-	async showPreview(result, batch) {
+	async showPreview(result, run) {
 		this.hideLoading();
 		this.previewSection.classList.remove("hidden");
 
@@ -316,7 +318,7 @@ class PayrollImportUploader {
 		this.validRows.textContent = result.valid_rows || 0;
 		this.errorRows.textContent = result.error_rows || 0;
 		this.duplicateRows.textContent = result.duplicate_rows || 0;
-		this.previewMeta.textContent = `Lote ${batch.name} - Periodo ${batch.nomina_period || this.period.options[this.period.selectedIndex].textContent}. Revisa la conciliacion antes de confirmar.`;
+		this.previewMeta.textContent = `Run ${run.run_id} · ${result.source_count || run.source_count || 0} archivo(s) · ${run.run_label || this.period.options[this.period.selectedIndex].textContent}. Revisa la conciliacion antes de confirmar.`;
 		this.previewStatusChip.textContent = result.status || "Pendiente";
 
 		const statusConfig = this.resolveStatusConfig(result.status);
@@ -334,7 +336,7 @@ class PayrollImportUploader {
 				className: "status-completado",
 				type: "success",
 				title: "Vista previa lista",
-				message: "Todas las filas del lote quedaron listas para confirmar.",
+				message: "Todas las filas del run quedaron listas para confirmar.",
 			};
 		}
 		if (status === "Completado con errores") {
@@ -343,7 +345,7 @@ class PayrollImportUploader {
 				className: "status-completado-con-errores",
 				type: "warning",
 				title: "Vista previa con observaciones",
-				message: "Hay filas con error. Puedes revisar y decidir si confirmas el lote para seguimiento posterior.",
+				message: "Hay filas con error. Puedes revisar y decidir si confirmas el run para seguimiento posterior.",
 			};
 		}
 		if (status === "Completado con duplicados") {
@@ -360,7 +362,7 @@ class PayrollImportUploader {
 			className: "status-fallido",
 			type: "error",
 			title: "Procesamiento fallido",
-			message: "El lote no pudo procesarse correctamente. Corrige el archivo o revisa los catalogos y vuelve a intentar.",
+			message: "El run no pudo procesarse correctamente. Corrige los archivos o revisa los catalogos y vuelve a intentar.",
 		};
 	}
 
@@ -369,13 +371,13 @@ class PayrollImportUploader {
 			const response = await frappe.call({
 				method: "hubgh.hubgh.payroll_import_upload_api.get_import_preview_lines",
 				args: {
-					batch_name: this.currentBatch,
+					run_id: this.currentRun,
 					limit_page_length: 200,
 				},
 			});
 			this.renderPreviewTable(response.message || []);
 		} catch (error) {
-			this.showAlert(this.getErrorMessage(error, "No se pudo cargar la vista previa del lote."), "error", "Error cargando vista previa");
+			this.showAlert(this.getErrorMessage(error, "No se pudo cargar la vista previa del run."), "error", "Error cargando vista previa");
 		}
 	}
 
@@ -411,7 +413,7 @@ class PayrollImportUploader {
 	}
 
 	async handleCommit() {
-		if (!this.currentBatch) {
+		if (!this.currentRun) {
 			return;
 		}
 
@@ -419,37 +421,38 @@ class PayrollImportUploader {
 			this.commitBtn.disabled = true;
 			this.commitBtn.textContent = "Confirmando...";
 			await frappe.call({
-				method: "hubgh.hubgh.payroll_import_upload_api.confirm_import_batch",
-				args: { batch_name: this.currentBatch },
+				method: "hubgh.hubgh.payroll_import_upload_api.confirm_import_run",
+				args: { run_id: this.currentRun },
 			});
 			this.showSuccess();
 		} catch (error) {
 			this.commitBtn.disabled = false;
-			this.commitBtn.textContent = "Confirmar importacion";
-			this.showAlert(this.getErrorMessage(error, "No se pudo confirmar el lote."), "error", "Error confirmando lote");
+			this.commitBtn.textContent = "Confirmar importacion agrupada";
+			this.showAlert(this.getErrorMessage(error, "No se pudo confirmar el run."), "error", "Error confirmando run");
 		}
 	}
 
 	async handleCancel() {
-		if (this.currentBatch) {
+		if (this.currentRun) {
 			try {
 				await frappe.call({
-					method: "hubgh.hubgh.payroll_import_upload_api.delete_import_batch",
-					args: { batch_name: this.currentBatch },
+					method: "hubgh.hubgh.payroll_import_upload_api.delete_import_run",
+					args: { run_id: this.currentRun },
 				});
 			} catch (error) {
-				this.showAlert(this.getErrorMessage(error, "No se pudo cancelar el lote actual."), "error", "Error cancelando lote");
+				this.showAlert(this.getErrorMessage(error, "No se pudo cancelar el run actual."), "error", "Error cancelando run");
 				return;
 			}
 		}
 
-		this.currentBatch = null;
+		this.currentRun = null;
+		this.currentRunMeta = null;
 		this.uploadForm.reset();
 		this.previewSection.classList.add("hidden");
 		this.successSection.classList.add("hidden");
 		this.alertContainer.innerHTML = "";
 		this.commitBtn.disabled = true;
-		this.commitBtn.textContent = "Confirmar importacion";
+		this.commitBtn.textContent = "Confirmar importacion agrupada";
 		this.previewStatusChip.textContent = "Pendiente";
 		this.previewStatusChip.className = "status-chip";
 		this.previewTableBody.innerHTML = "";
@@ -460,7 +463,7 @@ class PayrollImportUploader {
 	showSuccess() {
 		this.previewSection.classList.add("hidden");
 		this.successSection.classList.remove("hidden");
-		this.commitBtn.textContent = "Confirmar importacion";
+		this.commitBtn.textContent = "Confirmar importacion agrupada";
 	}
 
 	showAlert(message, type = "info", title = "Aviso") {

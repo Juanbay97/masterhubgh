@@ -91,7 +91,7 @@ class PrenominaExportService:
 		return os.path.realpath(os.path.join(get_site_path(), "private", "files", "prenomina_exports"))
 	
 	def generate_prenomina_export(
-		self, batch_name: str, output_dir: str = None, jornada_filter: str = None
+		self, batch_name: str = None, output_dir: str = None, jornada_filter: str = None, run_id: str = None
 	) -> Dict[str, Any]:
 		"""
 		Generate Prenomina Excel export for a specific batch.
@@ -105,15 +105,14 @@ class PrenominaExportService:
 		"""
 		
 		try:
-			# Get batch information
-			batch_doc = frappe.get_doc("Payroll Import Batch", batch_name)
+			batch_doc = self._resolve_export_batch(batch_name=batch_name, run_id=run_id)
 			if not batch_doc:
-				return {"status": "error", "message": f"Lote {batch_name} no encontrado"}
+				return {"status": "error", "message": f"No se encontró contexto de exportación para {run_id or batch_name}"}
 			
-			# Get TP-approved lines for this batch
-			lines, jornada_context = self._get_tp_approved_lines(batch_name, jornada_filter=jornada_filter)
+			# Get TP-approved lines for this batch/run
+			lines, jornada_context = self._get_tp_approved_lines(batch_name, jornada_filter=jornada_filter, run_id=run_id)
 			if not lines:
-				message = f"No hay líneas aprobadas TP en el lote {batch_name}"
+				message = f"No hay líneas aprobadas TP en el {'run' if run_id else 'lote'} {run_id or batch_name}"
 				warning = self._build_jornada_filter_warning(jornada_context)
 				if warning:
 					message = f"{message}. {warning}"
@@ -123,7 +122,7 @@ class PrenominaExportService:
 			employee_data = self._consolidate_employee_data(lines)
 			
 			# Generate Excel file
-			file_path = self._create_excel_export(employee_data, batch_doc, output_dir)
+			file_path = self._create_excel_export(employee_data, batch_doc, output_dir, run_id=run_id)
 			
 			# Calculate summary statistics
 			summary = self._calculate_export_summary(employee_data, batch_doc)
@@ -133,6 +132,7 @@ class PrenominaExportService:
 				"message": f"Prenomina generada exitosamente para {len(employee_data)} empleados",
 				"file_path": file_path,
 				"batch_name": batch_name,
+				"run_id": run_id or getattr(batch_doc, "run_id", None),
 				"employee_count": len(employee_data),
 				"period": batch_doc.nomina_period or "Sin Período",
 				"summary": summary,
@@ -148,8 +148,23 @@ class PrenominaExportService:
 				"file_path": None
 			}
 	
-	def _get_tp_approved_lines(self, batch_name: str, jornada_filter: str = None):
-		"""Get all TP-approved lines for the batch."""
+	def _resolve_export_batch(self, batch_name: str = None, run_id: str = None):
+		if batch_name:
+			return frappe.get_doc("Payroll Import Batch", batch_name)
+		if run_id:
+			batch_names = frappe.get_all(
+				"Payroll Import Batch",
+				filters={"run_id": run_id},
+				fields=["name"],
+				order_by="creation asc",
+				limit=1,
+			)
+			if batch_names:
+				return frappe.get_doc("Payroll Import Batch", batch_names[0].name)
+		return None
+
+	def _get_tp_approved_lines(self, batch_name: str = None, jornada_filter: str = None, run_id: str = None):
+		"""Get all TP-approved lines for the batch or grouped run."""
 		
 		filters = {
 			"batch": batch_name,
@@ -157,13 +172,16 @@ class PrenominaExportService:
 			"tc_status": "Aprobado",
 			"tp_status": "Aprobado"
 		}
+		if run_id:
+			filters.pop("batch", None)
+			filters["run_id"] = run_id
 		
 		lines = frappe.get_all("Payroll Import Line",
 			filters=filters,
 			fields=[
-				"name", "matched_employee", "employee_id", "employee_name",
+				"name", "batch", "run_id", "matched_employee", "employee_id", "employee_name",
 				"novedad_type", "novedad_date", "quantity", "amount",
-				"rule_applied", "rule_notes", "source_row_data"
+				"rule_applied", "rule_notes", "source_row_data", "tc_status", "tp_status"
 			],
 			order_by="employee_name asc, novedad_type asc"
 		)
@@ -454,7 +472,7 @@ class PrenominaExportService:
 		# Convert novelty_types set to list for JSON serialization
 		emp_record["novelty_types"] = list(emp_record["novelty_types"])
 	
-	def _create_excel_export(self, employee_data: List[Dict], batch_doc, output_dir: str = None) -> str:
+	def _create_excel_export(self, employee_data: List[Dict], batch_doc, output_dir: str = None, run_id: str = None) -> str:
 		"""
 		Create Excel file with Prenomina format.
 		
@@ -470,7 +488,8 @@ class PrenominaExportService:
 		# Generate filename
 		period = batch_doc.nomina_period or "Sin_Periodo"
 		timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-		filename = f"Prenomina_{period}_{batch_doc.name}_{timestamp}.xlsx"
+		export_key = run_id or batch_doc.name
+		filename = f"Prenomina_{period}_{export_key}_{timestamp}.xlsx"
 		file_path = os.path.join(output_dir, filename)
 		
 		# Create workbook
@@ -544,23 +563,6 @@ class PrenominaExportService:
 				cell.font = Font(bold=True)
 				cell.number_format = MONEY_FORMAT
 		
-		# Add metadata sheet
-		metadata_ws = wb.create_sheet("Metadata")
-		metadata = [
-			["Generado", now_datetime().strftime("%Y-%m-%d %H:%M:%S")],
-			["Lote", batch_doc.name],
-			["Período", batch_doc.nomina_period or "Sin Período"],
-			["Empleados", len(employee_data)],
-			["Total Devengado", total_devengado],
-			["Total Deducciones", total_deducciones],
-			["Neto Total", total_neto],
-			["Usuario", frappe.session.user]
-		]
-		
-		for row, (label, value) in enumerate(metadata, 1):
-			metadata_ws.cell(row=row, column=1, value=label).font = Font(bold=True)
-			metadata_ws.cell(row=row, column=2, value=value)
-		
 		# Save the file
 		wb.save(file_path)
 		
@@ -602,6 +604,7 @@ class PrenominaExportService:
 			],
 			"generation_date": now_datetime().strftime("%Y-%m-%d %H:%M:%S"),
 			"batch": batch_doc.name,
+			"run_id": getattr(batch_doc, "run_id", None),
 			"period": batch_doc.nomina_period or "Sin Período",
 			"parameterization_warnings": [
 				emp.get("parameterization_warning")
@@ -616,7 +619,7 @@ class PrenominaExportService:
 # =============================================================================
 
 @frappe.whitelist()
-def generate_prenomina_export(batch_name, output_dir=None, jornada_filter=None):
+def generate_prenomina_export(batch_name=None, output_dir=None, jornada_filter=None, run_id=None):
 	"""
 	API endpoint to generate Prenomina export for a batch.
 	
@@ -628,7 +631,7 @@ def generate_prenomina_export(batch_name, output_dir=None, jornada_filter=None):
 	
 	try:
 		service = PrenominaExportService()
-		return service.generate_prenomina_export(batch_name, output_dir, jornada_filter=jornada_filter)
+		return service.generate_prenomina_export(batch_name, output_dir, jornada_filter=jornada_filter, run_id=run_id)
 		
 	except ImportError as e:
 		return {
@@ -644,7 +647,7 @@ def generate_prenomina_export(batch_name, output_dir=None, jornada_filter=None):
 
 
 @frappe.whitelist()
-def get_prenomina_preview(batch_name, limit=10, jornada_filter=None):
+def get_prenomina_preview(batch_name=None, limit=10, jornada_filter=None, run_id=None):
 	"""
 	API endpoint to get a preview of Prenomina data without generating the file.
 	
@@ -658,7 +661,7 @@ def get_prenomina_preview(batch_name, limit=10, jornada_filter=None):
 		service = PrenominaExportService()
 		
 		# Get TP-approved lines
-		lines, jornada_context = service._get_tp_approved_lines(batch_name, jornada_filter=jornada_filter)
+		lines, jornada_context = service._get_tp_approved_lines(batch_name, jornada_filter=jornada_filter, run_id=run_id)
 		if not lines:
 			message = "No hay líneas aprobadas TP"
 			warning = service._build_jornada_filter_warning(jornada_context)
@@ -673,7 +676,7 @@ def get_prenomina_preview(batch_name, limit=10, jornada_filter=None):
 		preview_data = employee_data[:int(limit)]
 		
 		# Get batch info
-		batch_doc = frappe.get_doc("Payroll Import Batch", batch_name)
+		batch_doc = service._resolve_export_batch(batch_name=batch_name, run_id=run_id)
 		summary = service._calculate_export_summary(employee_data, batch_doc)
 		
 		return {
@@ -681,6 +684,7 @@ def get_prenomina_preview(batch_name, limit=10, jornada_filter=None):
 			"preview_data": preview_data,
 			"total_employees": len(employee_data),
 			"showing_count": len(preview_data),
+			"run_id": run_id or getattr(batch_doc, "run_id", None),
 			"summary": summary,
 			"columns": list(PRENOMINA_COLUMNS.keys()),
 			"jornada_filter": jornada_context.get("canonical_filter") or "Todas",
