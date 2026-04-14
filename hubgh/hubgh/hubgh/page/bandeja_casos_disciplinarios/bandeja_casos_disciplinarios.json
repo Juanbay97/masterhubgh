@@ -7,23 +7,26 @@
  "modified": "2026-04-13 00:00:00",
  "modified_by": "Administrator",
  "module": "Hubgh",
- "name": "payroll_incapacity_tray",
+ "name": "bandeja_casos_disciplinarios",
  "owner": "Administrator",
- "page_name": "payroll_incapacity_tray",
+ "page_name": "bandeja_casos_disciplinarios",
  "roles": [
   {
-   "role": "System Manager"
+   "role": "HR Labor Relations"
   },
   {
-   "role": "Operativo Nómina"
+   "role": "GH - RRLL"
   },
   {
-   "role": "TP Nómina"
+   "role": "Relaciones Laborales Jefe"
+  },
+  {
+   "role": "Gerente GH"
   }
  ],
  "script": null,
  "standard": "Yes",
  "style": null,
  "system_page": 0,
- "title": "Bandeja de incapacidades - Nómina"
+ "title": "Bandeja Disciplinaria RRLL"
 }

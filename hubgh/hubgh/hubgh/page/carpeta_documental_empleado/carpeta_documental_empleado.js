@@ -26,6 +26,7 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 
 	const state = {
 		search: "",
+		employmentStatus: "active",
 		rows: [],
 		selectedEmployee: null,
 		detail: null,
@@ -142,7 +143,8 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 		const employeeInfo = state.detail?.employee || {};
 		const summary = state.detail?.summary || {};
 		$overlay.find(".hub-drawer__title").text(employeeInfo.employee_name || employeeInfo.name || state.selectedEmployee);
-		$overlay.find(".hub-drawer__subtitle").text(`ID: ${employeeInfo.id_number || employeeInfo.name || "-"} · PDV: ${employeeInfo.branch || "-"}`);
+		const archiveLabel = employeeInfo.employment_status === "Retirado" ? " · Archivo retirado" : "";
+		$overlay.find(".hub-drawer__subtitle").text(`ID: ${employeeInfo.id_number || employeeInfo.name || "-"} · PDV: ${employeeInfo.branch || "-"}${archiveLabel}`);
 
 		if (state.loadingDetail) {
 			$overlay.find(".hub-drawer__body").html("<div class='hub-empty'>Cargando documentos...</div>");
@@ -238,7 +240,7 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 		return new Promise((resolve) => {
 			frappe.call({
 				method: "hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.get_employees_with_docs_status",
-				args: { search: state.search || null },
+				args: { search: state.search || null, employment_status: state.employmentStatus || "active" },
 				callback: (r) => {
 					state.rows = r?.message?.rows || [];
 					renderList();
@@ -366,12 +368,19 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 
 	$root.on("click", ".btn-search", () => {
 		state.search = ($root.find(".hub-search").val() || "").trim();
+		state.employmentStatus = $root.find(".hub-status-filter").val() || "active";
+		loadList();
+	});
+
+	$root.on("change", ".hub-status-filter", () => {
+		state.employmentStatus = $root.find(".hub-status-filter").val() || "active";
 		loadList();
 	});
 
 	$root.on("keypress", ".hub-search", (e) => {
 		if (e.key === "Enter") {
 			state.search = ($root.find(".hub-search").val() || "").trim();
+			state.employmentStatus = $root.find(".hub-status-filter").val() || "active";
 			loadList();
 		}
 	});

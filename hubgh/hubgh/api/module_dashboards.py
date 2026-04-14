@@ -3,6 +3,7 @@ from frappe.utils import now_datetime
 
 from hubgh.hubgh.candidate_states import STATE_AFILIACION, STATE_DOCUMENTACION, STATE_LISTO_CONTRATAR, candidate_status_filter_values
 from hubgh.hubgh.people_ops_policy import evaluate_dimension_access
+from hubgh.hubgh.payroll_permissions import can_user_access_nomina_module
 
 
 MODULE_LABELS = {
@@ -82,6 +83,27 @@ def get_module_dashboard(module_key):
 	if key not in builders:
 		frappe.throw("Módulo no soportado para dashboard de resumen.", frappe.ValidationError)
 
+	if key == "nomina" and not can_user_access_nomina_module(frappe.session.user):
+		payload = _empty_payload("No tienes permisos para este módulo.", [])
+		payload["module"] = {
+			"key": key,
+			"label": MODULE_LABELS.get(key, key),
+		}
+		payload["meta"] = {
+			"source": "hubgh.api.module_dashboards.get_module_dashboard",
+			"generated_at": now_datetime().isoformat(),
+		}
+		payload["policy"] = {
+			"dimension": "payroll_operational",
+			"mode": "enforce",
+			"allowed_by_role": False,
+			"effective_allowed": False,
+			"violated": False,
+			"known_dimension": True,
+			"surface": "module_dashboards",
+		}
+		return payload
+
 	dimension_map = {
 		"seleccion": "operational",
 		"rrll": "sensitive",
@@ -124,7 +146,9 @@ def get_module_dashboard(module_key):
 
 @frappe.whitelist()
 def get_initial_tray_reports():
-	modules = ["seleccion", "rrll", "sst", "operacion", "nomina"]
+	modules = ["seleccion", "rrll", "sst", "operacion"]
+	if can_user_access_nomina_module(frappe.session.user):
+		modules.append("nomina")
 	return {
 		"modules": modules,
 		"reports": {module_key: get_module_dashboard(module_key) for module_key in modules},

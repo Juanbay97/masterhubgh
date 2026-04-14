@@ -64,8 +64,12 @@ def submit_employee_retirement(
 	reason,
 	closure_date=None,
 	closure_summary=None,
+	source_doctype=None,
+	source_name=None,
+	enforce_access=True,
 ) -> dict[str, Any]:
-	enforce_retirement_access()
+	if enforce_access:
+		enforce_retirement_access()
 	if not employee:
 		frappe.throw(_("El empleado es obligatorio."))
 	if not last_worked_date:
@@ -82,6 +86,8 @@ def submit_employee_retirement(
 	current_flow_status = cstr(snapshot.get("retirement", {}).get("flow_status")).strip()
 	current_employee_status = cstr(snapshot.get("employee", {}).get("estado")).strip()
 	reason_detail = _compose_reason_detail(reason=reason, closure_summary=closure_summary)
+	source_doctype = cstr(source_doctype).strip() or RETIREMENT_FLOW_SOURCE_DOCTYPE
+	source_name = cstr(source_name).strip() or employee
 	metadata = {
 		"estado_retiro_operacion": "Ejecutado" if getdate(effective_date) <= today else "Programado",
 		"motivo_retiro": reason,
@@ -89,8 +95,8 @@ def submit_employee_retirement(
 		"fecha_retiro_efectiva": effective_date,
 		"fecha_cierre_retiro": closure_date_value,
 		"detalle_retiro": closure_summary,
-		"retiro_fuente_doctype": RETIREMENT_FLOW_SOURCE_DOCTYPE,
-		"retiro_fuente_name": employee,
+		"retiro_fuente_doctype": source_doctype,
+		"retiro_fuente_name": source_name,
 	}
 
 	if current_employee_status == "Retirado" or current_flow_status == "Ejecutado":
@@ -113,8 +119,8 @@ def submit_employee_retirement(
 
 	lifecycle_result = apply_retirement(
 		employee=employee,
-		source_doctype=RETIREMENT_FLOW_SOURCE_DOCTYPE,
-		source_name=employee,
+		source_doctype=source_doctype,
+		source_name=source_name,
 		retirement_date=effective_date,
 		reason=reason_detail,
 	)

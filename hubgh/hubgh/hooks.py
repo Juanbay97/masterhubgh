@@ -252,6 +252,7 @@ before_request = ["hubgh.www_hooks.check_page_permissions"]
 scheduler_events = {
 	"daily": [
 		"hubgh.tasks.revertir_novedades_expiradas",
+		"hubgh.tasks.procesar_casos_disciplinarios_rrll",
 		"hubgh.tasks.dispatch_sst_alertas_diarias",
 		"hubgh.tasks.procesar_retiros_empleados_programados",
 		"hubgh.tasks.bienestar_generar_seguimientos_ingreso_diarios",

@@ -7,10 +7,10 @@ from hubgh.hubgh.role_matrix import canonicalize_roles, roles_have_any, user_has
 # Role-based access matrix for payroll operations
 PAYROLL_ROLE_MATRIX = {
 	"operativo_nomina": {
-		"roles": ["Gestión Humana", "Operativo Nómina"],
+		"roles": ["Operativo Nómina"],
 		"access": {
 			"tc_tray": "full",
-			"tp_tray": "full", 
+			"tp_tray": "full",
 			"import_batches": "full",
 			"liquidation_cases": "read",
 			"payroll_catalogs": "read",
@@ -254,6 +254,19 @@ def can_user_view_employee_payroll(employee_id, user=None):
 	context = {"employee_id": employee_id}
 	result = validate_payroll_access("employee_payroll_data", user=user, context=context)
 	return result["allowed"]
+
+
+def can_user_access_nomina_module(user=None):
+	"""Workspace/dashboard visibility for the payroll operational surface."""
+	user = user or frappe.session.user
+	if user == "Administrator":
+		return True
+
+	for operation in ("tc_tray", "tp_tray", "import_batches"):
+		if validate_payroll_access(operation, user=user).get("allowed"):
+			return True
+
+	return False
 
 
 @frappe.whitelist()

@@ -407,7 +407,23 @@ def get_punto_stats(pdv_id):
         "estado": "Activo"
     })
     
-    empleados_pdv = [e.name for e in frappe.get_all("Ficha Empleado", filters={"pdv": pdv_id})]
+    empleados_rows = frappe.get_all(
+        "Ficha Empleado",
+        filters={"pdv": pdv_id},
+        fields=["name", "nombres", "apellidos", "cedula", "cargo", "estado", "email"],
+        order_by="nombres asc, apellidos asc",
+    )
+    empleados_pdv = [e.name for e in empleados_rows]
+    personas = [
+        {
+            "name": _row_value(row, "name"),
+            "nombre": f"{_row_value(row, 'nombres', '') or ''} {_row_value(row, 'apellidos', '') or ''}".strip(),
+            "cedula": _row_value(row, "cedula", "") or "",
+            "cargo": _row_value(row, "cargo", "") or "",
+            "estado": _row_value(row, "estado", "") or "Sin estado",
+        }
+        for row in empleados_rows
+    ]
 
     # 3. Novedades Activas
     novedades_activas = frappe.get_all(
@@ -811,6 +827,7 @@ def get_punto_stats(pdv_id):
         "feedback": feedback,
         "no_disponibles": no_disponibles,
         "alertas_sst": alertas_sst,
+        "personas": personas,
         "navigation_context": navigation_context,
 		"actionable_hub": actionable_hub,
     }

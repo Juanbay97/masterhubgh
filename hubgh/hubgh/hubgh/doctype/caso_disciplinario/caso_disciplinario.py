@@ -3,13 +3,13 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import nowdate
 
-from hubgh.hubgh.people_ops_lifecycle import apply_retirement, reverse_retirement_if_clear
+from hubgh.hubgh.disciplinary_case_service import sync_disciplinary_case_effects
 
 
 class CasoDisciplinario(Document):
 	def validate(self):
+		self._normalize_decision_final()
 		if (self.estado or "") != "Cerrado":
 			return
 
@@ -19,58 +19,22 @@ class CasoDisciplinario(Document):
 		if not self.fecha_cierre:
 			frappe.throw("No se puede cerrar el caso sin fecha de cierre.")
 
+		if not (self.resumen_cierre or "").strip():
+			frappe.throw("No se puede cerrar el caso sin resumen de cierre.")
+
+		if (self.decision_final or "") == "Suspensión":
+			if not self.fecha_inicio_suspension or not self.fecha_fin_suspension:
+				frappe.throw("La suspensión requiere fecha inicio y fecha fin.")
+			if self.fecha_fin_suspension < self.fecha_inicio_suspension:
+				frappe.throw("La fecha fin de suspensión no puede ser menor a la fecha inicio.")
+			return
+
+		self.fecha_inicio_suspension = None
+		self.fecha_fin_suspension = None
+
 	def on_update(self):
-		if (self.estado or "") == "Cerrado" and (self.decision_final or "").strip() == "Terminación":
-			self._apply_rrll_retiro_if_required()
-			return
-		self._reverse_rrll_retiro_if_possible()
+		sync_disciplinary_case_effects(self)
 
-	def _apply_rrll_retiro_if_required(self):
-		if not self.empleado:
-			return
-		apply_retirement(
-			employee=self.empleado,
-			source_doctype="Caso Disciplinario",
-			source_name=self.name,
-			retirement_date=self.fecha_cierre or self.fecha_incidente or nowdate(),
-			reason=self.decision_final,
-		)
-		self._emit_retiro_trace_event()
-
-	def _reverse_rrll_retiro_if_possible(self):
-		if not self.empleado:
-			return
-		reverse_retirement_if_clear(
-			employee=self.empleado,
-			source_doctype="Caso Disciplinario",
-			source_name=self.name,
-		)
-
-	def _emit_retiro_trace_event(self):
-		if not frappe.db.exists("DocType", "GH Novedad"):
-			return
-
-		existing = frappe.db.exists(
-			"GH Novedad",
-			{
-				"persona": self.empleado,
-				"tipo": "Otro",
-				"descripcion": ["like", f"%retiro controlado desde caso disciplinario {self.name}%"],
-			},
-		)
-		if existing:
-			return
-
-		frappe.get_doc(
-			{
-				"doctype": "GH Novedad",
-				"persona": self.empleado,
-				"tipo": "Otro",
-				"cola_origen": "GH-RRLL",
-				"cola_destino": "GH-RRLL",
-				"estado": "Cerrada",
-				"fecha_inicio": self.fecha_incidente or nowdate(),
-				"fecha_fin": self.fecha_cierre or nowdate(),
-				"descripcion": f"Retiro controlado desde caso disciplinario {self.name}",
-			}
-		).insert(ignore_permissions=True)
+	def _normalize_decision_final(self):
+		if (self.decision_final or "").strip() == "Llamado de Atención":
+			self.decision_final = "Llamado de atención"

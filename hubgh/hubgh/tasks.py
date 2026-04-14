@@ -5,6 +5,7 @@ from hubgh.hubgh.bienestar_automation import (
 	generate_ingreso_followups_for_active_employees,
 	mark_bienestar_followups_overdue,
 )
+from hubgh.hubgh.disciplinary_case_service import process_closed_disciplinary_cases
 from hubgh.hubgh.employee_retirement_service import process_pending_employee_retirements
 
 
@@ -85,3 +86,7 @@ def bienestar_marcar_vencidos_diario():
 
 def procesar_retiros_empleados_programados():
 	return process_pending_employee_retirements()
+
+
+def procesar_casos_disciplinarios_rrll():
+	return process_closed_disciplinary_cases()

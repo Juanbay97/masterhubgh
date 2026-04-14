@@ -3,6 +3,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, getdate, nowdate
 
+from hubgh.hubgh.payroll_permissions import can_user_view_employee_payroll
 from hubgh.hubgh.permissions import evaluate_dimension_permission
 from hubgh.hubgh.role_matrix import user_has_any_role
 from hubgh.hubgh.payroll_persona360 import get_payroll_block
@@ -543,19 +544,21 @@ def get_persona_stats(
         ]
     )
     
-    # Get payroll block data for Persona 360 (never break page if payroll isn't migrated)
-    try:
-        payroll_block = get_payroll_block(employee_id)
-    except Exception:
-        payroll_block = {
-            "employee_id": employee_id,
-            "novelty_summary": {},
-            "vacation_balance": {"days_remaining": 0},
-            "active_incapacidades": {"total_estimated": 0},
-            "pending_deductions": {"total_amount": 0, "total_items": 0},
-            "payroll_ready": False,
-            "note": "Módulo de nómina no disponible en este sitio"
-        }
+    payroll_block = {}
+    if can_user_view_employee_payroll(employee_id, user=user):
+        # Get payroll block data for Persona 360 (never break page if payroll isn't migrated)
+        try:
+            payroll_block = get_payroll_block(employee_id)
+        except Exception:
+            payroll_block = {
+                "employee_id": employee_id,
+                "novelty_summary": {},
+                "vacation_balance": {"days_remaining": 0},
+                "active_incapacidades": {"total_estimated": 0},
+                "pending_deductions": {"total_amount": 0, "total_items": 0},
+                "payroll_ready": False,
+                "note": "Módulo de nómina no disponible en este sitio"
+            }
         
     # Sort timeline by date descending
     timeline.sort(key=lambda x: str(x["date"]), reverse=True)
@@ -653,24 +656,47 @@ def get_persona_stats(
 
 
 @frappe.whitelist()
-def get_all_personas_overview():
-    filters = {}
-    if not _can_access_retirado(frappe.session.user):
-        filters["estado"] = ["!=", "Retirado"]
-    empleados = frappe.get_all(
-        "Ficha Empleado",
-        filters=filters,
-        fields=["name", "nombres", "apellidos", "cedula", "cargo", "pdv", "email", "estado", "fecha_ingreso"],
+def get_all_personas_overview(search=None):
+    search_term = str(search or "").strip().lower()
+    query_filters = {
+        "include_retirado": 1 if _can_access_retirado(frappe.session.user) else 0,
+        "search_like": f"%{search_term}%",
+        "search_term": search_term,
+    }
+    empleados = frappe.db.sql(
+        """
+        SELECT
+            emp.name,
+            emp.nombres,
+            emp.apellidos,
+            emp.cedula,
+            emp.cargo,
+            emp.pdv,
+            emp.email,
+            emp.estado,
+            emp.fecha_ingreso,
+            pdv.nombre_pdv AS pdv_nombre
+        FROM `tabFicha Empleado` emp
+        LEFT JOIN `tabPunto de Venta` pdv ON pdv.name = emp.pdv
+        WHERE (%(include_retirado)s = 1 OR IFNULL(emp.estado, '') != 'Retirado')
+          AND (
+              %(search_term)s = ''
+              OR LOWER(CONCAT_WS(' ', IFNULL(emp.nombres, ''), IFNULL(emp.apellidos, ''))) LIKE %(search_like)s
+              OR LOWER(IFNULL(emp.cedula, '')) LIKE %(search_like)s
+              OR LOWER(IFNULL(emp.cargo, '')) LIKE %(search_like)s
+              OR LOWER(IFNULL(emp.pdv, '')) LIKE %(search_like)s
+              OR LOWER(IFNULL(pdv.nombre_pdv, '')) LIKE %(search_like)s
+          )
+        ORDER BY emp.nombres ASC, emp.apellidos ASC
+        """,
+        query_filters,
+        as_dict=True,
     )
 
     summary_list = []
     for e in empleados:
         if not frappe.has_permission("Ficha Empleado", "read", e.name):
             continue
-
-        pdv_nombre = ""
-        if e.pdv:
-            pdv_nombre = frappe.db.get_value("Punto de Venta", e.pdv, "nombre_pdv") or ""
 
         # Novedades abiertas
         novedades_count = frappe.db.count("Novedad SST", {
@@ -697,7 +723,7 @@ def get_all_personas_overview():
             "cedula": e.cedula,
             "cargo": e.cargo,
             "pdv": e.pdv,
-            "pdv_nombre": pdv_nombre,
+            "pdv_nombre": e.pdv_nombre or "",
             "novedades": novedades_count,
             "feedback_count": feedback_count,
             "feedback_last": feedback_last

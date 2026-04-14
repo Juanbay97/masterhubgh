@@ -127,3 +127,18 @@ class TestHubghModuleDashboardsApi(FrappeTestCase):
 		self.assertEqual(set(payload["reports"].keys()), {"seleccion", "rrll", "sst", "operacion", "nomina"})
 		for module_key in payload["modules"]:
 			self._assert_contract(payload["reports"][module_key], module_key)
+
+	def test_dashboard_contract_nomina_returns_empty_when_user_has_no_payroll_access(self):
+		with patch("hubgh.api.module_dashboards.can_user_access_nomina_module", return_value=False):
+			payload = module_dashboards.get_module_dashboard("nomina")
+
+		self.assertTrue(payload["empty"])
+		self.assertEqual(payload["module"]["key"], "nomina")
+		self.assertFalse(payload["policy"]["effective_allowed"])
+
+	def test_get_initial_tray_reports_omits_nomina_without_payroll_access(self):
+		with patch("hubgh.api.module_dashboards.can_user_access_nomina_module", return_value=False):
+			payload = module_dashboards.get_initial_tray_reports()
+
+		self.assertEqual(payload["modules"], ["seleccion", "rrll", "sst", "operacion"])
+		self.assertEqual(set(payload["reports"].keys()), {"seleccion", "rrll", "sst", "operacion"})

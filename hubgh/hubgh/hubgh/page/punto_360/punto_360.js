@@ -222,6 +222,30 @@ function render_dashboard(page) {
                     </div>
                 `);
 
+                $container.append(`
+                    <div class="dashboard-section" style="margin-bottom: 20px;">
+                        <h5>Personas del punto</h5>
+                        <div class="punto360-table-scroll">
+                            <table class="table table-bordered table-sm">
+                                <thead class="thead-light">
+                                    <tr><th>Nombre</th><th>Cédula</th><th>Cargo</th><th>Estado</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${(data.personas || []).map(persona => `
+                                        <tr>
+                                            <td>${persona.nombre || '-'}</td>
+                                            <td>${persona.cedula || '-'}</td>
+                                            <td>${persona.cargo || 'Sin cargo'}</td>
+                                            <td>${persona.estado || '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                    ${(data.personas || []).length === 0 ? '<tr><td colspan="4" class="text-muted text-center">Sin personas asociadas</td></tr>' : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `);
+
                 // DETAILS SECTIONS
                 let html = `<div class="row">`;
 
@@ -402,7 +426,8 @@ function bindPuntoQuickActions($container, pdvId) {
 		}
 
 		if (actionKey === 'caso') {
-			frappe.new_doc('Caso Disciplinario', { pdv: pdvId });
+			frappe.route_options = { pdv: pdvId };
+			frappe.set_route('bandeja_casos_disciplinarios');
 		}
 	});
 }

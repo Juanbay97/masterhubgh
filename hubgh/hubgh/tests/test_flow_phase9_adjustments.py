@@ -716,6 +716,7 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 				email="ana@example.com",
 				estado="Activo",
 				fecha_ingreso="2026-03-20",
+				pdv_nombre="PDV 1",
 			)
 		]
 
@@ -729,36 +730,130 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 			return 0
 
 		def fake_get_all(doctype, *args, **kwargs):
-			if doctype == "Ficha Empleado":
-				return empleados
 			if doctype == "Bienestar Seguimiento Ingreso":
 				return [SimpleNamespace(observaciones="Seguimiento 10")]
 			if doctype == "Comentario Bienestar":
 				raise AssertionError("legacy doctype should not be queried")
 			return []
 
-		with patch("hubgh.hubgh.page.persona_360.persona_360.frappe.get_all", side_effect=fake_get_all), patch(
+		def fake_sql(query, values=None, as_dict=False):
+			self.assertTrue(as_dict)
+			self.assertEqual(values["search_term"], "")
+			return empleados
+
+		with patch("hubgh.hubgh.page.persona_360.persona_360.frappe.db.sql", side_effect=fake_sql), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.get_all", side_effect=fake_get_all
+		), patch(
 			"hubgh.hubgh.page.persona_360.persona_360.frappe.db.count",
 			side_effect=fake_count,
 		), patch(
 			"hubgh.hubgh.page.persona_360.persona_360.frappe.has_permission",
 			return_value=True,
-		), patch(
-			"hubgh.hubgh.page.persona_360.persona_360.frappe.db.get_value",
-			return_value="PDV 1",
 		):
 			rows = persona_360.get_all_personas_overview()
 
 		self.assertEqual(len(rows), 1)
 		self.assertEqual(rows[0]["feedback_count"], 1)
 		self.assertEqual(rows[0]["feedback_last"], "Seguimiento 10")
+		self.assertEqual(rows[0]["pdv_nombre"], "PDV 1")
+
+	def test_persona_360_overview_supports_backend_search(self):
+		empleados = [
+			SimpleNamespace(
+				name="EMP-001",
+				nombres="Ana",
+				apellidos="Paz",
+				cedula="1001",
+				cargo="Cajera",
+				pdv="PDV-NORTE",
+				email="ana@example.com",
+				estado="Activo",
+				fecha_ingreso="2026-03-20",
+				pdv_nombre="Punto Norte",
+			)
+		]
+
+		def fake_sql(query, values=None, as_dict=False):
+			self.assertEqual(values["search_term"], "norte")
+			self.assertEqual(values["search_like"], "%norte%")
+			return empleados
+
+		with patch("hubgh.hubgh.page.persona_360.persona_360.frappe.db.sql", side_effect=fake_sql), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.db.count",
+			return_value=0,
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.get_all",
+			return_value=[],
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.has_permission",
+			return_value=True,
+		):
+			rows = persona_360.get_all_personas_overview(search="norte")
+
+		self.assertEqual(len(rows), 1)
+		self.assertEqual(rows[0]["name"], "EMP-001")
+		self.assertEqual(rows[0]["pdv_nombre"], "Punto Norte")
+
+	def test_persona_360_hides_payroll_block_without_payroll_access(self):
+		emp = SimpleNamespace(
+			nombres="Ana",
+			apellidos="Paz",
+			cedula="1001",
+			cargo="Analista",
+			pdv="PDV-1",
+			estado="Activo",
+			fecha_ingreso="2026-03-01",
+			email="gh@example.com",
+		)
+
+		with patch("hubgh.hubgh.page.persona_360.persona_360.frappe.get_doc", return_value=emp), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.session",
+			new=SimpleNamespace(user="gh@example.com"),
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.user_has_any_role",
+			side_effect=lambda user, *roles: "Gestión Humana" in roles,
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.evaluate_dimension_permission",
+			return_value={"effective_allowed": False},
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.db.get_value",
+			return_value="PDV 1",
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.get_all",
+			return_value=[],
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.db.count",
+			return_value=0,
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.db.exists",
+			return_value=False,
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.can_user_view_employee_payroll",
+			return_value=False,
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.get_payroll_block"
+		) as payroll_block_mock:
+			res = persona_360.get_persona_stats("EMP-001")
+
+		payroll_block_mock.assert_not_called()
+		self.assertEqual(res["payroll_block"], {})
 
 	def test_punto_360_exposes_ingresos_formalizados_kpi(self):
 		punto_doc = SimpleNamespace(nombre_pdv="PDV 1", zona="Norte", planta_autorizada=10)
 
 		def fake_get_all(doctype, *args, **kwargs):
 			if doctype == "Ficha Empleado":
-				return [SimpleNamespace(name="EMP-001")]
+				return [
+					SimpleNamespace(
+						name="EMP-001",
+						nombres="Ana",
+						apellidos="Paz",
+						cedula="1001",
+						cargo="Cajera",
+						estado="Activo",
+						email="ana@example.com",
+					)
+				]
 			if doctype == "Novedad SST":
 				return []
 			if doctype == "Caso Disciplinario":
@@ -875,6 +970,7 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		self.assertEqual(res["info"]["kpi_formacion"]["total_colaboradores"], 1)
 		self.assertEqual(res["info"]["kpi_formacion"]["completados"], 0)
 		self.assertEqual(res["info"]["kpi_formacion"]["porcentaje_completud"], 0)
+		self.assertEqual(res["personas"], [{"name": "EMP-001", "nombre": "Ana Paz", "cedula": "1001", "cargo": "Cajera", "estado": "Activo"}])
 		self.assertEqual(res["navigation_context"]["persona_route"], "persona_360")
 		self.assertEqual(res["navigation_context"]["expediente_route"], "query-report/Person Documents")
 		self.assertIn("actionable_hub", res)

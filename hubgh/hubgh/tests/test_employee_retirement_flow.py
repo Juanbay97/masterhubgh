@@ -96,6 +96,47 @@ class TestEmployeeRetirementFlow(FrappeTestCase):
 		self.assertEqual(retirement_mock.call_args.kwargs["source_doctype"], "Ficha Empleado")
 		self.assertEqual(captured_updates[0][2]["estado_retiro_operacion"], "Ejecutado")
 
+	def test_submit_employee_retirement_respects_source_override(self):
+		captured_updates = []
+		row = {
+			"name": "EMP-001",
+			"nombres": "Ana",
+			"apellidos": "Paz",
+			"cedula": "1001",
+			"cargo": "Analista",
+			"pdv": "PDV-1",
+			"estado": "Activo",
+			"fecha_ingreso": "2026-01-10",
+			"estado_retiro_operacion": "",
+		}
+
+		with patch("hubgh.hubgh.employee_retirement_service.nowdate", return_value="2026-04-13"), patch(
+			"hubgh.hubgh.employee_retirement_service.frappe.get_meta",
+			return_value=SimpleNamespace(fields=[SimpleNamespace(fieldname=field) for field in employee_retirement_service.RETIREMENT_METADATA_FIELDS]),
+		), patch(
+			"hubgh.hubgh.employee_retirement_service.frappe.db.get_value",
+			return_value=row,
+		), patch(
+			"hubgh.hubgh.employee_retirement_service.frappe.db.set_value",
+			side_effect=lambda doctype, name, values, update_modified=False: captured_updates.append((doctype, name, values)),
+		), patch(
+			"hubgh.hubgh.employee_retirement_service.apply_retirement",
+			return_value={"employee": "EMP-001", "retirement_date": "2026-04-10"},
+		) as retirement_mock:
+			employee_retirement_service.submit_employee_retirement(
+				employee="EMP-001",
+				last_worked_date="2026-04-10",
+				reason="Terminación con justa causa",
+				closure_summary="Cierre disciplinario",
+				source_doctype="Caso Disciplinario",
+				source_name="DIS-001",
+				enforce_access=False,
+			)
+
+		self.assertEqual(retirement_mock.call_args.kwargs["source_doctype"], "Caso Disciplinario")
+		self.assertEqual(retirement_mock.call_args.kwargs["source_name"], "DIS-001")
+		self.assertEqual(captured_updates[0][2]["retiro_fuente_doctype"], "Caso Disciplinario")
+
 	def test_process_pending_employee_retirements_executes_due_rows(self):
 		captured_updates = []
 		rows = [

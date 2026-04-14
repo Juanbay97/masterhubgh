@@ -15,7 +15,7 @@ from hubgh.hubgh.role_matrix import user_has_any_role
 def _validate_folder_access(employee=None):
 	if frappe.session.user == "Administrator":
 		return
-	if user_has_any_role(frappe.session.user, "System Manager", "Relaciones Laborales Jefe"):
+	if user_has_any_role(frappe.session.user, "System Manager", "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe", "Gerente GH"):
 		return
 	if employee and user_has_any_role(frappe.session.user, "Empleado"):
 		user_employee = frappe.db.get_value("User", frappe.session.user, "employee")
@@ -405,13 +405,17 @@ def _required_document_types():
 	)
 
 
-def _employee_rows(search=None, branch=None, limit_start=0, limit_page_length=50):
+def _employee_rows(search=None, branch=None, employment_status=None, limit_start=0, limit_page_length=50):
 	limit_start = cint(limit_start or 0)
 	limit_page_length = cint(limit_page_length or 50)
 	filters = {}
 	or_filters = None
 	if branch:
 		filters["pdv"] = branch
+	if employment_status == "active":
+		filters["estado"] = ["!=", "Retirado"]
+	elif employment_status == "retired":
+		filters["estado"] = "Retirado"
 	if search:
 		term = f"%{search.strip()}%"
 		or_filters = {
@@ -424,7 +428,7 @@ def _employee_rows(search=None, branch=None, limit_start=0, limit_page_length=50
 
 	return frappe.get_all(
 		"Ficha Empleado",
-		fields=["name", "nombres", "apellidos", "cedula", "pdv"],
+		fields=["name", "nombres", "apellidos", "cedula", "pdv", "estado"],
 		filters=filters,
 		or_filters=or_filters,
 		order_by="modified desc",
@@ -488,11 +492,11 @@ def _employee_required_summary(employee_name, required_types_map):
 
 
 @frappe.whitelist()
-def get_employees_with_docs_status(search=None, branch=None, limit_start=0, limit_page_length=50):
+def get_employees_with_docs_status(search=None, branch=None, employment_status=None, limit_start=0, limit_page_length=50):
 	_validate_folder_access()
 	required_types = _required_document_types()
 	required_map = {d.name: d for d in required_types}
-	rows = _employee_rows(search=search, branch=branch, limit_start=limit_start, limit_page_length=limit_page_length)
+	rows = _employee_rows(search=search, branch=branch, employment_status=employment_status, limit_start=limit_start, limit_page_length=limit_page_length)
 
 	data = []
 	for row in rows:
@@ -503,11 +507,13 @@ def get_employees_with_docs_status(search=None, branch=None, limit_start=0, limi
 			"employee_name": full_name,
 			"id_number": row.cedula,
 			"branch": row.pdv,
+			"employment_status": row.estado,
 			**summary,
 		})
 
 	return {
 		"rows": data,
+		"filters": {"employment_status": employment_status},
 		"required_document_types": [
 			{
 				"name": d.name,
@@ -610,6 +616,7 @@ def get_employee_documents(employee):
 			"employee_name": f"{emp.nombres or ''} {emp.apellidos or ''}".strip() or emp.name,
 			"id_number": emp.cedula,
 			"branch": emp.pdv,
+			"employment_status": getattr(emp, "estado", None),
 		},
 		"summary": summary,
 		"required_documents": required_results,

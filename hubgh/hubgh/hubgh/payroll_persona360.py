@@ -2,6 +2,8 @@ import frappe
 from datetime import datetime, timedelta
 from frappe.utils import add_months, getdate, nowdate
 
+from hubgh.hubgh.payroll_permissions import enforce_payroll_access
+
 
 def get_payroll_block(employee_id):
 	"""
@@ -267,4 +269,5 @@ def _get_pending_deductions_summary(employee_id):
 @frappe.whitelist()
 def get_employee_payroll_data(employee_id):
 	"""API endpoint for Persona 360 payroll block."""
+	enforce_payroll_access("employee_payroll_data", context={"employee_id": employee_id})
 	return get_payroll_block(employee_id)

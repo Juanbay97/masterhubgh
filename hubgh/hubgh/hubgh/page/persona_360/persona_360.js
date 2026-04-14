@@ -84,16 +84,12 @@ function render_overview(page) {
     clear_contextual_action_buttons(page);
     frappe.call({
         method: "hubgh.hubgh.page.persona_360.persona_360.get_all_personas_overview",
+        args: {
+            search: page._emp_filter || ''
+        },
         callback: function (r) {
             if (r.message) {
-                const personas = r.message;
-                const filter_text = (page._emp_filter || '').toLowerCase();
-                const filtered = personas.filter(p => {
-                    const nombre = (p.full_name || '').toLowerCase();
-                    const cedula = (p.cedula || '').toLowerCase();
-                    const pdv = (p.pdv_nombre || '').toLowerCase();
-                    return !filter_text || nombre.includes(filter_text) || cedula.includes(filter_text) || pdv.includes(filter_text);
-                });
+                const personas = r.message || [];
 
                 let $container = $(page.main || page.body);
                 $container.empty();
@@ -105,7 +101,7 @@ function render_overview(page) {
 								<h4>Personas activas</h4>
 								<p class="text-muted">Buscá por persona, cédula o punto y abrí el detalle operativo sin perder contexto.</p>
 							</div>
-							<div class="persona360-overview-count">${filtered.length} visibles</div>
+							<div class="persona360-overview-count">${personas.length} visibles</div>
 						</div>
 						<div class="row" style="padding: 20px; padding-top: 8px;">
                         <div class="col-md-12">
@@ -114,7 +110,7 @@ function render_overview(page) {
                         <div class="col-md-12">
                             <div class="persona360-employee-list-scroll">
                                 <div class="row" style="margin: 0;">
-                                    ${filtered.map(p => `
+                                    ${personas.map(p => `
                                         <div class="col-md-4" style="padding-left: 8px; padding-right: 8px;">
 											<div class="emp-card persona360-overview-card" data-emp="${p.name}">
 												<div class="persona360-card-name">${p.full_name}</div>
@@ -128,7 +124,7 @@ function render_overview(page) {
 											</div>
                                         </div>
                                     `).join('')}
-                                    ${filtered.length === 0 ? '<div class="col-md-12"><p class="text-muted">Sin resultados</p></div>' : ''}
+                                    ${personas.length === 0 ? '<div class="col-md-12"><p class="text-muted">Sin resultados</p></div>' : ''}
                                 </div>
                             </div>
                         </div>

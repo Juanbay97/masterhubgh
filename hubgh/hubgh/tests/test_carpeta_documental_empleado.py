@@ -64,19 +64,34 @@ def tearDownModule():
 
 
 class TestCarpetaDocumentalEmpleado(TestCase):
-	def test_folder_access_requires_relaciones_laborales_jefe_for_full_rrll_access(self):
+	def test_folder_access_requires_rrll_scope_for_full_rrll_access(self):
 		with patch(
 			"hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.user_has_any_role",
 			return_value=False,
 		), self.assertRaisesRegex(Exception, "No autorizado"):
 			carpeta_documental_empleado._validate_folder_access("EMP-001")
 
-	def test_folder_access_allows_relaciones_laborales_jefe(self):
+	def test_folder_access_allows_hr_labor_relations(self):
 		with patch(
 			"hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.user_has_any_role",
-			side_effect=lambda user, *roles: "Relaciones Laborales Jefe" in roles,
+			side_effect=lambda user, *roles: "HR Labor Relations" in roles,
 		):
 			carpeta_documental_empleado._validate_folder_access("EMP-001")
+
+	def test_employee_rows_supports_retired_filter(self):
+		captured = {}
+
+		def fake_get_all(doctype, **kwargs):
+			captured.update(kwargs)
+			return []
+
+		with patch(
+			"hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.frappe.get_all",
+			side_effect=fake_get_all,
+		):
+			carpeta_documental_empleado._employee_rows(employment_status="retired")
+
+		self.assertEqual(captured["filters"]["estado"], "Retirado")
 
 	def test_persona_documento_legacy_placeholder_is_excluded(self):
 		rows = [
@@ -223,3 +238,4 @@ class TestCarpetaDocumentalEmpleado(TestCase):
 		self.assertIn("Estado SST Empleado", content)
 		self.assertIn("template_documentos_masivos_manifest.csv", content)
 		self.assertIn("template_estados_sst_opciones.csv", content)
+		self.assertIn("Retirados", content)
