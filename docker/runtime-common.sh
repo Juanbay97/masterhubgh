@@ -5,6 +5,7 @@ BENCH_DIR="${BENCH_DIR:-/home/frappe/frappe-bench}"
 PUBLIC_DOMAIN="${PUBLIC_DOMAIN:-}"
 HUBGH_RUNTIME_MODE="${HUBGH_RUNTIME_MODE:-development}"
 SITE_NAME="${FRAPPE_SITE_NAME:-hubgh.local}"
+FRAPPE_HOME="${FRAPPE_HOME:-/home/frappe}"
 
 resolve_host_name() {
   local domain="$1"
@@ -133,6 +134,24 @@ rebuild_asset_links() {
   fi
 }
 
+ensure_runtime_log_paths() {
+  local home_logs_dir="$FRAPPE_HOME/logs"
+  local bench_logs_dir="$BENCH_DIR/logs"
+
+  mkdir -p "$bench_logs_dir"
+
+  if [ -L "$home_logs_dir" ]; then
+    return
+  fi
+
+  if [ -d "$home_logs_dir" ]; then
+    return
+  fi
+
+  ln -s "$bench_logs_dir" "$home_logs_dir"
+  echo "==> Log path reparado: $home_logs_dir -> $bench_logs_dir"
+}
+
 initialize_bench_if_needed() {
   if [ -f "$BENCH_DIR/Procfile" ]; then
     return
@@ -193,6 +212,7 @@ configure_bench_runtime() {
   bench set-config -g redis_queue redis://redis-queue:6379
   bench set-config -g redis_socketio redis://redis-queue:6379
   bench set-config -g webserver_port 8000
+  ensure_runtime_log_paths
   ensure_current_site_selection
   sync_site_host_name "$(resolve_host_name "$PUBLIC_DOMAIN")"
   rebuild_asset_links
