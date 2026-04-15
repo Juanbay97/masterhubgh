@@ -4,6 +4,7 @@ set -euo pipefail
 BENCH_DIR="${BENCH_DIR:-/home/frappe/frappe-bench}"
 PUBLIC_DOMAIN="${PUBLIC_DOMAIN:-}"
 HUBGH_RUNTIME_MODE="${HUBGH_RUNTIME_MODE:-development}"
+SITE_NAME="${FRAPPE_SITE_NAME:-hubgh.local}"
 
 resolve_host_name() {
   local domain="$1"
@@ -23,12 +24,41 @@ resolve_host_name() {
 
 current_site_name() {
   local current_site_file="$BENCH_DIR/sites/currentsite.txt"
+  local detected_site=""
 
-  if [ ! -f "$current_site_file" ]; then
+  if [ -f "$current_site_file" ]; then
+    tr -d '\n' < "$current_site_file"
     return 0
   fi
 
-  tr -d '\n' < "$current_site_file"
+  if [ -d "$BENCH_DIR/sites/$SITE_NAME" ]; then
+    printf '%s' "$SITE_NAME"
+    return 0
+  fi
+
+  detected_site="$(find "$BENCH_DIR/sites" -mindepth 1 -maxdepth 1 -type d ! -name assets ! -name .git | sed 's#.*/##' | head -n 1 || true)"
+  if [ -n "$detected_site" ]; then
+    printf '%s' "$detected_site"
+  fi
+}
+
+ensure_current_site_selection() {
+  local current_site=""
+  local current_site_file="$BENCH_DIR/sites/currentsite.txt"
+
+  current_site="$(current_site_name)"
+  if [ -z "$current_site" ]; then
+    return
+  fi
+
+  if [ ! -f "$current_site_file" ] || [ "$(tr -d '\n' < "$current_site_file" 2>/dev/null || true)" != "$current_site" ]; then
+    printf '%s' "$current_site" > "$current_site_file"
+    echo "==> currentsite.txt reparado: $current_site"
+  fi
+
+  if bench use "$current_site" >/dev/null 2>&1; then
+    echo "==> Sitio por defecto asegurado: $current_site"
+  fi
 }
 
 sync_site_host_name() {
@@ -163,6 +193,7 @@ configure_bench_runtime() {
   bench set-config -g redis_queue redis://redis-queue:6379
   bench set-config -g redis_socketio redis://redis-queue:6379
   bench set-config -g webserver_port 8000
+  ensure_current_site_selection
   sync_site_host_name "$(resolve_host_name "$PUBLIC_DOMAIN")"
   rebuild_asset_links
 }
