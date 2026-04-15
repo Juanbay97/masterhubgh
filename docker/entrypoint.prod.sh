@@ -36,7 +36,7 @@ cd "$BENCH_DIR"
 export SITES_PATH="$BENCH_DIR/sites"
 
 start_process "Gunicorn" ./env/bin/python -m gunicorn \
-  --chdir "$BENCH_DIR" \
+  --chdir "$BENCH_DIR/sites" \
   -b 0.0.0.0:8000 \
   -w "${FRAPPE_GUNICORN_WORKERS:-2}" \
   --max-requests "${FRAPPE_GUNICORN_MAX_REQUESTS:-5000}" \
