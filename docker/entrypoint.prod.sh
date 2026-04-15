@@ -34,7 +34,7 @@ sync_site_runtime_mode 0
 
 cd "$BENCH_DIR"
 
-start_process "Gunicorn" ./env/bin/gunicorn \
+start_process "Gunicorn" ./env/bin/python -m gunicorn \
   -b 0.0.0.0:8000 \
   -w "${FRAPPE_GUNICORN_WORKERS:-2}" \
   --max-requests "${FRAPPE_GUNICORN_MAX_REQUESTS:-5000}" \
