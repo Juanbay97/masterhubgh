@@ -159,6 +159,7 @@ after_migrate = [
 # }
 
 permission_query_conditions = {
+	"Workspace": "hubgh.api.access.get_workspace_permission_query_conditions",
 	"Ficha Empleado": "hubgh.permissions.get_permission_query_conditions",
 	"LMS Enrollment": "hubgh.permissions.get_permission_query_conditions",
 	"Novedad SST": "hubgh.permissions.get_permission_query_conditions",
@@ -175,6 +176,7 @@ permission_query_conditions = {
 }
 
 has_permission = {
+	"Workspace": "hubgh.api.access.workspace_has_permission",
 	"Ficha Empleado": "hubgh.permissions.has_permission",
 	"LMS Enrollment": "hubgh.permissions.has_permission",
 	"Candidato": "hubgh.hubgh.permissions.candidato_has_permission",

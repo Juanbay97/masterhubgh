@@ -214,3 +214,20 @@ class TestEmployeeRetirementFlow(FrappeTestCase):
 		retirement_actions = [row for row in actions["quick_actions"] if row["key"] == "manage_retirement" and row["visible"]]
 		self.assertEqual(len(retirement_actions), 1)
 		self.assertEqual(retirement_actions[0]["route"], "/app/bandeja-retiros-empleados")
+
+	def test_persona_360_contextual_actions_expose_document_drawer_route(self):
+		with patch("hubgh.hubgh.page.persona_360.persona_360.user_has_any_role", return_value=False):
+			actions = persona_360._build_contextual_actions(
+				user="empleado@example.com",
+				employee_id="EMP-001",
+				is_gh=False,
+				is_jefe=False,
+				is_emp=True,
+				can_view_sensitive=False,
+			)
+
+		document_actions = [row for row in actions["quick_actions"] if row["key"] == "view_documents" and row["visible"]]
+		self.assertEqual(len(document_actions), 1)
+		self.assertEqual(document_actions[0]["presentation"], "drawer")
+		self.assertEqual(document_actions[0]["route"], "/app/carpeta-documental-empleado")
+		self.assertEqual(document_actions[0]["prefill"], {"employee": "EMP-001", "open_drawer": 1})

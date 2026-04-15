@@ -24,12 +24,18 @@ services:
       - ../.env
     environment:
       SHELL: /bin/bash
+      HUBGH_RUNTIME_MODE: production
+      FRAPPE_GUNICORN_WORKERS: ${FRAPPE_GUNICORN_WORKERS:-2}
+      FRAPPE_GUNICORN_MAX_REQUESTS: ${FRAPPE_GUNICORN_MAX_REQUESTS:-5000}
+      FRAPPE_GUNICORN_MAX_REQUESTS_JITTER: ${FRAPPE_GUNICORN_MAX_REQUESTS_JITTER:-500}
+      FRAPPE_HTTP_TIMEOUT: ${FRAPPE_HTTP_TIMEOUT:-120}
     volumes:
       - bench_data:/home/frappe/frappe-bench
-      - ../hubgh:/home/frappe/frappe-bench/apps/hubgh
+      - ../hubgh:/home/frappe/frappe-bench/apps/hubgh:ro
       - sites_data:/home/frappe/frappe-bench/sites
-      - ./entrypoint.sh:/entrypoint.sh
-      - ./create-site.sh:/create-site.sh
+      - ./runtime-common.sh:/runtime-common.sh:ro
+      - ./entrypoint.prod.sh:/entrypoint.prod.sh:ro
+      - ./create-site.sh:/create-site.sh:ro
     depends_on:
       mariadb:
         condition: service_healthy
@@ -40,7 +46,7 @@ services:
     expose:
       - "8000"
       - "9000"
-    command: ["bash", "/entrypoint.sh"]
+    command: ["bash", "/entrypoint.prod.sh"]
 
   caddy:
     image: caddy:2.8-alpine

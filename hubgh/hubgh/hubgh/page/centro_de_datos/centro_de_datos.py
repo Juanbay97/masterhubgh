@@ -13,6 +13,7 @@ from frappe.utils import getdate, validate_email_address
 from frappe.utils.file_manager import save_file
 
 from hubgh.hubgh.document_service import upload_person_document
+from hubgh.hubgh.role_matrix import user_has_any_role
 from hubgh.person_identity import normalize_document, reconcile_person_identity
 
 
@@ -42,6 +43,15 @@ EXPECTED_CSV_COLUMNS = {
 }
 
 ZIP_BULK_DOCTYPES = {"Documentos Empleado"}
+
+
+def _validate_bulk_documental_write_access(doctype):
+	if doctype != "Documentos Empleado":
+		return
+	user = getattr(getattr(frappe, "session", None), "user", None)
+	if user == "Administrator" or user_has_any_role(user, "Relaciones Laborales Jefe"):
+		return
+	frappe.throw("Solo Jefe RRLL puede ejecutar cargas documentales masivas.")
 
 
 def _stable_error(code, detail=""):
@@ -326,6 +336,7 @@ def get_supported_doctypes():
 
 @frappe.whitelist()
 def start_upload_data(doctype, file_url, chunk_size=DEFAULT_IMPORT_CHUNK_SIZE):
+	_validate_bulk_documental_write_access(doctype)
 	rows = _read_bulk_rows(doctype, file_url)
 	chunk_size = _coerce_chunk_size(chunk_size)
 	import_id = uuid.uuid4().hex
@@ -446,6 +457,8 @@ def upload_data(doctype, file_url):
 			"errors": [_stable_error("unsupported_doctype", doctype)],
 			"supported_doctypes": get_supported_doctypes(),
 		}
+
+	_validate_bulk_documental_write_access(doctype)
 
 	try:
 		rows = _read_bulk_rows(doctype, file_url)

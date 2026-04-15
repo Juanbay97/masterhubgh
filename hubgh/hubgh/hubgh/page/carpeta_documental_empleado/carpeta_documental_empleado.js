@@ -30,8 +30,19 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 		rows: [],
 		selectedEmployee: null,
 		detail: null,
+		uploadableTypes: null,
 		loadingList: false,
 		loadingDetail: false,
+		upload: {
+			open: false,
+			documentType: "",
+			personDocument: null,
+			file: null,
+			hasExpiry: 0,
+			issueDate: "",
+			validUntil: "",
+			saving: false,
+		},
 	};
 
 	const $root = $("<div class='hub-folder-page'></div>").appendTo(page.body);
@@ -50,6 +61,45 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 		if (type === "negative") return "hub-badge hub-badge--negative";
 		if (type === "positive") return "hub-badge hub-badge--positive";
 		return "hub-badge hub-badge--neutral";
+	};
+
+	const employmentStatusLabels = { active: "Activos", retired: "Retirados", all: "Todos" };
+
+	const resetUploadState = () => {
+		state.upload = {
+			open: false,
+			documentType: "",
+			personDocument: null,
+			file: null,
+			hasExpiry: 0,
+			issueDate: "",
+			validUntil: "",
+			saving: false,
+		};
+	};
+
+	const getUploadTypeMeta = (documentType) => {
+		const items = Array.isArray(state.uploadableTypes) ? state.uploadableTypes : [];
+		return items.find((item) => item.name === documentType) || items[0] || null;
+	};
+
+	const uploadToFileAPI = (doctype, docname, file) => {
+		const formData = new FormData();
+		formData.append("file", file);
+		formData.append("is_private", 1);
+		formData.append("doctype", doctype);
+		formData.append("docname", docname);
+		return fetch("/api/method/upload_file", {
+			method: "POST",
+			body: formData,
+			credentials: "same-origin",
+			headers: { "X-Frappe-CSRF-Token": frappe.csrf_token },
+		})
+			.then((r) => r.json())
+			.then((r) => {
+				if (!r.message?.file_url) throw new Error("upload_error");
+				return r.message.file_url;
+			});
 	};
 
 	const renderBulkBatchPanel = () => `
@@ -130,26 +180,72 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 
 	const renderDrawer = () => {
 		const opened = Boolean(state.selectedEmployee);
-		const $overlay = $root.find(".hub-drawer-overlay");
-		$overlay.toggleClass("is-open", opened);
+		const $drawerShell = $root.find(".hub-drawer-shell");
+		$drawerShell.toggleClass("is-open", opened);
 
 		if (!opened) {
-			$overlay.find(".hub-drawer__body").html("");
-			$overlay.find(".hub-drawer__title").text("Detalle empleado");
-			$overlay.find(".hub-drawer__subtitle").text("");
+			resetUploadState();
+			$drawerShell.find(".hub-drawer__body").html("");
+			$drawerShell.find(".hub-drawer__title").text("Detalle empleado");
+			$drawerShell.find(".hub-drawer__subtitle").text("");
 			return;
 		}
 
 		const employeeInfo = state.detail?.employee || {};
 		const summary = state.detail?.summary || {};
-		$overlay.find(".hub-drawer__title").text(employeeInfo.employee_name || employeeInfo.name || state.selectedEmployee);
+		const canUpload = Boolean(Number(state.detail?.permissions?.can_upload || 0));
+		$drawerShell.find(".hub-drawer__title").text(employeeInfo.employee_name || employeeInfo.name || state.selectedEmployee);
 		const archiveLabel = employeeInfo.employment_status === "Retirado" ? " · Archivo retirado" : "";
-		$overlay.find(".hub-drawer__subtitle").text(`ID: ${employeeInfo.id_number || employeeInfo.name || "-"} · PDV: ${employeeInfo.branch || "-"}${archiveLabel}`);
+		$drawerShell.find(".hub-drawer__subtitle").text(`ID: ${employeeInfo.id_number || employeeInfo.name || "-"} · PDV: ${employeeInfo.branch || "-"}${archiveLabel}`);
+		$drawerShell.find(".btn-add-categorized-upload").toggle(canUpload);
 
 		if (state.loadingDetail) {
-			$overlay.find(".hub-drawer__body").html("<div class='hub-empty'>Cargando documentos...</div>");
+			$drawerShell.find(".hub-drawer__body").html("<div class='hub-empty'>Cargando documentos...</div>");
 			return;
 		}
+
+		const uploadItems = Array.isArray(state.uploadableTypes) ? state.uploadableTypes : [];
+		const uploadOptions = uploadItems.map((item) => {
+			const selected = item.name === state.upload.documentType ? "selected" : "";
+			return `<option value='${esc(item.name)}' ${selected}>${esc(item.label || item.name)}</option>`;
+		}).join("");
+		const uploadMeta = getUploadTypeMeta(state.upload.documentType);
+		const uploadPanel = canUpload && state.upload.open ? `
+			<div class='hub-upload-panel'>
+				<div class='hub-upload-panel__head'>
+					<div>
+						<div class='hub-upload-panel__title'>${state.upload.personDocument ? "Actualizar documento" : "Agregar documento a la carpeta"}</div>
+						<div class='hub-upload-panel__meta'>Cargá cualquier documento editable del empleado sin salir del panel lateral.</div>
+					</div>
+					<button class='hub-btn hub-btn--icon btn-close-upload-panel' title='Cerrar formulario'><i class='fa fa-times'></i></button>
+				</div>
+				<div class='hub-upload-grid'>
+					<div class='hub-field'>
+						<label>Categoría documental</label>
+						<select class='hub-upload-select'>${uploadOptions}</select>
+					</div>
+					<div class='hub-field'>
+						<label>Archivo</label>
+						<input type='file' class='hub-upload-file' />
+					</div>
+					<div class='hub-field'>
+						<label>Fecha de expedición</label>
+						<input type='date' class='hub-upload-issue-date' value='${esc(state.upload.issueDate || "")}' />
+					</div>
+					${uploadMeta?.has_expiry ? `
+						<div class='hub-field'>
+							<label>Fecha de vencimiento</label>
+							<input type='date' class='hub-upload-valid-until' value='${esc(state.upload.validUntil || "")}' />
+						</div>
+					` : ""}
+				</div>
+				<div class='hub-upload-help'>${uploadMeta?.requires_for_employee_folder ? "Documento requerido dentro de la carpeta del empleado." : "Documento adicional permitido para la carpeta del empleado."}</div>
+				<div class='hub-upload-panel__actions'>
+					<button class='hub-btn btn-close-upload-panel'>Cancelar</button>
+					<button class='hub-btn hub-btn--primary btn-submit-upload-panel' ${state.upload.saving ? "disabled" : ""}>${state.upload.saving ? "Guardando..." : (state.upload.personDocument ? "Actualizar" : "Guardar documento")}</button>
+				</div>
+			</div>
+		` : "";
 
 		const renderDocCard = (d) => {
 			const statusType = d.is_expired ? "negative" : (d.is_missing ? "neutral" : "positive");
@@ -162,11 +258,12 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 				? `<button class='hub-btn hub-btn--icon btn-doc-download' data-url='${esc(d.file)}' title='Descargar'><i class='fa fa-download'></i></button>`
 				: "";
 
-			const updateBtn = !isEditable
+			const replaceToken = Boolean(Number(d.can_replace || 0)) ? esc(d.person_document || "") : "";
+			const updateBtn = !isEditable || !canUpload
 				? ""
 				: d.file
-					? `<button class='hub-btn hub-btn--icon btn-doc-upload' data-document='${esc(d.document_type)}' data-person-document='${esc(d.person_document || "")}' title='Actualizar'><i class='fa fa-refresh'></i></button>`
-					: `<button class='hub-btn hub-btn--primary btn-doc-upload' data-document='${esc(d.document_type)}' data-person-document='${esc(d.person_document || "")}'>Subir</button>`;
+					? `<button class='hub-btn hub-btn--icon btn-doc-upload' data-document='${esc(d.document_type)}' data-person-document='${replaceToken}' title='Actualizar'><i class='fa fa-refresh'></i></button>`
+					: `<button class='hub-btn hub-btn--primary btn-doc-upload' data-document='${esc(d.document_type)}' data-person-document='${replaceToken}'>Subir</button>`;
 
 			return `
 				<div class='hub-doc-card ${d.is_expired ? "is-expired" : ""}'>
@@ -200,7 +297,8 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 		const disciplinaryRows = disciplinaryDocs.map(renderDocCard).join("");
 		const otherRows = otherDocs.map(renderDocCard).join("");
 
-		$overlay.find(".hub-drawer__body").html(`
+		$drawerShell.find(".hub-drawer__body").html(`
+			${uploadPanel}
 			<div class='hub-drawer__summary'>
 				<span class='${badgeClass("neutral")}'><i class='fa fa-file-text-o'></i> ${summary.total_required || 0} requeridos</span>
 				<span class='${badgeClass("positive")}'><i class='fa fa-check'></i> ${summary.uploaded_count || 0} cargados</span>
@@ -234,6 +332,25 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 		`);
 	};
 
+	const getUploadableDocumentTypes = () => {
+		if (!state.selectedEmployee) return Promise.resolve([]);
+		if (Array.isArray(state.uploadableTypes)) return Promise.resolve(state.uploadableTypes);
+		return new Promise((resolve) => {
+			frappe.call({
+				method: "hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.get_uploadable_document_types",
+				args: { employee: state.selectedEmployee },
+				callback: (r) => {
+					state.uploadableTypes = r?.message?.items || [];
+					resolve(state.uploadableTypes);
+				},
+				error: () => {
+					state.uploadableTypes = [];
+					resolve([]);
+				},
+			});
+		});
+	};
+
 	const loadList = () => {
 		state.loadingList = true;
 		$root.find(".hub-grid").html("<div class='hub-empty'>Cargando empleados...</div>");
@@ -258,6 +375,8 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 
 	const loadDetail = (employee) => {
 		state.selectedEmployee = employee;
+		state.uploadableTypes = null;
+		resetUploadState();
 		state.loadingDetail = true;
 		renderDrawer();
 		return new Promise((resolve) => {
@@ -280,31 +399,74 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 		});
 	};
 
-	const openUpload = ({ documentType, personDocument }) => {
-		if (!state.selectedEmployee || !documentType) return;
-		new frappe.ui.FileUploader({
-			on_success(file) {
-				const method = personDocument
+	const openUploadPanel = ({ documentType = "", personDocument = null } = {}) => {
+		if (!state.selectedEmployee) return;
+		getUploadableDocumentTypes().then((items) => {
+			if (!items.length) {
+				frappe.msgprint({
+					title: "Carpeta documental",
+					indicator: "orange",
+					message: "No hay categorías habilitadas para carga manual en esta carpeta.",
+				});
+				return;
+			}
+			const selected = items.find((item) => item.name === documentType) || items[0];
+			state.upload.open = true;
+			state.upload.documentType = selected.name;
+			state.upload.personDocument = personDocument || null;
+			state.upload.file = null;
+			state.upload.issueDate = "";
+			state.upload.validUntil = "";
+			state.upload.hasExpiry = Number(selected.has_expiry || 0);
+			renderDrawer();
+		});
+	};
+
+	const closeUploadPanel = () => {
+		resetUploadState();
+		renderDrawer();
+	};
+
+	const submitUploadPanel = () => {
+		if (!state.selectedEmployee || !state.upload.documentType || !state.upload.file || state.upload.saving) return;
+		state.upload.saving = true;
+		renderDrawer();
+		uploadToFileAPI("Ficha Empleado", state.selectedEmployee, state.upload.file)
+			.then((fileUrl) => new Promise((resolve, reject) => {
+				const method = state.upload.personDocument
 					? "hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.replace_document"
 					: "hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.upload_document";
 				frappe.call({
 					method,
 					args: {
-						person_document: personDocument || null,
+						person_document: state.upload.personDocument || null,
 						employee: state.selectedEmployee,
-						document_type: documentType,
-						file_url: file.file_url,
+						document_type: state.upload.documentType,
+						file_url: fileUrl,
+						issue_date: state.upload.issueDate || null,
+						valid_until: state.upload.validUntil || null,
 					},
 					freeze: true,
 					freeze_message: "Guardando documento...",
-					callback: () => {
-						frappe.show_alert({ indicator: "green", message: "Documento actualizado" });
-						loadDetail(state.selectedEmployee);
-						loadList();
-					},
+					callback: (response) => resolve(response),
+					error: (error) => reject(error),
 				});
-			},
-		});
+			}))
+			.then(() => {
+				frappe.show_alert({ indicator: "green", message: state.upload.personDocument ? "Documento actualizado" : "Documento cargado" });
+				closeUploadPanel();
+				loadDetail(state.selectedEmployee);
+				loadList();
+			})
+			.catch(() => {
+				state.upload.saving = false;
+				renderDrawer();
+				frappe.msgprint({
+					title: "Carpeta documental",
+					indicator: "red",
+					message: "No fue posible cargar el documento. Probá nuevamente.",
+				});
+			});
 	};
 
 	const openBulkUpload = (doctype) => {
@@ -351,6 +513,10 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 		});
 	};
 
+	const openCategorizedUpload = () => {
+		openUploadPanel();
+	};
+
 	const downloadZip = () => {
 		if (!state.selectedEmployee) return;
 		frappe.call({
@@ -360,6 +526,28 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 				if (!r || !r.message) return;
 				window.open(r.message, "_blank");
 			},
+		});
+	};
+
+	const maybeOpenDrawerFromRoute = () => {
+		const options = frappe.route_options || {};
+		const requestedEmployee = options.employee || options.persona;
+		const shouldOpenDrawer = options.open_drawer === undefined ? Boolean(requestedEmployee) : Boolean(Number(options.open_drawer || 0));
+		if (!requestedEmployee) {
+			return Promise.resolve(false);
+		}
+
+		state.search = requestedEmployee;
+		state.employmentStatus = options.employment_status || "all";
+		$root.find(".hub-search").val(requestedEmployee);
+		$root.find(".hub-status-filter").val(state.employmentStatus);
+		frappe.route_options = null;
+
+		return loadList().then(() => {
+			if (!shouldOpenDrawer) {
+				return true;
+			}
+			return loadDetail(requestedEmployee).then(() => true);
 		});
 	};
 
@@ -396,7 +584,7 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 		renderDrawer();
 	});
 
-	$root.on("click", ".hub-drawer-overlay", function(e) {
+	$root.on("click", ".hub-drawer-shell", function(e) {
 		if (e.target !== this) return;
 		state.selectedEmployee = null;
 		state.detail = null;
@@ -419,13 +607,43 @@ frappe.pages["carpeta_documental_empleado"].on_page_load = function(wrapper) {
 	$root.on("click", ".btn-doc-upload", function() {
 		const documentType = $(this).data("document");
 		const personDocument = $(this).data("person-document");
-		openUpload({ documentType, personDocument });
+		openUploadPanel({ documentType, personDocument });
 	});
 
+	$root.on("click", ".btn-add-categorized-upload", openCategorizedUpload);
+	$root.on("click", ".btn-close-upload-panel", closeUploadPanel);
+	$root.on("change", ".hub-upload-select", function() {
+		const documentType = $(this).val() || "";
+		const selected = getUploadTypeMeta(documentType);
+		state.upload.documentType = documentType;
+		state.upload.hasExpiry = Number(selected?.has_expiry || 0);
+		if (!state.upload.hasExpiry) {
+			state.upload.validUntil = "";
+		}
+		renderDrawer();
+	});
+	$root.on("change", ".hub-upload-file", function() {
+		state.upload.file = this.files && this.files[0] ? this.files[0] : null;
+	});
+	$root.on("change", ".hub-upload-issue-date", function() {
+		state.upload.issueDate = $(this).val() || "";
+	});
+	$root.on("change", ".hub-upload-valid-until", function() {
+		state.upload.validUntil = $(this).val() || "";
+	});
+	$root.on("click", ".btn-submit-upload-panel", submitUploadPanel);
 	$root.on("click", ".btn-download-zip", downloadZip);
 	$root.on("click", ".btn-bulk-upload", function() {
 		openBulkUpload($(this).data("doctype"));
 	});
 
-	loadList();
+	$(wrapper).bind("show", function() {
+		maybeOpenDrawerFromRoute();
+	});
+
+	maybeOpenDrawerFromRoute().then((openedFromRoute) => {
+		if (!openedFromRoute) {
+			loadList();
+		}
+	});
 };

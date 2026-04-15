@@ -216,6 +216,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 
 				const candidateInfoHtml = [
 					["Documento", candidateData.numero_documento],
+					["PDV destino", candidateData.pdv_destino_nombre || candidateData.pdv_destino],
 					["Ciudad", candidateData.ciudad],
 					["Localidad", candidateData.localidad],
 					["Dirección", candidateData.direccion],
@@ -279,7 +280,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		const q = (state.search || "").trim().toLowerCase();
 		return (state.rows || []).filter(row => {
 			if (q) {
-				const blob = [row.full_name, row.name, row.numero_documento, row.pdv_destino, row.cargo_postulado, row.estado_proceso].filter(Boolean).join(" ").toLowerCase();
+				const blob = [row.full_name, row.name, row.numero_documento, row.pdv_destino_nombre, row.pdv_destino, row.cargo_postulado, row.estado_proceso].filter(Boolean).join(" ").toLowerCase();
 				if (!blob.includes(q)) return false;
 			}
 			if (state.status === "complete" && !row.completo) return false;
@@ -305,6 +306,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 			const inMedical = isInMedicalExam(row);
 			const manageEnabled = !!row.can_manage;
 			const primary = getPrimaryAction(row);
+			const pdvLabel = row.pdv_destino_nombre || row.pdv_destino || "";
 
 			return `
 				<div class='hubgh-card' data-c='${esc(row.name)}'>
@@ -317,10 +319,10 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 							</div>
 							<div class='hubgh-meta'>CC ${esc(row.numero_documento || "-")}</div>
 							<div class='hubgh-submeta'>
-								<span>${esc(row.cargo_postulado || "Sin cargo")}</span>
-								<span class='hubgh-dot'>•</span>
-								<span>${esc(row.pdv_destino || "Sin PDV")}</span>
-							</div>
+							<span>${esc(row.cargo_postulado || "Sin cargo")}</span>
+							<span class='hubgh-dot'>•</span>
+							<span title='${esc(row.pdv_destino || "")}'>${esc(pdvLabel || "Sin PDV")}</span>
+						</div>
 						</div>
 						<div class='hubgh-right'>
 							<div>${ui.yesNoBadge(!!row.completo)}</div>

@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
-# Entrypoint del contenedor backend.
 
-BENCH_DIR="/home/frappe/frappe-bench"
+BENCH_DIR="${BENCH_DIR:-/home/frappe/frappe-bench}"
 PUBLIC_DOMAIN="${PUBLIC_DOMAIN:-}"
+HUBGH_RUNTIME_MODE="${HUBGH_RUNTIME_MODE:-development}"
 
 resolve_host_name() {
   local domain="$1"
@@ -21,22 +21,44 @@ resolve_host_name() {
   esac
 }
 
+current_site_name() {
+  local current_site_file="$BENCH_DIR/sites/currentsite.txt"
+
+  if [ ! -f "$current_site_file" ]; then
+    return 0
+  fi
+
+  tr -d '\n' < "$current_site_file"
+}
+
 sync_site_host_name() {
   local host_name="$1"
-  local current_site_file="$BENCH_DIR/sites/currentsite.txt"
   local current_site=""
 
-  if [ -z "$host_name" ] || [ ! -f "$current_site_file" ]; then
+  if [ -z "$host_name" ]; then
     return
   fi
 
-  current_site="$(tr -d '\n' < "$current_site_file")"
-  if [ -z "$current_site" ] || [ "$current_site" = "" ]; then
+  current_site="$(current_site_name)"
+  if [ -z "$current_site" ]; then
     return
   fi
 
-  echo "==> Asegurando host_name público para $current_site: $host_name"
+  echo "==> Asegurando host_name para $current_site: $host_name"
   bench --site "$current_site" set-config host_name "$host_name"
+}
+
+sync_site_runtime_mode() {
+  local current_site=""
+  local developer_mode_value="$1"
+
+  current_site="$(current_site_name)"
+  if [ -z "$current_site" ]; then
+    return
+  fi
+
+  echo "==> Asegurando developer_mode=$developer_mode_value para $current_site"
+  bench --site "$current_site" set-config developer_mode "$developer_mode_value"
 }
 
 ensure_asset_link() {
@@ -81,15 +103,13 @@ rebuild_asset_links() {
   fi
 }
 
-# ── Inicialización del bench (solo primera vez) ──────────────────────────────
-# Docker pre-crea $BENCH_DIR como named volume antes de que este script corra,
-# así que bench init siempre ve un directorio existente y falla.
-# Solución: inicializar en /tmp (directorio limpio) y copiar al volume.
-if [ ! -f "$BENCH_DIR/Procfile" ]; then
-  echo "==> Inicializando bench (primera vez, ~10-15 min)..."
+initialize_bench_if_needed() {
+  if [ -f "$BENCH_DIR/Procfile" ]; then
+    return
+  fi
 
-  # El volumen bench_data es creado por Docker con owner root.
-  # Lo corregimos antes de intentar escribir como usuario frappe.
+  echo "==> Inicializando bench ($HUBGH_RUNTIME_MODE, primera vez, ~10-15 min)..."
+
   sudo chown -R frappe:frappe "$BENCH_DIR"
 
   cd /tmp
@@ -100,24 +120,15 @@ if [ ! -f "$BENCH_DIR/Procfile" ]; then
     --frappe-branch version-15 \
     frappe-bench-tmp || { echo "ERROR: bench init falló"; exit 1; }
 
-  # Copiar al volume. apps/hubgh y sites ya están montados como sub-volumes:
-  # cp los ignora si no hay conflicto, y agrega los archivos del bench (frappe,
-  # Procfile, env/, etc.) sin pisar los mounts existentes.
   cp -a frappe-bench-tmp/. "$BENCH_DIR/"
   rm -rf frappe-bench-tmp
 
-  # ── Reparar el venv y registrar apps ────────────────────────────────────
-  # bench init usa "pip install -e" con paths absolutos a /tmp/frappe-bench-tmp.
-  # Después del cp esos paths quedan rotos en los .pth del venv.
-  # Solución: reinstalar frappe y hubgh con los paths correctos del destino.
   cd "$BENCH_DIR"
   echo "==> Reparando entorno Python (editable install paths post-cp)..."
   ./env/bin/python -m pip install -q -e apps/frappe
   echo "==> Registrando app hubgh en el bench..."
   ./env/bin/python -m pip install -q -e apps/hubgh
 
-  # Frappe v15 lee el registro de apps desde sites/apps.txt y sites/apps.json
-  # (NO desde el apps.txt raíz del bench). Los actualizamos explícitamente.
   printf "frappe\nhubgh\n" > apps.txt
   printf "frappe\nhubgh\n" > sites/apps.txt
   ./env/bin/python -c "
@@ -138,23 +149,20 @@ if 'hubgh' not in apps:
         json.dump(apps, f, indent=4)
     print('==> hubgh agregado a sites/apps.json')
 "
-  echo "==> sites/apps.txt: $(cat sites/apps.txt | tr '\n' ' ')"
+  echo "==> sites/apps.txt: $(tr '\n' ' ' < sites/apps.txt)"
   rebuild_asset_links
 
   echo "==> Bench inicializado."
-fi
+}
 
-# ── Configuración ────────────────────────────────────────────────────────────
-# bench set-config requiere CWD dentro del bench dir.
-cd "$BENCH_DIR" || { echo "ERROR: no se pudo entrar a $BENCH_DIR"; exit 1; }
+configure_bench_runtime() {
+  cd "$BENCH_DIR" || { echo "ERROR: no se pudo entrar a $BENCH_DIR"; exit 1; }
 
-bench set-config -g db_host mariadb
-bench set-config -g redis_cache redis://redis-cache:6379
-bench set-config -g redis_queue redis://redis-queue:6379
-bench set-config -g redis_socketio redis://redis-queue:6379
-bench set-config -g webserver_port 8000
-sync_site_host_name "$(resolve_host_name "$PUBLIC_DOMAIN")"
-rebuild_asset_links
-
-echo "==> Arrancando bench..."
-exec bench start
+  bench set-config -g db_host mariadb
+  bench set-config -g redis_cache redis://redis-cache:6379
+  bench set-config -g redis_queue redis://redis-queue:6379
+  bench set-config -g redis_socketio redis://redis-queue:6379
+  bench set-config -g webserver_port 8000
+  sync_site_host_name "$(resolve_host_name "$PUBLIC_DOMAIN")"
+  rebuild_asset_links
+}

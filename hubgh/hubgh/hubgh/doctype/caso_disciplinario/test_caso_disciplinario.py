@@ -84,6 +84,16 @@ class TestCasoDisciplinario(FrappeTestCase):
 		self.assertIn("frappe.set_route('bandeja_casos_disciplinarios')", content)
 		self.assertNotIn("frappe.new_doc('Caso Disciplinario', { pdv: pdvId });", content)
 
+	def test_persona_360_contextual_actions_use_explicit_doctype_and_report_navigation(self):
+		js_path = Path(__file__).resolve().parents[2] / "page" / "persona_360" / "persona_360.js"
+		content = js_path.read_text(encoding="utf-8")
+
+		self.assertIn("function navigate_contextual_action(action, emp_id)", content)
+		self.assertIn("frappe.set_route('query-report', 'Person Documents');", content)
+		self.assertIn("frappe.new_doc(action.doctype, Object.assign({}, action.prefill || {}));", content)
+		self.assertNotIn("Object.assign({}, action.prefill || {}, { employee: emp_id })", content)
+		self.assertNotIn("Object.assign({}, action.prefill || {}, { empleado: emp_id })", content)
+
 	def test_on_update_reopen_reverses_retirement_when_case_is_no_longer_termination(self):
 		doc = frappe.get_doc({"doctype": "Caso Disciplinario"})
 		doc.name = "DIS-002"

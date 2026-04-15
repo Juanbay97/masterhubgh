@@ -761,6 +761,7 @@ def get_punto_stats(pdv_id):
     return {
         "info": {
             "nombre": punto.nombre_pdv,
+			"pdv_nombre": punto.nombre_pdv,
             "zona": punto.zona,
             "planta_autorizada": punto.planta_autorizada,
             "headcount": headcount,

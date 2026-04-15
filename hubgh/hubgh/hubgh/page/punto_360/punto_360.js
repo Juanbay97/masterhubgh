@@ -153,10 +153,10 @@ function render_dashboard(page) {
 
 				$container.append(`
 					<div class="punto360-shell punto360-detail-shell">
-						<div class="punto360-detail-header dashboard-section p-4">
-							<div>
-								<div class="punto360-kickers"><span>Punto 360</span><span>Vista operativa</span></div>
-								<h3>${data.info.pdv_nombre || pdv_id}</h3>
+					<div class="punto360-detail-header dashboard-section p-4">
+						<div>
+							<div class="punto360-kickers"><span>Punto 360</span><span>Vista operativa</span></div>
+							<h3>${data.info.nombre || data.info.pdv_nombre || pdv_id}</h3>
 								<p class="text-muted mb-2">${data.info.zona || 'Sin zona'} · Headcount activo ${data.info.headcount || 0} / ${data.info.planta_autorizada || 0}</p>
 								<div class="punto360-detail-meta">
 									<span>Faltantes ${data.info.faltantes || 0}</span>

@@ -24,6 +24,8 @@ TIPO_AFORADO = "Aforado"
 TIPO_INCAPACIDAD_EG = "Incapacidad por enfermedad general"
 TIPO_SEGUIMIENTO = "Seguimiento SST"
 TIPO_PRORROGA_INCAPACIDAD = "Prórroga incapacidad"
+DIAS_INCAPACIDAD_POST_EXAMEN = 30
+DIAS_ANTICIPO_ALERTA_POST_INCAPACIDAD = 7
 
 
 class NovedadSST(Document):
@@ -274,19 +276,6 @@ class NovedadSST(Document):
 		if not cint(self.alerta_activa):
 			return
 
-		if self.tipo_novedad == TIPO_SEGUIMIENTO:
-			self.crear_alerta = 1
-			if not self.tipo_alerta:
-				self.tipo_alerta = "Seguimiento"
-			if not self.frecuencia_alerta:
-				self.frecuencia_alerta = "Única"
-			if not self.proxima_alerta_fecha:
-				dias = cint(self.dias_para_alerta or 0)
-				self.proxima_alerta_fecha = add_days(nowdate(), dias)
-			if not self.descripcion_resumen:
-				self.descripcion_resumen = "Seguimiento SST programado"
-			return
-
 		if self.tipo_novedad == TIPO_RECOMENDACION and self.fecha_fin:
 			self.crear_alerta = 1
 			self.tipo_alerta = "Vencimiento recomendación médica"
@@ -307,12 +296,11 @@ class NovedadSST(Document):
 				self.descripcion_resumen = "Seguimiento semestral de personal aforado"
 			return
 
-		if self.is_incapacidad_case() and self.fecha_fin:
-			dias_previos = cint(self.dias_alerta_post_incapacidad or 7)
+		if self.requires_post_incapacidad_alert() and self.fecha_fin:
 			self.crear_alerta = 1
 			self.tipo_alerta = "Examen post incapacidad"
 			self.frecuencia_alerta = "Única"
-			self.proxima_alerta_fecha = add_days(self.fecha_fin, -dias_previos)
+			self.proxima_alerta_fecha = add_days(self.fecha_fin, -DIAS_ANTICIPO_ALERTA_POST_INCAPACIDAD)
 			if not self.descripcion_resumen:
 				self.descripcion_resumen = "Programar examen médico post incapacidad antes del reintegro"
 			return
@@ -320,9 +308,10 @@ class NovedadSST(Document):
 		if cint(self.crear_alerta):
 			if not self.tipo_alerta:
 				self.tipo_alerta = "Seguimiento"
+			if not self.frecuencia_alerta:
+				self.frecuencia_alerta = "Única"
 			if not self.proxima_alerta_fecha:
-				dias = cint(self.dias_para_alerta or 0)
-				self.proxima_alerta_fecha = add_days(nowdate(), dias)
+				frappe.throw("Debes registrar la fecha en que debe dispararse la alerta.")
 
 	def ensure_sst_alerta_record(self, notify=False):
 		if not cint(self.alerta_activa):
@@ -506,6 +495,9 @@ class NovedadSST(Document):
 		return self.tipo_novedad in {"Incapacidad", TIPO_INCAPACIDAD_EG} or (
 			self.tipo_novedad == TIPO_ACCIDENTE and cint(getattr(self, "accidente_tuvo_incapacidad", 0))
 		)
+
+	def requires_post_incapacidad_alert(self):
+		return self.is_incapacidad_case() and cint(self.dias_incapacidad) > DIAS_INCAPACIDAD_POST_EXAMEN
 
 
 def cint(value):

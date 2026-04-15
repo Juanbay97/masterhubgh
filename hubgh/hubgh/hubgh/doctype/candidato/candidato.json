@@ -22,10 +22,11 @@
    "contacto_emergencia_telefono",
    "genero",
    "estado_civil",
-   "nivel_educativo_siesa",
-   "es_extranjero",
-   "prefijo_cuenta_extranjero",
-   "ciudad",
+    "nivel_educativo_siesa",
+    "es_extranjero",
+    "prefijo_cuenta_extranjero",
+    "tiene_cuenta_bancaria",
+    "ciudad",
    "localidad",
    "localidad_otras",
    "barrio",
@@ -166,14 +167,20 @@
    "label": "Es Extranjero"
   },
   {
-   "depends_on": "eval:doc.es_extranjero == 1",
-   "fieldname": "prefijo_cuenta_extranjero",
-   "fieldtype": "Data",
-   "label": "Prefijo Cuenta Extranjero"
-  },
-  {
-   "fieldname": "ciudad",
-   "fieldtype": "Select",
+    "depends_on": "eval:doc.es_extranjero == 1",
+    "fieldname": "prefijo_cuenta_extranjero",
+    "fieldtype": "Data",
+    "label": "Prefijo Cuenta Extranjero"
+   },
+   {
+    "fieldname": "tiene_cuenta_bancaria",
+    "fieldtype": "Select",
+    "label": "¿Tiene Cuenta Bancaria?",
+    "options": "\nSi\nNo"
+   },
+   {
+    "fieldname": "ciudad",
+    "fieldtype": "Select",
    "label": "Ciudad",
    "options": "Bogota\nMedellin\nCartagena",
    "reqd": 1

@@ -16,17 +16,53 @@ from hubgh.hubgh.role_matrix import (
 )
 
 
+CANDIDATE_HOME_PAGE = "app/mis_documentos_candidato"
+CANDIDATE_HOME_PATH = f"/{CANDIDATE_HOME_PAGE}"
+CANDIDATE_ALLOWED_APP_PREFIXES = (
+	CANDIDATE_HOME_PATH,
+	"/app/mi-postulacion",
+	"/app/logout",
+)
+
+
+def get_canonical_user_roles(user):
+	if not user or user == "Guest":
+		return set()
+	return canonicalize_roles(set(frappe.get_roles(user) or []))
+
+
+def is_candidate_only_user(user):
+	roles = get_canonical_user_roles(user)
+	return "Candidato" in roles and not roles_have_any(roles, {"System Manager", "HR Selection", "Gestión Humana"})
+
+
+def get_user_app_home_path(user):
+	home_page = get_website_user_home_page(user)
+	if not home_page:
+		return "/app"
+	if home_page.startswith("app/"):
+		return f"/{home_page}"
+	return home_page if home_page.startswith("/") else f"/{home_page}"
+
+
+def is_candidate_allowed_path(path):
+	current_path = (path or "").rstrip("/") or "/"
+	return any(
+		current_path == prefix or current_path.startswith(f"{prefix}/")
+		for prefix in CANDIDATE_ALLOWED_APP_PREFIXES
+	)
+
+
 def get_website_user_home_page(user):
 	"""Route users to role-specific app landing pages after login (no shell)."""
 	if not user or user == "Guest":
 		return "login"
 
-	roles = set(frappe.get_roles(user))
-	canonical_roles = canonicalize_roles(roles)
+	canonical_roles = get_canonical_user_roles(user)
 
 	# Candidate landing goes directly to documents tray.
 	if "Candidato" in canonical_roles:
-		return "app/mis_documentos_candidato"
+		return CANDIDATE_HOME_PAGE
 
 	if "System Manager" in canonical_roles:
 		return "app/hubgh-admin"

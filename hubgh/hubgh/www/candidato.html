@@ -208,7 +208,16 @@
                                 <p id="prefijo-cuenta-help" class="text-[11px] text-gray-500 mt-2">Este dato aplica cuando tu procedencia es Venezuela.</p>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">¿Tienes cuenta bancaria?</label>
+                            <select id="tiene_cuenta_bancaria" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white appearance-none cursor-pointer">
+                                <option value="" selected disabled>Selecciona una opción</option>
+                                <option value="Si">Sí</option>
+                                <option value="No">No</option>
+                            </select>
+                            <p class="text-[11px] text-gray-500 mt-2">Si no tenés cuenta bancaria, podés continuar y cargar tus documentos sin bloquear el proceso.</p>
+                        </div>
+                        <div id="bank-fields-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 hidden">
                             <div>
                                 <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">¿Cuál es tu banco?</label>
                                 <select id="banco_siesa" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white appearance-none cursor-pointer">
@@ -562,6 +571,8 @@
             setProcedenciaSelection(data.procedencia_pais || '', data.procedencia_departamento || '', data.procedencia_ciudad || '');
             document.getElementById('prefijo_cuenta_extranjero').value = data.prefijo_cuenta_extranjero || '';
             refreshForeignState();
+            document.getElementById('tiene_cuenta_bancaria').value = data.tiene_cuenta_bancaria || '';
+            toggleBankFields();
             document.getElementById('banco_siesa').value = data.banco_siesa || '';
             document.getElementById('tipo_cuenta_bancaria').value = data.tipo_cuenta_bancaria || 'Ahorros';
             document.getElementById('numero_cuenta_bancaria').value = data.numero_cuenta_bancaria || '';
@@ -712,6 +723,19 @@
         }
     }
 
+    function toggleBankFields() {
+        const hasBankAccount = (document.getElementById('tiene_cuenta_bancaria')?.value || '').trim() === 'Si';
+        const bankContainer = document.getElementById('bank-fields-container');
+        if (bankContainer) {
+            bankContainer.classList.toggle('hidden', !hasBankAccount);
+        }
+        if (!hasBankAccount) {
+            document.getElementById('banco_siesa').value = '';
+            document.getElementById('tipo_cuenta_bancaria').value = 'Ahorros';
+            document.getElementById('numero_cuenta_bancaria').value = '';
+        }
+    }
+
     async function loadProcedenciaSiesaCatalog() {
         setSelectOptions(procedenciaPaisSelect, [], 'Cargando países...');
         setSelectOptions(procedenciaDepartamentoSelect, [], 'Selecciona país primero');
@@ -778,9 +802,16 @@
             data.procedencia_ciudad = (document.getElementById('procedencia_ciudad').value || '').trim();
             data.prefijo_cuenta_extranjero = (document.getElementById('prefijo_cuenta_extranjero').value || '').trim();
             refreshForeignState();
-            data.banco_siesa = (document.getElementById('banco_siesa').value || '').trim();
-            data.tipo_cuenta_bancaria = (document.getElementById('tipo_cuenta_bancaria').value || 'Ahorros').trim();
-            data.numero_cuenta_bancaria = (document.getElementById('numero_cuenta_bancaria').value || '').trim();
+            data.tiene_cuenta_bancaria = (document.getElementById('tiene_cuenta_bancaria').value || '').trim();
+            if (data.tiene_cuenta_bancaria === 'Si') {
+                data.banco_siesa = (document.getElementById('banco_siesa').value || '').trim();
+                data.tipo_cuenta_bancaria = (document.getElementById('tipo_cuenta_bancaria').value || 'Ahorros').trim();
+                data.numero_cuenta_bancaria = (document.getElementById('numero_cuenta_bancaria').value || '').trim();
+            } else {
+                data.banco_siesa = '';
+                data.tipo_cuenta_bancaria = '';
+                data.numero_cuenta_bancaria = '';
+            }
         }
         if (step === 4) {
             data.ciudad = (document.getElementById('ciudad').value || '').trim();
@@ -828,7 +859,11 @@
             if (selectedPais === '850') {
                 if (!checkVal('prefijo_cuenta_extranjero')) { isValid = false; errors.push('prefijo_cuenta_extranjero'); }
             }
-            if (!checkVal('banco_siesa')) { isValid = false; errors.push('banco_siesa'); }
+            if (!checkVal('tiene_cuenta_bancaria')) { isValid = false; errors.push('tiene_cuenta_bancaria'); }
+            if ((document.getElementById('tiene_cuenta_bancaria').value || '').trim() === 'Si') {
+                if (!checkVal('banco_siesa')) { isValid = false; errors.push('banco_siesa'); }
+                if (!checkVal('numero_cuenta_bancaria')) { isValid = false; errors.push('numero_cuenta_bancaria'); }
+            }
         }
         if (step === 4) {
             if (!checkVal('ciudad')) { isValid = false; errors.push('ciudad'); }
@@ -943,6 +978,7 @@
                 prefijo_cuenta_extranjero: data.prefijo_cuenta_extranjero,
                 contacto_emergencia_nombre: data.contacto_emergencia_nombre,
                 contacto_emergencia_telefono: data.contacto_emergencia_telefono,
+                tiene_cuenta_bancaria: data.tiene_cuenta_bancaria,
                 banco_siesa: data.banco_siesa,
                 tipo_cuenta_bancaria: data.tipo_cuenta_bancaria,
                 numero_cuenta_bancaria: data.numero_cuenta_bancaria,
@@ -1246,6 +1282,13 @@
             updateCiudadesForDepartamento();
         });
     }
+    const bankAccountSelect = document.getElementById('tiene_cuenta_bancaria');
+    if (bankAccountSelect) {
+        bankAccountSelect.addEventListener('change', () => {
+            toggleBankFields();
+            collectData(3);
+        });
+    }
 
     function getCsrfToken() {
         const fromFrappe = (typeof frappe !== 'undefined' && frappe.csrf_token) ? frappe.csrf_token : '';
@@ -1317,6 +1360,7 @@
     loadBancosSiesa();
     loadProcedenciaSiesaCatalog();
     toggleAlergiasContainer();
+    toggleBankFields();
     showStep(currentStep);
 </script>
 

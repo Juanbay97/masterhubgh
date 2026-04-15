@@ -95,7 +95,24 @@ def get_person_document_permission_query(user=None):
 	)
 
 
-def person_document_has_permission(doc, user=None):
+def _can_write_employee_document_record(doc, user=None):
+	user = user or frappe.session.user
+	if user == "Administrator":
+		return True
+	return user_has_any_role(user, "Relaciones Laborales Jefe")
+
+
+def person_document_has_permission(doc, user=None, permission_type="read"):
+	permission_type = str(permission_type or "read").lower()
+	if permission_type in {"write", "create", "delete", "submit", "cancel", "amend"}:
+		person_type = str(getattr(doc, "person_type", "") or (doc.get("person_type") if hasattr(doc, "get") else "")).strip()
+		if person_type == "Empleado":
+			return _can_write_employee_document_record(doc, user=user)
+		candidate = getattr(doc, "person", None) or (doc.get("person") if hasattr(doc, "get") else None)
+		if person_type == "Candidato" and candidate:
+			status = frappe.db.get_value("Candidato", candidate, "estado_proceso")
+			if str(status or "").strip() in {"En afiliación", "En Afiliación", "Afiliacion", "En Proceso de Contratación", "Listo para contratar", "Listo para Contratar", "Contratado"}:
+				return _can_write_employee_document_record(doc, user=user)
 	return can_user_read_person_document(doc, user=user)
 
 

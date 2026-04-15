@@ -1,6 +1,7 @@
 
 import frappe
 from frappe import _
+from frappe.utils import cint
 from frappe.utils import add_days, getdate, nowdate
 
 from hubgh.hubgh.payroll_permissions import can_user_view_employee_payroll
@@ -202,8 +203,9 @@ def _build_contextual_actions(user, employee_id, is_gh, is_jefe, is_emp, can_vie
                 "key": "view_documents",
                 "label": "Ver Expediente Documental",
                 "visible": can_view_documents,
-                "route": "/app/query-report/Person%20Documents",
-                "prefill": {"persona": employee_id},
+                "route": "/app/carpeta-documental-empleado",
+                "presentation": "drawer",
+                "prefill": {"employee": employee_id, "open_drawer": 1},
             },
         ],
         "visibility_context": {
@@ -222,6 +224,64 @@ def _can_access_retirado(user):
 
 def _can_manage_disciplinary(user):
     return user_has_any_role(user, "System Manager", "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe", "Gerente GH")
+
+
+def _persona_search_query_filters(search_text=None):
+    search_term = str(search_text or "").strip().lower()
+    return {
+        "include_retirado": 1 if _can_access_retirado(frappe.session.user) else 0,
+        "search_like": f"%{search_term}%",
+        "search_term": search_term,
+    }
+
+
+def _persona_search_match_clause():
+    return """
+        (%(search_term)s = ''
+         OR LOWER(IFNULL(emp.name, '')) LIKE %(search_like)s
+         OR LOWER(CONCAT_WS(' ', IFNULL(emp.nombres, ''), IFNULL(emp.apellidos, ''))) LIKE %(search_like)s
+         OR LOWER(IFNULL(emp.cedula, '')) LIKE %(search_like)s
+         OR LOWER(IFNULL(emp.cargo, '')) LIKE %(search_like)s
+         OR LOWER(IFNULL(emp.pdv, '')) LIKE %(search_like)s
+         OR LOWER(IFNULL(pdv.nombre_pdv, '')) LIKE %(search_like)s)
+    """
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def search_persona_360_employee(doctype, txt, searchfield, start, page_len, filters=None):
+    query_filters = _persona_search_query_filters(txt)
+    query_filters.update({
+        "start": cint(start or 0),
+        "page_len": cint(page_len or 20),
+    })
+
+    return frappe.db.sql(
+        f"""
+        SELECT
+            emp.name,
+            CONCAT_WS(' ', IFNULL(emp.nombres, ''), IFNULL(emp.apellidos, '')) AS full_name,
+            emp.cedula,
+            IFNULL(pdv.nombre_pdv, '') AS pdv_nombre
+        FROM `tabFicha Empleado` emp
+        LEFT JOIN `tabPunto de Venta` pdv ON pdv.name = emp.pdv
+        WHERE (%(include_retirado)s = 1 OR IFNULL(emp.estado, '') != 'Retirado')
+          AND {_persona_search_match_clause()}
+        ORDER BY
+            CASE
+                WHEN LOWER(IFNULL(emp.name, '')) = %(search_term)s THEN 0
+                WHEN LOWER(CONCAT_WS(' ', IFNULL(emp.nombres, ''), IFNULL(emp.apellidos, ''))) = %(search_term)s THEN 1
+                WHEN LOWER(IFNULL(emp.cedula, '')) = %(search_term)s THEN 2
+                WHEN LOWER(IFNULL(emp.pdv, '')) = %(search_term)s THEN 3
+                WHEN LOWER(IFNULL(pdv.nombre_pdv, '')) = %(search_term)s THEN 4
+                ELSE 5
+            END,
+            emp.nombres ASC,
+            emp.apellidos ASC
+        LIMIT %(start)s, %(page_len)s
+        """,
+        query_filters,
+    )
 
 @frappe.whitelist()
 def get_persona_stats(
@@ -657,14 +717,9 @@ def get_persona_stats(
 
 @frappe.whitelist()
 def get_all_personas_overview(search=None):
-    search_term = str(search or "").strip().lower()
-    query_filters = {
-        "include_retirado": 1 if _can_access_retirado(frappe.session.user) else 0,
-        "search_like": f"%{search_term}%",
-        "search_term": search_term,
-    }
+    query_filters = _persona_search_query_filters(search)
     empleados = frappe.db.sql(
-        """
+        f"""
         SELECT
             emp.name,
             emp.nombres,
@@ -679,14 +734,7 @@ def get_all_personas_overview(search=None):
         FROM `tabFicha Empleado` emp
         LEFT JOIN `tabPunto de Venta` pdv ON pdv.name = emp.pdv
         WHERE (%(include_retirado)s = 1 OR IFNULL(emp.estado, '') != 'Retirado')
-          AND (
-              %(search_term)s = ''
-              OR LOWER(CONCAT_WS(' ', IFNULL(emp.nombres, ''), IFNULL(emp.apellidos, ''))) LIKE %(search_like)s
-              OR LOWER(IFNULL(emp.cedula, '')) LIKE %(search_like)s
-              OR LOWER(IFNULL(emp.cargo, '')) LIKE %(search_like)s
-              OR LOWER(IFNULL(emp.pdv, '')) LIKE %(search_like)s
-              OR LOWER(IFNULL(pdv.nombre_pdv, '')) LIKE %(search_like)s
-          )
+          AND {_persona_search_match_clause()}
         ORDER BY emp.nombres ASC, emp.apellidos ASC
         """,
         query_filters,

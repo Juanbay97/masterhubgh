@@ -2,6 +2,17 @@ import frappe
 from frappe.model.document import Document
 
 
+def _has_bank_account(doc):
+	value = str((doc.get("tiene_cuenta_bancaria") if hasattr(doc, "get") else getattr(doc, "tiene_cuenta_bancaria", "")) or "").strip().lower()
+	if value in {"si", "sí", "1", "true", "yes"}:
+		return True
+	for fieldname in ("banco_siesa", "tipo_cuenta_bancaria", "numero_cuenta_bancaria"):
+		field_value = doc.get(fieldname) if hasattr(doc, "get") else getattr(doc, fieldname, None)
+		if field_value not in (None, ""):
+			return True
+	return False
+
+
 class DatosContratacion(Document):
 	def validate(self):
 		self._sync_from_candidate()
@@ -38,6 +49,7 @@ class DatosContratacion(Document):
 			"nivel_educativo_siesa",
 			"es_extranjero",
 			"prefijo_cuenta_extranjero",
+			"tiene_cuenta_bancaria",
 			"direccion",
 			"barrio",
 			"ciudad",
@@ -64,7 +76,7 @@ class DatosContratacion(Document):
 				self.set(fieldname, cand.get(fieldname))
 
 		if not self.telefono_contacto_siesa:
-			self.telefono_contacto_siesa = cand.get("telefono_fijo") or cand.get("celular")
+			self.telefono_contacto_siesa = cand.get("telefono_fijo")
 
 		# Backfill automático para captura final SIESA usando procedencia/residencia
 		pais_res = cand.get("pais_residencia_siesa") or cand.get("procedencia_pais")
@@ -120,9 +132,6 @@ class DatosContratacion(Document):
 			"direccion",
 			"celular",
 			"email",
-			"banco_siesa",
-			"numero_cuenta_bancaria",
-			"tipo_cuenta_bancaria",
 			"pdv_destino",
 			"cargo_postulado",
 			"fecha_ingreso",
@@ -138,8 +147,14 @@ class DatosContratacion(Document):
 			"pais_expedicion_siesa",
 			"departamento_expedicion_siesa",
 			"ciudad_expedicion_siesa",
-			"telefono_contacto_siesa",
 		]
+
+		if _has_bank_account(self):
+			required.extend([
+				"banco_siesa",
+				"numero_cuenta_bancaria",
+				"tipo_cuenta_bancaria",
+			])
 
 		missing = [f for f in required if not self.get(f)]
 		if missing:

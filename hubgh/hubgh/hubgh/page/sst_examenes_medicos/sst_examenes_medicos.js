@@ -113,7 +113,7 @@ frappe.pages["sst_examenes_medicos"].on_page_load = function(wrapper) {
 			if (state.status === "upload_pending" && row.has_exam_document) return false;
 			if (state.status === "ready_concept" && !row.has_exam_document) return false;
 			if (!q) return true;
-			const blob = [row.full_name, row.numero_documento, row.pdv_destino, row.cargo_postulado, row.concepto_medico].filter(Boolean).join(" ").toLowerCase();
+			const blob = [row.full_name, row.numero_documento, row.pdv_destino_nombre, row.pdv_destino, row.cargo_postulado, row.concepto_medico].filter(Boolean).join(" ").toLowerCase();
 			return blob.includes(q);
 		});
 	};
@@ -129,6 +129,7 @@ frappe.pages["sst_examenes_medicos"].on_page_load = function(wrapper) {
 			const blob = [
 				row.full_name,
 				row.numero_documento,
+				row.pdv_destino_nombre,
 				row.pdv_destino,
 				row.cargo_postulado,
 				row.concepto_medico,
@@ -141,6 +142,7 @@ frappe.pages["sst_examenes_medicos"].on_page_load = function(wrapper) {
 	const renderCards = rows => {
 		const cards = (rows || []).map(row => {
 			const primary = getPrimaryAction(row);
+			const pdvLabel = row.pdv_destino_nombre || row.pdv_destino || "";
 			return `
 			<div class='hubgh-card'>
 				<div class='hubgh-card-head'>
@@ -153,7 +155,7 @@ frappe.pages["sst_examenes_medicos"].on_page_load = function(wrapper) {
 						<div class='hubgh-submeta'>
 							<span>${esc(row.cargo_postulado || "Sin cargo")}</span>
 							<span class='hubgh-dot'>•</span>
-							<span>${esc(row.pdv_destino || "Sin PDV")}</span>
+							<span title='${esc(row.pdv_destino || "")}'>${esc(pdvLabel || "Sin PDV")}</span>
 							<span class='hubgh-dot'>•</span>
 							<span>Enviado: ${esc(frappe.datetime.str_to_user(row.fecha_envio_examen_medico || "") || "-")}</span>
 						</div>
@@ -194,7 +196,9 @@ frappe.pages["sst_examenes_medicos"].on_page_load = function(wrapper) {
 	};
 
 	const renderHistoryCards = rows => {
-		const cards = (rows || []).map(row => `
+		const cards = (rows || []).map(row => {
+			const pdvLabel = row.pdv_destino_nombre || row.pdv_destino || "";
+			return `
 			<div class='hubgh-card'>
 				<div class='hubgh-card-head'>
 					<div class='hubgh-main'>
@@ -206,7 +210,7 @@ frappe.pages["sst_examenes_medicos"].on_page_load = function(wrapper) {
 						<div class='hubgh-submeta'>
 							<span>${esc(row.cargo_postulado || "Sin cargo")}</span>
 							<span class='hubgh-dot'>•</span>
-							<span>${esc(row.pdv_destino || "Sin PDV")}</span>
+							<span title='${esc(row.pdv_destino || "")}'>${esc(pdvLabel || "Sin PDV")}</span>
 							<span class='hubgh-dot'>•</span>
 							<span>Estado: ${esc(row.estado_proceso || "-")}</span>
 						</div>
@@ -219,7 +223,8 @@ frappe.pages["sst_examenes_medicos"].on_page_load = function(wrapper) {
 					</div>
 				</div>
 			</div>
-		`).join("");
+		`;
+		}).join("");
 
 		$root.find(".hubgh-history-wrap").html(cards || `
 			<div class='hubgh-empty'>

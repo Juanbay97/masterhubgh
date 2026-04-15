@@ -62,6 +62,19 @@ def _get_my_candidate_name():
 	return candidate
 
 
+def _candidate_has_bank_account(candidate):
+	row = frappe.db.get_value(
+		"Candidato",
+		candidate,
+		["tiene_cuenta_bancaria", "banco_siesa", "tipo_cuenta_bancaria", "numero_cuenta_bancaria"],
+		as_dict=True,
+	)
+	value = str((row or {}).get("tiene_cuenta_bancaria") or "").strip().lower()
+	if value in {"si", "sí", "1", "true", "yes"}:
+		return True
+	return any((row or {}).get(fieldname) not in (None, "") for fieldname in ("banco_siesa", "tipo_cuenta_bancaria", "numero_cuenta_bancaria"))
+
+
 def _section_for_document(document_type: str, label: str | None = None) -> str:
 	text = f"{document_type or ''} {label or ''}".lower()
 	if "banc" in text:
@@ -115,6 +128,8 @@ def get_my_documents():
 		fields=["name", "document_name", "is_required_for_hiring", "requires_approval", "allows_multiple"],
 		order_by="is_required_for_hiring desc, document_name asc",
 	)
+	if not _candidate_has_bank_account(candidate):
+		doc_types = [dt for dt in doc_types if dt.name != "Certificación bancaria (No mayor a 30 días)."]
 
 	for dt in doc_types:
 		ensure_person_document("Candidato", candidate, dt.name)
@@ -183,6 +198,7 @@ def get_my_documents():
 	return {
 		"candidate": candidate,
 		"candidate_data": {
+			"tiene_cuenta_bancaria": cand.tiene_cuenta_bancaria,
 			"eps_siesa": cand.eps_siesa,
 			"afp_siesa": cand.afp_siesa,
 			"cesantias_siesa": cand.cesantias_siesa,

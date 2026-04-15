@@ -4,7 +4,7 @@
 # Ejecutar DESPUÉS de que el bench haya terminado de inicializar.
 # Desde la VM:
 #
-#   docker-compose -f docker/docker-compose.yml exec backend \
+#   docker-compose -f docker/docker-compose.dev.yml exec backend \
 #     bash -c "$(cat docker/create-site.sh)"
 #
 # Variables de entorno (opcionales, tienen defaults):
@@ -19,6 +19,7 @@ ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin}"
 DB_ROOT_PASSWORD="${MARIADB_ROOT_PASSWORD:-frappe}"
 PUBLIC_DOMAIN="${PUBLIC_DOMAIN:-}"
 BENCH_DIR="/home/frappe/frappe-bench"
+HUBGH_RUNTIME_MODE="${HUBGH_RUNTIME_MODE:-development}"
 
 resolve_host_name() {
   local domain="$1"
@@ -81,5 +82,9 @@ echo "  Sitio:      $SITE_NAME"
 echo "  Usuario:    Administrator"
 echo "  Contraseña: $ADMIN_PASSWORD"
 echo ""
-echo "Reiniciá el backend para aplicar:"
-echo "  docker-compose -f docker/docker-compose.yml restart backend"
+echo "Reiniciá el backend para aplicar cambios de configuración:"
+if [ "$HUBGH_RUNTIME_MODE" = "production" ]; then
+  echo "  make prod-restart"
+else
+  echo "  make dev-restart"
+fi

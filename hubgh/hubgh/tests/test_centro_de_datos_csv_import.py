@@ -11,15 +11,11 @@ from unittest.mock import patch
 
 def _install_frappe_stub():
 	frappe_module = sys.modules.get("frappe") or types.ModuleType("frappe")
-	frappe_module.db = getattr(
-		frappe_module,
-		"db",
-		types.SimpleNamespace(
-			exists=lambda *args, **kwargs: False,
-			get_value=lambda *args, **kwargs: None,
-			commit=lambda *args, **kwargs: None,
-		),
-	)
+	db = getattr(frappe_module, "db", types.SimpleNamespace())
+	db.exists = getattr(db, "exists", lambda *args, **kwargs: False)
+	db.get_value = getattr(db, "get_value", lambda *args, **kwargs: None)
+	db.commit = getattr(db, "commit", lambda *args, **kwargs: None)
+	frappe_module.db = db
 	frappe_module.get_doc = getattr(
 		frappe_module,
 		"get_doc",
@@ -35,6 +31,7 @@ def _install_frappe_stub():
 	frappe_module.throw = getattr(frappe_module, "throw", lambda message: (_ for _ in ()).throw(Exception(message)))
 	frappe_module.whitelist = getattr(frappe_module, "whitelist", lambda *args, **kwargs: (lambda fn: fn))
 	frappe_module._ = getattr(frappe_module, "_", lambda value: value)
+	frappe_module.session = getattr(frappe_module, "session", SimpleNamespace(user="rrll.jefe@example.com"))
 
 	frappe_utils = sys.modules.get("frappe.utils") or types.ModuleType("frappe.utils")
 	frappe_utils.getdate = getattr(frappe_utils, "getdate", lambda value: value)
@@ -58,10 +55,18 @@ def _install_frappe_stub():
 		lambda **kwargs: SimpleNamespace(name="PD-TEST", issue_date=None, valid_until=None, save=lambda **k: None),
 	)
 
+	role_matrix = sys.modules.get("hubgh.hubgh.role_matrix") or types.ModuleType("hubgh.hubgh.role_matrix")
+	role_matrix.user_has_any_role = getattr(
+		role_matrix,
+		"user_has_any_role",
+		lambda user, *roles: "Relaciones Laborales Jefe" in roles,
+	)
+
 	sys.modules["frappe"] = frappe_module
 	sys.modules["frappe.utils"] = frappe_utils
 	sys.modules["frappe.utils.file_manager"] = frappe_file_manager
 	sys.modules["hubgh.hubgh.document_service"] = document_service
+	sys.modules["hubgh.hubgh.role_matrix"] = role_matrix
 
 
 _install_frappe_stub()
@@ -185,3 +190,7 @@ class TestCentroDeDatosCsvImport(TestCase):
 		self.assertEqual(res["errors"], [])
 		self.assertEqual(bulk_upload.call_args.args[0]["archivo"], "documentos/hv.pdf")
 		self.assertEqual(bulk_upload.call_args.args[0]["__attachment_filename"], "hv.pdf")
+
+	def test_documental_mass_upload_requires_relaciones_laborales_jefe(self):
+		with patch("hubgh.hubgh.page.centro_de_datos.centro_de_datos.user_has_any_role", return_value=False), self.assertRaisesRegex(Exception, "Jefe RRLL"):
+			centro_de_datos.upload_data("Documentos Empleado", "/private/files/documentos.zip")

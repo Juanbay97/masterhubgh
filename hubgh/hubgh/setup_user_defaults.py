@@ -2,14 +2,14 @@ import frappe
 
 from hubgh.access_profiles import ensure_roles_and_profiles, sync_user_access_profile
 from hubgh.hubgh.role_matrix import canonicalize_roles, roles_have_any
-from hubgh.utils import get_website_user_home_page
+from hubgh.utils import CANDIDATE_HOME_PAGE, get_website_user_home_page
 
 
 def _resolve_home_workspace(user_roles: set[str]) -> str:
 	canonical_roles = canonicalize_roles(user_roles)
 
 	if "Candidato" in canonical_roles:
-		return "app/mis_documentos_candidato"
+		return CANDIDATE_HOME_PAGE
 
 	if "System Manager" in canonical_roles:
 		return "HubGH Admin"

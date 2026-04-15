@@ -1,8 +1,10 @@
 import io
+import hashlib
 import os
 import re
 import unicodedata
 import zipfile
+from datetime import date
 
 import frappe
 from frappe.utils import cint, getdate, now_datetime
@@ -24,10 +26,24 @@ def _validate_folder_access(employee=None):
 	frappe.throw("No autorizado", frappe.PermissionError)
 
 
+def _has_folder_write_access(user=None):
+	user = user or frappe.session.user
+	if user == "Administrator":
+		return True
+	return user_has_any_role(user, "Relaciones Laborales Jefe")
+
+
+def _validate_folder_write_access(employee=None):
+	_validate_folder_access(employee)
+	if _has_folder_write_access():
+		return
+	frappe.throw("Solo Jefe RRLL puede cargar o reemplazar documentos en la carpeta documental.", frappe.PermissionError)
+
+
 def _is_expired(has_expiry, valid_until):
 	if not cint(has_expiry) or not valid_until:
 		return False
-	return getdate(valid_until) < getdate()
+	return getdate(valid_until) < getdate(date.today().isoformat())
 
 
 def _normalize_text(value):
@@ -128,8 +144,24 @@ def _has_archival_value(item):
 	return bool(item.get("file"))
 
 
+def _is_uploadable_employee_document_type(document_type):
+	if not document_type:
+		return False
+	rows = frappe.get_all(
+		"Document Type",
+		filters={
+			"name": document_type,
+			"is_active": 1,
+			"applies_to": ["in", ["Empleado", "Ambos"]],
+		},
+		fields=["name"],
+		limit_page_length=1,
+	)
+	return bool(rows)
+
+
 def _is_editable_document_type(document_type):
-	return _resolve_section_key(document_type, "Person Document") not in DERIVED_SECTION_KEYS
+	return _is_uploadable_employee_document_type(document_type)
 
 
 def _prepare_extra_item(item):
@@ -282,6 +314,8 @@ def _collect_employee_and_candidate_person_docs(employee, required_names=None):
 	fields = [
 		"name",
 		"document_type",
+		"employee",
+		"person_type",
 		"status",
 		"file",
 		"uploaded_by",
@@ -403,6 +437,30 @@ def _required_document_types():
 		fields=["name", "document_name", "has_expiry", "sort_order"],
 		order_by="sort_order asc, modified asc",
 	)
+
+
+def _editable_employee_document_types():
+	rows = frappe.get_all(
+		"Document Type",
+		filters={
+			"is_active": 1,
+			"applies_to": ["in", ["Empleado", "Ambos"]],
+		},
+		fields=["name", "document_name", "requires_for_employee_folder", "has_expiry", "sort_order"],
+		order_by="sort_order asc, modified asc",
+	)
+	items = []
+	for row in rows:
+		document_type = row.name
+		items.append({
+			"name": document_type,
+			"label": row.document_name or document_type,
+			"section_key": _resolve_section_key(row.document_name or document_type, "Person Document"),
+			"has_expiry": cint(row.has_expiry),
+			"requires_for_employee_folder": cint(row.requires_for_employee_folder),
+			"sort_order": cint(row.sort_order),
+		})
+	return items
 
 
 def _employee_rows(search=None, branch=None, employment_status=None, limit_start=0, limit_page_length=50):
@@ -559,6 +617,7 @@ def get_employee_documents(employee):
 
 		results.append({
 			"person_document": row.name if row else None,
+			"can_replace": cint(bool(row and str(getattr(row, "employee", "") or "") == str(employee))),
 			"document_type": d.name,
 			"document_label": d.document_name or d.name,
 			"has_expiry": cint(d.has_expiry),
@@ -582,6 +641,7 @@ def get_employee_documents(employee):
 	for row in extra_docs:
 		results.append({
 			"person_document": row.name,
+			"can_replace": cint(str(getattr(row, "employee", "") or "") == str(employee)),
 			"document_type": row.document_type,
 			"document_label": row.document_type,
 			"has_expiry": 0,
@@ -626,15 +686,27 @@ def get_employee_documents(employee):
 		"contract_documents": extra_split["contract_documents"],
 		"disciplinary_documents": extra_split["disciplinary_documents"],
 		"other_documents": extra_split["other_documents"],
+		"permissions": {
+			"can_upload": cint(_has_folder_write_access()),
+		},
 		"documents": results,
+	}
+
+
+@frappe.whitelist()
+def get_uploadable_document_types(employee=None):
+	_validate_folder_write_access(employee)
+	return {
+		"can_upload": cint(_has_folder_write_access()),
+		"items": _editable_employee_document_types(),
 	}
 
 
 def _upsert_employee_document(employee, document_type, file_url, issue_date=None, valid_until=None, person_document=None):
 	if not employee or not document_type or not file_url:
 		frappe.throw("employee, document_type y file_url son obligatorios")
-	if not _is_editable_document_type(document_type):
-		frappe.throw("Este documento se gestiona desde su proceso origen y no puede cargarse desde la carpeta documental")
+	if not _is_uploadable_employee_document_type(document_type):
+		frappe.throw("El tipo documental no está habilitado para carga manual en la carpeta del empleado")
 
 	if person_document:
 		doc = frappe.get_doc("Person Document", person_document)
@@ -686,7 +758,7 @@ def _upsert_employee_document(employee, document_type, file_url, issue_date=None
 
 @frappe.whitelist()
 def upload_document(employee, document_type, file_url, issue_date=None, valid_until=None):
-	_validate_folder_access(employee)
+	_validate_folder_write_access(employee)
 	return _upsert_employee_document(
 		employee=employee,
 		document_type=document_type,
@@ -698,7 +770,7 @@ def upload_document(employee, document_type, file_url, issue_date=None, valid_un
 
 @frappe.whitelist()
 def replace_document(person_document, employee, document_type, file_url, issue_date=None, valid_until=None):
-	_validate_folder_access(employee)
+	_validate_folder_write_access(employee)
 	return _upsert_employee_document(
 		employee=employee,
 		document_type=document_type,
@@ -707,6 +779,49 @@ def replace_document(person_document, employee, document_type, file_url, issue_d
 		valid_until=valid_until,
 		person_document=person_document,
 	)
+
+
+def _persist_generated_private_file(file_name, content, attached_to_doctype, attached_to_name):
+	private_files_path = frappe.get_site_path("private", "files")
+	os.makedirs(private_files_path, exist_ok=True)
+	base_name, ext = os.path.splitext(file_name)
+	safe_base = re.sub(r"[^\w\-.]+", "_", base_name).strip("._") or "archivo"
+	content_hash = hashlib.md5(content).hexdigest()
+	final_name = f"{safe_base}{ext}"
+	absolute_path = os.path.join(private_files_path, final_name)
+	idx = 2
+	while os.path.exists(absolute_path):
+		with open(absolute_path, "rb") as existing_file:
+			if hashlib.md5(existing_file.read()).hexdigest() == content_hash:
+				break
+		final_name = f"{safe_base}-{idx}{ext}"
+		absolute_path = os.path.join(private_files_path, final_name)
+		idx += 1
+	if not os.path.exists(absolute_path):
+		with open(absolute_path, "wb") as output_file:
+			output_file.write(content)
+	file_url = f"/private/files/{final_name}"
+	existing = frappe.db.get_value(
+		"File",
+		{
+			"file_url": file_url,
+			"attached_to_doctype": attached_to_doctype,
+			"attached_to_name": attached_to_name,
+		},
+		"name",
+	)
+	if existing:
+		return file_url
+	frappe.get_doc({
+		"doctype": "File",
+		"file_name": final_name,
+		"file_url": file_url,
+		"is_private": 1,
+		"attached_to_doctype": attached_to_doctype,
+		"attached_to_name": attached_to_name,
+		"folder": "Home/Attachments",
+	}).insert(ignore_permissions=True)
+	return file_url
 
 
 @frappe.whitelist()
@@ -743,5 +858,4 @@ def download_employee_documents_zip(employee):
 				idx += 1
 
 	zip_name = f"empleado_{employee}_expediente_digital.zip"
-	file_doc = save_file(zip_name, buf.getvalue(), "Ficha Empleado", employee, is_private=1)
-	return file_doc.file_url
+	return _persist_generated_private_file(zip_name, buf.getvalue(), "Ficha Empleado", employee)

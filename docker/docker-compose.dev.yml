@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   mariadb:
     image: mariadb:10.6
@@ -26,11 +24,13 @@ services:
       - ../.env
     environment:
       SHELL: /bin/bash
+      HUBGH_RUNTIME_MODE: development
     volumes:
       - bench_data:/home/frappe/frappe-bench
       - ../hubgh:/home/frappe/frappe-bench/apps/hubgh
       - sites_data:/home/frappe/frappe-bench/sites
-      - ./entrypoint.sh:/entrypoint.sh
+      - ./runtime-common.sh:/runtime-common.sh:ro
+      - ./entrypoint.dev.sh:/entrypoint.dev.sh:ro
       - ./create-site.sh:/create-site.sh
     depends_on:
       mariadb:
@@ -42,7 +42,7 @@ services:
     ports:
       - "80:8000"
       - "9000:9000"
-    command: ["bash", "/entrypoint.sh"]
+    command: ["bash", "/entrypoint.dev.sh"]
 
 volumes:
   mariadb_data:

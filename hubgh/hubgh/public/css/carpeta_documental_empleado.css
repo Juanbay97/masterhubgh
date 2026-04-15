@@ -116,22 +116,21 @@
 	text-align: center;
 }
 
-.hub-drawer-overlay {
+.hub-drawer-shell {
 	position: fixed;
 	inset: 0;
 	z-index: 9990;
 	background: transparent;
-	backdrop-filter: blur(0px);
 	visibility: hidden;
 	opacity: 0;
-	transition: all .16s ease;
+	pointer-events: none;
+	transition: opacity .16s ease, visibility .16s ease;
 }
 
-.hub-drawer-overlay.is-open {
+.hub-drawer-shell.is-open {
 	visibility: visible;
 	opacity: 1;
-	background: var(--hub-overlay);
-	backdrop-filter: blur(2px);
+	pointer-events: auto;
 }
 
 .hub-drawer {
@@ -146,9 +145,11 @@
 	display: grid;
 	grid-template-rows: auto 1fr;
 	z-index: 10000;
+	border-left: 1px solid var(--hub-border);
+	box-shadow: -18px 0 40px rgba(15, 23, 42, 0.14);
 }
 
-.hub-drawer-overlay.is-open .hub-drawer { transform: translateX(0); }
+.hub-drawer-shell.is-open .hub-drawer { transform: translateX(0); }
 
 .hub-drawer__header {
 	display: flex;
@@ -172,6 +173,69 @@
 }
 
 .hub-drawer__summary { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.hub-upload-panel {
+	background: #fff;
+	border: 1px solid var(--hub-border);
+	border-radius: 12px;
+	padding: 12px;
+	display: grid;
+	gap: 10px;
+}
+
+.hub-upload-panel__head {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 12px;
+}
+
+.hub-upload-panel__title { font-size: 14px; font-weight: 700; }
+
+.hub-upload-panel__meta,
+.hub-upload-help {
+	font-size: 12px;
+	color: var(--hub-text-muted);
+}
+
+.hub-upload-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 10px;
+}
+
+.hub-field {
+	display: grid;
+	gap: 6px;
+}
+
+.hub-field label {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--hub-text-primary);
+}
+
+.hub-field input,
+.hub-field select {
+	height: 36px;
+	border: 1px solid var(--hub-border);
+	border-radius: 9px;
+	padding: 0 10px;
+	width: 100%;
+	background: #fff;
+}
+
+.hub-field input[type="file"] {
+	padding: 6px 10px;
+	height: auto;
+}
+
+.hub-upload-panel__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	flex-wrap: wrap;
+}
 
 .hub-doc-card {
 	background: #fff;

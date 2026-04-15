@@ -16,7 +16,7 @@ from hubgh.hubgh.onboarding_security import (
 	validate_candidate_duplicates,
 	validate_onboarding_captcha,
 )
-from hubgh.hubgh.public_url import build_public_url, get_public_base_url
+from hubgh.public_url import build_public_url, get_public_base_url
 from hubgh.www.candidato import create_candidate, get_procedencia_siesa_catalog
 
 
@@ -407,3 +407,33 @@ class TestOnboardingSecurityPhase5(FrappeTestCase):
 		self.assertEqual(created.banco_siesa, "1059")
 		self.assertEqual(created.tipo_cuenta_bancaria, "Ahorros")
 		self.assertEqual(created.numero_cuenta_bancaria, "1234567890")
+
+	def test_create_candidate_persists_bank_account_opt_out_without_bank_fields(self):
+		suffix = uuid4().hex[:8]
+		payload = {
+			"tipo_documento": "Cedula",
+			"numero_documento": f"2{suffix}",
+			"nombres": "Lina",
+			"apellidos": "Rojas",
+			"email": f"lina.{suffix}@example.com",
+			"ciudad": "Bogota",
+			"direccion": "Cra 10 # 10-10",
+			"celular": "3001234567",
+			"telefono_fijo": "",
+			"tiene_cuenta_bancaria": "No",
+			"banco_siesa": "1059",
+			"tipo_cuenta_bancaria": "Ahorros",
+			"numero_cuenta_bancaria": "999999",
+		}
+
+		result = create_candidate(json.dumps(payload))
+		self._created_candidates.append(result["name"])
+		if result.get("user"):
+			self._created_users.append(result["user"])
+
+		created = frappe.get_doc("Candidato", result["name"])
+		self.assertEqual(created.tiene_cuenta_bancaria, "No")
+		self.assertEqual(created.telefono_fijo or "", "")
+		self.assertEqual(created.banco_siesa or "", "")
+		self.assertEqual(created.tipo_cuenta_bancaria or "", "")
+		self.assertEqual(created.numero_cuenta_bancaria or "", "")

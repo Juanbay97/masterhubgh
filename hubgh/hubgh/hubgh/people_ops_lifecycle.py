@@ -96,7 +96,7 @@ def apply_retirement(*, employee, source_doctype, source_name, retirement_date=N
 	retirement_date = str(retirement_date or nowdate())
 	frappe.db.set_value("Ficha Empleado", employee, "estado", "Retirado", update_modified=False)
 	_sync_ficha_retirement_metadata(
-		employee,
+		employee=employee,
 		retirement_date=retirement_date,
 		reason=reason,
 		source_doctype=source_doctype,
@@ -140,7 +140,7 @@ def reverse_retirement_if_clear(*, employee, source_doctype, source_name) -> dic
 
 	frappe.db.set_value("Ficha Empleado", employee, "estado", "Activo", update_modified=False)
 	_sync_ficha_retirement_metadata(
-		employee,
+		employee=employee,
 		retirement_date=nowdate(),
 		source_doctype=source_doctype,
 		source_name=source_name,

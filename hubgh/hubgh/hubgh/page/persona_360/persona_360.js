@@ -1,5 +1,6 @@
 
 frappe.pages['persona_360'].on_page_load = function (wrapper) {
+	frappe.require('/assets/hubgh/css/carpeta_documental_empleado.css');
 	injectPersona360Styles();
     var page = frappe.ui.make_app_page({
         parent: wrapper,
@@ -23,12 +24,18 @@ frappe.pages['persona_360'].on_page_load = function (wrapper) {
         render_overview(page);
     });
 
-    page.add_field({
+	const empleado_field = page.add_field({
         fieldname: 'empleado',
-		label: 'Persona',
+		label: 'Buscar persona',
         fieldtype: 'Link',
         options: 'Ficha Empleado',
+        get_query: function () {
+			return {
+				query: 'hubgh.hubgh.page.persona_360.persona_360.search_persona_360_employee'
+			};
+		},
         change: function () {
+			page._overview_search_term = '';
             if (page._suppress_render) {
                 page._suppress_render = false;
                 return;
@@ -41,18 +48,39 @@ frappe.pages['persona_360'].on_page_load = function (wrapper) {
         }
     });
 
-    page.add_field({
-        fieldname: 'empleado_buscar',
-        label: 'Buscar en listado',
-        fieldtype: 'Data',
-        placeholder: 'Nombre, cédula o punto…',
-        change: function () {
-            page._emp_filter = page.fields_dict.empleado_buscar.get_value() || '';
-            if (!page.fields_dict.empleado.get_value()) {
-                render_overview(page);
-            }
-        }
-    });
+	if (empleado_field.$input) {
+		empleado_field.$input.attr('placeholder', 'Nombre, cédula o punto…');
+		empleado_field.$input.on('input', frappe.utils.debounce(function () {
+			page._overview_search_term = empleado_field.$input.val() || '';
+			if (!page.fields_dict.empleado.get_value()) {
+				render_overview(page);
+			}
+		}, 250));
+	}
+
+	page._overview_search_debounced = frappe.utils.debounce(function () {
+		const search_value = $(page.body).find('.persona360-overview-search-input').val() || '';
+		apply_overview_search(page, search_value);
+	}, 250);
+
+	$(page.body).off('input', '.persona360-overview-search-input').on('input', '.persona360-overview-search-input', function () {
+		page._overview_search_debounced();
+	});
+
+	$(page.body).off('keypress', '.persona360-overview-search-input').on('keypress', '.persona360-overview-search-input', function (e) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			apply_overview_search(page, $(this).val() || '');
+		}
+	});
+
+	$(page.body).off('click', '.persona360-overview-search-btn').on('click', '.persona360-overview-search-btn', function () {
+		apply_overview_search(page, $(page.body).find('.persona360-overview-search-input').val() || '');
+	});
+
+	$(page.body).off('click', '.persona360-overview-search-clear').on('click', '.persona360-overview-search-clear', function () {
+		clear_overview_search(page);
+	});
 
     $(page.body).off('click', '.emp-card').on('click', '.emp-card', function () {
         const empId = $(this).data('emp');
@@ -66,7 +94,7 @@ frappe.pages['persona_360'].on_page_load = function (wrapper) {
         frappe.route_options = null;
     }
 
-    $(wrapper).bind('show', function () {
+	$(wrapper).bind('show', function () {
         if (frappe.route_options && frappe.route_options.empleado) {
             page.fields_dict.empleado.set_value(frappe.route_options.empleado);
             frappe.route_options = null;
@@ -82,19 +110,36 @@ frappe.pages['persona_360'].on_page_load = function (wrapper) {
 
 function render_overview(page) {
     clear_contextual_action_buttons(page);
+	close_document_drawer(page);
     frappe.call({
         method: "hubgh.hubgh.page.persona_360.persona_360.get_all_personas_overview",
         args: {
-            search: page._emp_filter || ''
+			search: get_search_term(page)
         },
         callback: function (r) {
             if (r.message) {
                 const personas = r.message || [];
+				const search_term = frappe.utils.escape_html(get_search_term(page));
 
                 let $container = $(page.main || page.body);
                 $container.empty();
 				let html = `
 					<div class="persona360-shell">
+						<div class="persona360-overview-search-card">
+							<div>
+								<div class="persona360-kickers"><span>Búsqueda operativa</span><span>Overview</span></div>
+								<h5>Encontrá personas rápido</h5>
+								<p class="text-muted mb-0">La búsqueda visible del overview filtra por nombre, cédula y punto de venta.</p>
+							</div>
+							<div class="persona360-overview-search-controls">
+								<div class="persona360-overview-search-input-wrap">
+									<i class="fa fa-search"></i>
+									<input type="text" class="form-control persona360-overview-search-input" placeholder="Buscar por nombre, cédula o punto" value="${search_term}">
+								</div>
+								<button class="btn btn-primary persona360-overview-search-btn">Buscar</button>
+								${get_search_term(page) ? '<button class="btn btn-default persona360-overview-search-clear">Limpiar</button>' : ''}
+							</div>
+						</div>
 						<div class="persona360-overview-header">
 							<div>
 								<div class="persona360-kickers"><span>People Ops</span><span>Vista general</span></div>
@@ -137,9 +182,50 @@ function render_overview(page) {
     });
 }
 
+function get_search_term(page) {
+	if (page && typeof page._overview_search_term === 'string') {
+		return page._overview_search_term.trim();
+	}
+
+	const empleado_field = page && page.fields_dict && page.fields_dict.empleado;
+	if (!empleado_field) {
+		return '';
+	}
+
+	if (empleado_field.$input && empleado_field.$input.val) {
+		return empleado_field.$input.val() || '';
+	}
+
+	return empleado_field.get_value() || '';
+}
+
+function sync_overview_search_input(page, value) {
+	const empleado_field = page && page.fields_dict && page.fields_dict.empleado;
+	if (empleado_field && empleado_field.$input) {
+		empleado_field.$input.val(value || '');
+	}
+}
+
+function apply_overview_search(page, value) {
+	page._overview_search_term = String(value || '');
+	sync_overview_search_input(page, page._overview_search_term);
+	render_overview(page);
+}
+
+function clear_overview_search(page) {
+	page._overview_search_term = '';
+	sync_overview_search_input(page, '');
+	if (page && page.fields_dict && page.fields_dict.empleado && page.fields_dict.empleado.get_value()) {
+		page._suppress_render = true;
+		page.fields_dict.empleado.set_value('');
+	}
+	render_overview(page);
+}
+
 function render_persona(page) {
     let emp_id = page.fields_dict.empleado.get_value();
     if (!emp_id) return;
+	close_document_drawer(page);
 
     frappe.call({
         method: "hubgh.hubgh.page.persona_360.persona_360.get_persona_stats",
@@ -299,7 +385,7 @@ function render_persona(page) {
                 `;
 
                 $container.append(html);
-				bind_contextual_action_panel($container, contextual_actions, emp_id);
+				bind_contextual_action_panel(page, $container, contextual_actions, emp_id);
             }
         }
     });
@@ -313,26 +399,39 @@ function clear_contextual_action_buttons(page) {
     page._persona_action_buttons = [];
 }
 
+function navigate_to_document_workspace(action, employee) {
+	const route = String((action && action.route) || '/app/carpeta-documental-empleado');
+	const route_parts = route.replace(/^\/app\//, '').split('/').map(part => decodeURIComponent(part));
+	frappe.route_options = Object.assign({ employee: employee, open_drawer: 1 }, (action && action.prefill) || {});
+	frappe.set_route(...route_parts);
+}
+
+function navigate_contextual_action(page, action, emp_id) {
+	if (!action) return;
+
+	if (action.key === 'view_documents') {
+		navigate_to_document_workspace(action, emp_id);
+		return;
+	}
+
+	if (action.doctype) {
+		frappe.new_doc(action.doctype, Object.assign({}, action.prefill || {}));
+		return;
+	}
+
+	if (action.route) {
+		frappe.route_options = Object.assign({}, action.prefill || {});
+		frappe.set_route(...String(action.route || '').replace(/^\/app\//, '').split('/').map(part => decodeURIComponent(part)));
+	}
+}
+
 function render_contextual_action_buttons(page, contextual_actions, emp_id) {
     clear_contextual_action_buttons(page);
 
     const actions = (contextual_actions.quick_actions || []).filter(a => a && a.visible);
 		actions.forEach(action => {
 			const btn = page.add_inner_button(action.label, function () {
-				if (action.route) {
-					frappe.route_options = Object.assign({}, action.prefill || {}, { employee: emp_id });
-					frappe.set_route(...String(action.route || '').replace(/^\/app\//, '').split('/'));
-					return;
-				}
-				if (action.key === 'view_documents') {
-					frappe.route_options = { persona: emp_id };
-					frappe.set_route('query-report', 'Person Documents');
-                return;
-            }
-            if (action.doctype) {
-                const prefill = Object.assign({}, action.prefill || {}, { empleado: emp_id });
-                frappe.new_doc(action.doctype, prefill);
-            }
+				navigate_contextual_action(page, action, emp_id);
         });
         page._persona_action_buttons.push(btn);
     });
@@ -351,7 +450,7 @@ function render_contextual_actions_panel(contextual_actions) {
 	`).join('');
 }
 
-function bind_contextual_action_panel($container, contextual_actions, emp_id) {
+function bind_contextual_action_panel(page, $container, contextual_actions, emp_id) {
 	const actions = (contextual_actions.quick_actions || []).filter(a => a && a.visible);
 	const actionMap = {};
 	actions.forEach(action => {
@@ -360,24 +459,160 @@ function bind_contextual_action_panel($container, contextual_actions, emp_id) {
 
 	$container.off('click', '.persona-action-btn').on('click', '.persona-action-btn', function () {
 		const action = actionMap[$(this).data('action-key')];
-		if (!action) return;
+		navigate_contextual_action(page, action, emp_id);
+	});
+}
 
-		if (action.route) {
-			frappe.route_options = Object.assign({}, action.prefill || {}, { employee: emp_id });
-			frappe.set_route(...String(action.route || '').replace(/^\/app\//, '').split('/'));
-			return;
-		}
+function ensure_document_drawer(page) {
+	const $wrapper = $(page.wrapper);
+	if ($wrapper.find('.persona360-doc-overlay').length) {
+		return $wrapper.find('.persona360-doc-overlay');
+	}
 
-		if (action.key === 'view_documents') {
-			frappe.route_options = { persona: emp_id };
-			frappe.set_route('query-report', 'Person Documents');
-			return;
-		}
+	$wrapper.append(`
+		<div class="hub-drawer-overlay persona360-doc-overlay">
+			<div class="hub-drawer persona360-doc-drawer">
+				<div class="hub-drawer__header persona360-doc-drawer__header">
+					<div>
+						<div class="hub-drawer__title">Expediente documental</div>
+						<div class="hub-drawer__subtitle"></div>
+					</div>
+					<div class="hub-drawer__actions">
+						<button class="hub-btn btn-open-doc-workspace">Abrir carpeta completa</button>
+						<button class="hub-btn hub-btn--icon btn-close-doc-drawer" title="Cerrar"><i class="fa fa-times"></i></button>
+					</div>
+				</div>
+				<div class="hub-drawer__body"></div>
+			</div>
+		</div>
+	`);
 
-		if (action.doctype) {
-			const prefill = Object.assign({}, action.prefill || {}, { empleado: emp_id });
-			frappe.new_doc(action.doctype, prefill);
+	$wrapper.off('click', '.btn-close-doc-drawer').on('click', '.btn-close-doc-drawer', function () {
+		close_document_drawer(page);
+	});
+
+	$wrapper.off('click', '.persona360-doc-overlay').on('click', '.persona360-doc-overlay', function (e) {
+		if (e.target !== this) return;
+		close_document_drawer(page);
+	});
+
+	$wrapper.off('click', '.btn-open-doc-workspace').on('click', '.btn-open-doc-workspace', function () {
+		const employee = page._document_drawer && page._document_drawer.employee;
+		if (!employee) return;
+		navigate_to_document_workspace({ route: '/app/carpeta-documental-empleado' }, employee);
+	});
+
+	$wrapper.off('click', '.btn-doc-download').on('click', '.btn-doc-download', function () {
+		const url = $(this).data('url');
+		if (url) {
+			window.open(url, '_blank');
 		}
+	});
+
+	$(document).off('keydown.persona360_doc_drawer').on('keydown.persona360_doc_drawer', function (e) {
+		if (e.key === 'Escape' && page._document_drawer && page._document_drawer.employee) {
+			close_document_drawer(page);
+		}
+	});
+
+	return $wrapper.find('.persona360-doc-overlay');
+}
+
+function close_document_drawer(page) {
+	page._document_drawer = { employee: null, detail: null, loading: false };
+	const $overlay = ensure_document_drawer(page);
+	$overlay.removeClass('is-open');
+	$overlay.find('.hub-drawer__subtitle').text('');
+	$overlay.find('.hub-drawer__body').html('');
+}
+
+function render_document_section(title, items) {
+	const rows = (items || []).map(d => {
+		const status_type = d.is_expired ? 'negative' : (d.is_missing ? 'neutral' : 'positive');
+		const status_label = d.is_expired ? 'Vencido' : (d.is_missing ? 'Faltante' : 'Vigente');
+		const expiry = d.has_expiry ? (d.valid_until ? frappe.datetime.str_to_user(d.valid_until) : 'Sin fecha') : 'No aplica';
+		const updated = d.uploaded_on ? frappe.datetime.str_to_user(d.uploaded_on) : 'Sin carga';
+
+		return `
+			<div class="hub-doc-card ${d.is_expired ? 'is-expired' : ''}">
+				<div class="hub-doc-card__left">
+					<div class="hub-doc-card__title">${frappe.utils.escape_html(d.document_label || d.document_type || '-')}</div>
+					<div class="hub-doc-card__meta">Actualizado: ${frappe.utils.escape_html(updated)}</div>
+					<div class="hub-doc-card__meta">Vencimiento: ${frappe.utils.escape_html(expiry)}</div>
+				</div>
+				<div class="hub-doc-card__right">
+					<span class="hub-badge hub-badge--${status_type}">${frappe.utils.escape_html(status_label)}</span>
+					${d.file ? `<div class="hub-doc-card__actions"><button class="hub-btn hub-btn--icon btn-doc-download" data-url="${frappe.utils.escape_html(d.file)}" title="Descargar"><i class="fa fa-download"></i></button></div>` : ''}
+				</div>
+			</div>
+		`;
+	}).join('');
+
+	return `
+		<div>
+			<div class="hub-card__title persona360-doc-section-title">${frappe.utils.escape_html(title)}</div>
+			${rows || '<div class="hub-empty">Sin documentos en esta sección.</div>'}
+		</div>
+	`;
+}
+
+function render_document_drawer(page) {
+	const state = page._document_drawer || { employee: null, detail: null, loading: false };
+	const $overlay = ensure_document_drawer(page);
+	const opened = Boolean(state.employee);
+	$overlay.toggleClass('is-open', opened);
+
+	if (!opened) {
+		return;
+	}
+
+	if (state.loading) {
+		$overlay.find('.hub-drawer__subtitle').text(state.employee || '');
+		$overlay.find('.hub-drawer__body').html('<div class="hub-empty">Cargando expediente documental...</div>');
+		return;
+	}
+
+	const detail = state.detail || {};
+	const employee_info = detail.employee || {};
+	const summary = detail.summary || {};
+	const archive_label = employee_info.employment_status === 'Retirado' ? ' · Archivo retirado' : '';
+
+	$overlay.find('.hub-drawer__subtitle').text(`ID: ${employee_info.id_number || employee_info.name || '-'} · PDV: ${employee_info.branch || '-'}${archive_label}`);
+	$overlay.find('.hub-drawer__body').html(`
+		<div class="hub-drawer__summary persona360-doc-summary">
+			<span class="hub-badge hub-badge--neutral"><i class="fa fa-file-text-o"></i> ${summary.total_required || 0} requeridos</span>
+			<span class="hub-badge hub-badge--positive"><i class="fa fa-check"></i> ${summary.uploaded_count || 0} cargados</span>
+			<span class="hub-badge hub-badge--neutral"><i class="fa fa-minus-circle"></i> ${summary.missing_count || 0} faltantes</span>
+			<span class="hub-badge hub-badge--negative"><i class="fa fa-exclamation-circle"></i> ${summary.expired_count || 0} vencidos</span>
+		</div>
+		${render_document_section('Documentos requeridos', detail.required_documents || [])}
+		${render_document_section('Selección / RRLL', detail.selection_rrll_documents || [])}
+		${render_document_section('SST / Exámenes médicos', detail.sst_documents || [])}
+		${render_document_section('Contractuales', detail.contract_documents || [])}
+		${render_document_section('Disciplinarios', detail.disciplinary_documents || [])}
+		${render_document_section('Otros', detail.other_documents || [])}
+	`);
+}
+
+function open_document_drawer(page, employee) {
+	if (!employee) return;
+	page._document_drawer = { employee: employee, detail: null, loading: true };
+	render_document_drawer(page);
+
+	frappe.call({
+		method: 'hubgh.hubgh.page.carpeta_documental_empleado.carpeta_documental_empleado.get_employee_documents',
+		args: { employee: employee },
+		callback: function (r) {
+			page._document_drawer = { employee: employee, detail: r.message || {}, loading: false };
+			render_document_drawer(page);
+		},
+		error: function () {
+			page._document_drawer = { employee: employee, detail: null, loading: false };
+			const $overlay = ensure_document_drawer(page);
+			$overlay.addClass('is-open');
+			$overlay.find('.hub-drawer__subtitle').text(employee);
+			$overlay.find('.hub-drawer__body').html('<div class="hub-empty">No fue posible abrir el expediente documental.</div>');
+		},
 	});
 }
 
@@ -457,6 +692,9 @@ function injectPersona360Styles() {
             border-radius: 4px;
             border-left: 3px solid #007bff;
             font-size: 13px;
+        }
+        .persona360-doc-drawer {
+            width: min(760px, 96vw);
         }
     `;
     document.head.appendChild(style);

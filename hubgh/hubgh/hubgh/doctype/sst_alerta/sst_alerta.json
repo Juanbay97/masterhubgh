@@ -41,13 +41,14 @@
    "label": "Punto de Venta",
    "options": "Punto de Venta"
   },
-  {
-   "fieldname": "fecha_programada",
-   "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "Fecha Programada",
-   "reqd": 1
-  },
+		{
+			"description": "Fecha exacta en la que la alerta debe dispararse o quedar visible en la bandeja SST.",
+			"fieldname": "fecha_programada",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Fecha de disparo",
+			"reqd": 1
+		},
   {
    "fieldname": "tipo_alerta",
    "fieldtype": "Select",

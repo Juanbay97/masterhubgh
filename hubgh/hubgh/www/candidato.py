@@ -413,6 +413,17 @@ def _split_apellidos(apellidos: str | None) -> tuple[str, str]:
 		return parts[0], ""
 	return parts[0], " ".join(parts[1:]).strip()
 
+
+def _normalize_bank_account_flag(raw_value):
+	if raw_value in (None, ""):
+		return None
+	text = str(raw_value).strip().lower()
+	if text in {"1", "true", "si", "sí", "yes"}:
+		return "Si"
+	if text in {"0", "false", "no"}:
+		return "No"
+	return None
+
 from hubgh.hubgh.onboarding_security import (
 	enforce_onboarding_rate_limit,
 	validate_candidate_duplicates,
@@ -479,6 +490,7 @@ def create_candidate(payload):
 		"telefono_fijo",
 		"contacto_emergencia_nombre",
 		"contacto_emergencia_telefono",
+		"tiene_cuenta_bancaria",
 		"tipo_documento",
 		"numero_documento",
 		"fecha_nacimiento",
@@ -510,7 +522,25 @@ def create_candidate(payload):
 		"disponibilidad",
 	}
 
+	tiene_cuenta_bancaria = _normalize_bank_account_flag(data.get("tiene_cuenta_bancaria"))
+	if tiene_cuenta_bancaria:
+		data["tiene_cuenta_bancaria"] = tiene_cuenta_bancaria
+	elif "tiene_cuenta_bancaria" in data:
+		data["tiene_cuenta_bancaria"] = ""
+
+	if tiene_cuenta_bancaria == "No":
+		data["banco_siesa"] = ""
+		data["tipo_cuenta_bancaria"] = ""
+		data["numero_cuenta_bancaria"] = ""
+
 	banco = (data.get("banco_siesa") or "").strip()
+	if tiene_cuenta_bancaria == "Si":
+		if not banco:
+			frappe.throw("Debes seleccionar un banco si indicaste que tienes cuenta bancaria.", frappe.ValidationError)
+		if not (data.get("tipo_cuenta_bancaria") or "").strip():
+			frappe.throw("Debes seleccionar el tipo de cuenta bancaria.", frappe.ValidationError)
+		if not (data.get("numero_cuenta_bancaria") or "").strip():
+			frappe.throw("Debes diligenciar el número de cuenta bancaria.", frappe.ValidationError)
 	banco_resuelto = _resolve_banco_siesa_name(banco)
 	if banco and not banco_resuelto:
 		banco_resuelto = _ensure_default_bank_exists(banco)

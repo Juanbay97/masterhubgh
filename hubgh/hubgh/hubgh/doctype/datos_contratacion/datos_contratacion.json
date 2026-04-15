@@ -38,6 +38,7 @@
   "celular",
   "email",
   "seccion_bancaria",
+  "tiene_cuenta_bancaria",
   "banco_siesa",
   "tipo_cuenta_bancaria",
   "numero_cuenta_bancaria",
@@ -253,6 +254,12 @@
    "fieldname": "seccion_bancaria",
    "fieldtype": "Section Break",
    "label": "Datos Bancarios"
+  },
+  {
+   "fieldname": "tiene_cuenta_bancaria",
+   "fieldtype": "Select",
+   "label": "¿Tiene Cuenta Bancaria?",
+   "options": "\nSi\nNo"
   },
   {
    "fieldname": "banco_siesa",

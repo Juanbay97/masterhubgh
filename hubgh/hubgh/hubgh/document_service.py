@@ -39,6 +39,14 @@ def _normalize_text(value):
 	return "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch))
 
 
+def _normalize_identity_value(value):
+	text = str(value or "").strip().upper()
+	if not text:
+		return ""
+	text = "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch))
+	return re.sub(r"[^A-Z0-9]", "", text)
+
+
 def _resolve_document_type_name(document_type):
 	requested = canonicalize_selection_document_name((document_type or "").strip())
 	if not requested:
@@ -63,8 +71,32 @@ def _resolve_document_type_name(document_type):
 
 def _is_excluded_from_candidate_hiring_progress(doc_type_row):
 	"""Regla transicional: Contrato no bloquea el envío a RL."""
-	name = (doc_type_row.get("document_name") or doc_type_row.get("name") or "").strip().lower()
+	name = str((doc_type_row.get("document_name") if isinstance(doc_type_row, dict) else getattr(doc_type_row, "document_name", None)) or (doc_type_row.get("name") if isinstance(doc_type_row, dict) else getattr(doc_type_row, "name", None)) or "").strip().lower()
 	return name == "contrato"
+
+
+def _is_bank_certification_document(doc_type_row):
+	name = _normalize_text((doc_type_row.get("document_name") if isinstance(doc_type_row, dict) else getattr(doc_type_row, "document_name", None)) or (doc_type_row.get("name") if isinstance(doc_type_row, dict) else getattr(doc_type_row, "name", None)) or "")
+	return name == _normalize_text("Certificación bancaria (No mayor a 30 días).")
+
+
+def _candidate_has_bank_account(candidate):
+	row = frappe.db.get_value(
+		"Candidato",
+		candidate,
+		["tiene_cuenta_bancaria", "banco_siesa", "tipo_cuenta_bancaria", "numero_cuenta_bancaria"],
+		as_dict=True,
+	)
+	value = str((row or {}).get("tiene_cuenta_bancaria") or "").strip().lower()
+	if value in {"si", "sí", "1", "true", "yes"}:
+		return True
+	return any((row or {}).get(fieldname) not in (None, "") for fieldname in ("banco_siesa", "tipo_cuenta_bancaria", "numero_cuenta_bancaria"))
+
+
+def _filter_candidate_document_types_for_profile(candidate, doc_types):
+	if _candidate_has_bank_account(candidate):
+		return list(doc_types or [])
+	return [row for row in (doc_types or []) if not _is_bank_certification_document(row)]
 
 
 def _get_document_type_rules(document_type):
@@ -100,25 +132,92 @@ def _person_doctype_for(person_type):
 	return "Candidato" if person_type == "Candidato" else "Ficha Empleado"
 
 
+def _match_person_name_by_identity(doctype, fieldname, value, extra_fields=None):
+	normalized_value = _normalize_identity_value(value)
+	if not normalized_value:
+		return ""
+
+	fields = ["name", fieldname]
+	for extra_field in extra_fields or []:
+		if extra_field and extra_field not in fields:
+			fields.append(extra_field)
+
+	rows = frappe.get_all(doctype, fields=fields, ignore_permissions=True)
+	for row in rows:
+		for candidate_value in [row.get("name"), row.get(fieldname)] + [row.get(extra_field) for extra_field in extra_fields or []]:
+			if _normalize_identity_value(candidate_value) == normalized_value:
+				return str(row.get("name") or "").strip()
+	return ""
+
+
+def _resolve_employee_name(person):
+	person_name = str(person or "").strip()
+	if not person_name:
+		return ""
+
+	if frappe.db.exists("Ficha Empleado", person_name):
+		return person_name
+
+	by_document = frappe.db.get_value("Ficha Empleado", {"cedula": person_name}, "name")
+	if by_document:
+		return by_document
+
+	matched = _match_person_name_by_identity("Ficha Empleado", "cedula", person_name)
+	if matched:
+		return matched
+
+	if frappe.db.exists("Candidato", person_name):
+		candidate_employee = str(frappe.db.get_value("Candidato", person_name, "persona") or "").strip()
+		if candidate_employee and frappe.db.exists("Ficha Empleado", candidate_employee):
+			return candidate_employee
+
+	matched_candidate = _match_person_name_by_identity("Candidato", "numero_documento", person_name, extra_fields=["persona"])
+	if matched_candidate:
+		candidate_employee = str(frappe.db.get_value("Candidato", matched_candidate, "persona") or "").strip()
+		if candidate_employee and frappe.db.exists("Ficha Empleado", candidate_employee):
+			return candidate_employee
+
+	return ""
+
+
+def _resolve_candidate_name(person):
+	person_name = str(person or "").strip()
+	if not person_name:
+		return ""
+
+	if frappe.db.exists("Candidato", person_name):
+		return person_name
+
+	by_document = frappe.db.get_value("Candidato", {"numero_documento": person_name}, "name")
+	if by_document:
+		return by_document
+
+	by_employee = frappe.db.get_value("Candidato", {"persona": person_name}, "name")
+	if by_employee:
+		return by_employee
+
+	matched = _match_person_name_by_identity("Candidato", "numero_documento", person_name, extra_fields=["persona"])
+	if matched:
+		return matched
+
+	employee_name = _resolve_employee_name(person_name)
+	if employee_name:
+		by_employee = frappe.db.get_value("Candidato", {"persona": employee_name}, "name")
+		if by_employee:
+			return by_employee
+
+	return ""
+
+
 def _resolve_person_name(person_type, person):
 	person_name = str(person or "").strip()
 	if not person_name:
 		return ""
 
-	target_doctype = _person_doctype_for(person_type)
-	if frappe.db.exists(target_doctype, person_name):
-		return person_name
-
 	if person_type == "Candidato":
-		by_document = frappe.db.get_value("Candidato", {"numero_documento": person_name}, "name")
-		if by_document:
-			return by_document
-	else:
-		by_document = frappe.db.get_value("Ficha Empleado", {"cedula": person_name}, "name")
-		if by_document:
-			return by_document
+		return _resolve_candidate_name(person_name) or person_name
 
-	return person_name
+	return _resolve_employee_name(person_name) or person_name
 
 
 def _person_identity_aliases(person_type, person):
@@ -134,12 +233,43 @@ def _person_identity_aliases(person_type, person):
 		numero_documento = str(frappe.db.get_value("Candidato", resolved, "numero_documento") or "").strip()
 		if numero_documento and numero_documento not in aliases:
 			aliases.append(numero_documento)
+		employee = str(frappe.db.get_value("Candidato", resolved, "persona") or "").strip()
+		if employee and employee not in aliases:
+			aliases.append(employee)
+		if employee:
+			employee_document = str(frappe.db.get_value("Ficha Empleado", employee, "cedula") or "").strip()
+			if employee_document and employee_document not in aliases:
+				aliases.append(employee_document)
 	elif person_type == "Empleado" and resolved:
 		cedula = str(frappe.db.get_value("Ficha Empleado", resolved, "cedula") or "").strip()
 		if cedula and cedula not in aliases:
 			aliases.append(cedula)
+		candidate = str(frappe.db.get_value("Candidato", {"persona": resolved}, "name") or "").strip()
+		if candidate and candidate not in aliases:
+			aliases.append(candidate)
+		if candidate:
+			candidate_document = str(frappe.db.get_value("Candidato", candidate, "numero_documento") or "").strip()
+			if candidate_document and candidate_document not in aliases:
+				aliases.append(candidate_document)
 
 	return aliases
+
+
+def get_person_document_rows(person_type, person, *, fields=None, extra_filters=None, order_by="modified desc", limit_page_length=None):
+	requested_fields = list(fields or ["name"])
+	for fieldname in ("name", "person", "candidate", "employee"):
+		if fieldname not in requested_fields:
+			requested_fields.append(fieldname)
+
+	rows = frappe.get_all(
+		"Person Document",
+		filters={"person_type": person_type, **(extra_filters or {})},
+		fields=requested_fields,
+		order_by=order_by,
+		limit_page_length=limit_page_length,
+	)
+	aliases = _person_identity_aliases(person_type, person)
+	return [row for row in rows if _matches_person_alias(row, aliases)]
 
 
 def _get_file_doc_from_url(file_url):
@@ -349,17 +479,16 @@ def can_user_read_person_document(doc, user=None):
 
 
 def _candidate_has_uploaded_document(candidate, document_type):
-	rows = frappe.get_all(
-		"Person Document",
-		filters={
-			"person_type": "Candidato",
-			"person": candidate,
+	rows = get_person_document_rows(
+		"Candidato",
+		candidate,
+		fields=["name"],
+		extra_filters={
 			"document_type": document_type,
 			"status": ["in", ["Subido", "Aprobado"]],
 			"file": ["is", "set"],
 		},
-		fields=["name"],
-		limit_page_length=1,
+		limit_page_length=50,
 	)
 	return bool(rows)
 
@@ -454,9 +583,9 @@ def _doc_sort_key(row):
 
 def _build_person_dossier(person_type, person):
 	"""Canonical dossier source for a person with vigente/historico/versioned views (S5.1)."""
-	rows = frappe.get_all(
-		"Person Document",
-		filters={"person_type": person_type, "person": person},
+	rows = get_person_document_rows(
+		person_type,
+		person,
 		fields=["name", "document_type", "status", "file", "uploaded_on", "approved_on", "modified", "creation"],
 		order_by="modified desc",
 	)
@@ -633,6 +762,7 @@ def ensure_candidate_required_documents(candidate):
 		filters={"is_active": 1, "applies_to": ["in", ["Candidato", "Ambos"]]},
 		fields=["name", "allows_multiple"],
 	)
+	doc_types = _filter_candidate_document_types_for_profile(candidate, doc_types)
 	for d in doc_types:
 		if int(d.allows_multiple or 0):
 			exists = frappe.db.exists(
@@ -656,6 +786,7 @@ def get_candidate_progress(candidate):
 		fields=["name", "requires_approval", "document_name", "allows_multiple"],
 	)
 	required = [row for row in required if not _is_excluded_from_candidate_hiring_progress(row)]
+	required = _filter_candidate_document_types_for_profile(candidate, required)
 
 	if not required:
 		return {

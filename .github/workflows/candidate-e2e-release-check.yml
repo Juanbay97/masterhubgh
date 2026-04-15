@@ -39,7 +39,7 @@ jobs:
       - name: Wait for backend container
         run: |
           for i in {1..24}; do
-            if docker compose -f docker/docker-compose.yml --env-file .env ps backend | grep -q "running"; then
+            if docker compose -f docker/docker-compose.dev.yml --env-file .env ps backend | grep -q "running"; then
               exit 0
             fi
             sleep 10

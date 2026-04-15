@@ -7,6 +7,7 @@ from hubgh.hubgh import document_service
 from hubgh.hubgh import contratacion_service
 from hubgh.hubgh import siesa_export
 from hubgh.hubgh import siesa_reference_matrix
+from hubgh.hubgh.doctype.datos_contratacion.datos_contratacion import DatosContratacion
 from hubgh.hubgh.doctype.contrato.contrato import Contrato
 from hubgh.hubgh.page.seleccion_documentos import seleccion_documentos
 from hubgh.hubgh.page.persona_360 import persona_360
@@ -16,6 +17,16 @@ from hubgh.hubgh.page.carpeta_documental_empleado import carpeta_documental_empl
 
 
 class TestFlowPhase9Adjustments(FrappeTestCase):
+	class _DocStub(dict):
+		def __getattr__(self, item):
+			return self.get(item)
+
+		def __setattr__(self, key, value):
+			self[key] = value
+
+		def set(self, key, value):
+			self[key] = value
+
 	def test_set_candidate_status_keeps_medical_exam_state(self):
 		with patch("hubgh.hubgh.document_service.frappe.db.get_value", return_value="En Examen Médico"), patch(
 			"hubgh.hubgh.document_service.frappe.db.set_value"
@@ -395,6 +406,9 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		self.assertFalse(actions["create_novedad"]["visible"])
 		self.assertFalse(actions["create_disciplinary"]["visible"])
 		self.assertTrue(actions["view_documents"]["visible"])
+		self.assertEqual(actions["view_documents"]["presentation"], "drawer")
+		self.assertEqual(actions["view_documents"]["route"], "/app/carpeta-documental-empleado")
+		self.assertEqual(actions["view_documents"]["prefill"], {"employee": "EMP-001", "open_drawer": 1})
 		self.assertEqual(actions["create_wellbeing"]["doctype"], "Bienestar Compromiso")
 		self.assertEqual(actions["create_wellbeing_alert"]["doctype"], "Bienestar Alerta")
 
@@ -794,6 +808,36 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		self.assertEqual(rows[0]["name"], "EMP-001")
 		self.assertEqual(rows[0]["pdv_nombre"], "Punto Norte")
 
+	def test_persona_360_link_query_supports_name_cedula_and_point_search(self):
+		def fake_sql(query, values=None, as_dict=False):
+			self.assertFalse(as_dict)
+			self.assertIn("LOWER(IFNULL(emp.name, '')) LIKE %(search_like)s", query)
+			self.assertIn("LOWER(IFNULL(emp.cedula, '')) LIKE %(search_like)s", query)
+			self.assertIn("LOWER(IFNULL(pdv.nombre_pdv, '')) LIKE %(search_like)s", query)
+			self.assertEqual(values["search_term"], "punto norte")
+			self.assertEqual(values["search_like"], "%punto norte%")
+			self.assertEqual(values["start"], 0)
+			self.assertEqual(values["page_len"], 20)
+			return [["EMP-001", "Ana Paz", "1001", "Punto Norte"]]
+
+		with patch("hubgh.hubgh.page.persona_360.persona_360.frappe.db.sql", side_effect=fake_sql), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.frappe.session",
+			new=SimpleNamespace(user="gh@example.com"),
+		), patch(
+			"hubgh.hubgh.page.persona_360.persona_360.user_has_any_role",
+			return_value=False,
+		):
+			rows = persona_360.search_persona_360_employee(
+				"Ficha Empleado",
+				"Punto Norte",
+				"name",
+				0,
+				20,
+				None,
+			)
+
+		self.assertEqual(rows, [["EMP-001", "Ana Paz", "1001", "Punto Norte"]])
+
 	def test_persona_360_hides_payroll_block_without_payroll_access(self):
 		emp = SimpleNamespace(
 			nombres="Ana",
@@ -946,6 +990,8 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		):
 			res = punto_360.get_punto_stats("PDV-1")
 
+		self.assertEqual(res["info"]["nombre"], "PDV 1")
+		self.assertEqual(res["info"]["pdv_nombre"], "PDV 1")
 		self.assertEqual(res["info"]["kpi_ingreso"]["ingresos_formalizados_30d"], 1)
 		self.assertEqual(res["info"]["kpi_liderazgo"]["faltantes_dotacion"], 9)
 		self.assertEqual(res["info"]["kpi_liderazgo"]["ingresos_formalizados_30d"], 1)
@@ -1403,6 +1449,108 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		self.assertEqual(result[0]["concepto_medico"], "Restringido")
 		self.assertFalse(result[0]["clinical_visible"])
 
+	def test_selection_candidate_detail_resolves_display_labels_for_codes(self):
+		candidate_doc = SimpleNamespace(
+			name="CAND-001",
+			nombres="Ana",
+			apellidos="Paz",
+			primer_apellido="",
+			segundo_apellido="",
+			numero_documento="1001",
+			estado_proceso="En Proceso",
+			concepto_medico="Pendiente",
+			fecha_envio_examen_medico="2026-03-01",
+			direccion="Calle 1",
+			barrio="Centro",
+			ciudad="Bogota",
+			localidad="Suba",
+			localidad_otras="",
+			procedencia_pais="169",
+			procedencia_departamento="11",
+			procedencia_ciudad="001",
+			banco_siesa="1059",
+			pdv_destino="PDV-1",
+			tipo_cuenta_bancaria="Ahorros",
+			numero_cuenta_bancaria="12345",
+		)
+
+		with patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._validate_selection_access"), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.ensure_candidate_required_documents"
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.get_doc",
+			return_value=candidate_doc,
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.get_person_document_rows",
+			return_value=[],
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.get_candidate_progress",
+			return_value={"percent": 0, "required_ok": 0, "required_total": 0, "is_complete": False},
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._selection_docs_status",
+			return_value=[],
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._active_candidate_document_types",
+			return_value=[],
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.resolve_candidate_location_labels",
+			return_value={"pais": "Colombia", "departamento": "Cundinamarca", "ciudad": "Armenia"},
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.resolve_siesa_bank_name",
+			return_value="Bancolombia",
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.get_punto_name_map",
+			return_value={"PDV-1": "Punto Norte"},
+		):
+			result = seleccion_documentos.candidate_detail("CAND-001")
+
+		self.assertEqual(result["candidate"]["procedencia_pais"], "Colombia")
+		self.assertEqual(result["candidate"]["procedencia_departamento"], "Cundinamarca")
+		self.assertEqual(result["candidate"]["procedencia_ciudad"], "Armenia")
+		self.assertEqual(result["candidate"]["banco_siesa"], "Bancolombia")
+		self.assertEqual(result["candidate"]["pdv_destino_nombre"], "Punto Norte")
+		self.assertEqual(result["candidate"]["banco_siesa_codigo"], "1059")
+
+	def test_selection_list_candidates_exposes_point_name_alongside_code(self):
+		rows = [
+			SimpleNamespace(
+				name="CAND-001",
+				nombres="Ana",
+				apellidos="Paz",
+				primer_apellido="",
+				segundo_apellido="",
+				numero_documento="1001",
+				pdv_destino="PDV-1",
+				cargo_postulado="Auxiliar",
+				creation="2026-03-01 10:00:00",
+				estado_proceso="En Proceso",
+				concepto_medico="Pendiente",
+				fecha_envio_examen_medico="2026-03-01",
+			),
+		]
+
+		with patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._validate_selection_access"), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._can_manage_candidates",
+			return_value=True,
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.get_all",
+			return_value=rows,
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.ensure_candidate_required_documents"
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.get_candidate_progress",
+			return_value={"percent": 50, "required_ok": 1, "required_total": 2, "is_complete": False},
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._has_uploaded_document",
+			return_value=False,
+		), patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.get_punto_name_map",
+			return_value={"PDV-1": "Punto Norte"},
+		):
+			result = seleccion_documentos.list_candidates()
+
+		self.assertEqual(result[0]["pdv_destino"], "PDV-1")
+		self.assertEqual(result[0]["pdv_destino_nombre"], "Punto Norte")
+
 	def test_ensure_person_document_allows_multiple_reuses_pending_seed(self):
 		rules = {"document_type": "2 cartas de referencias personales.", "allows_multiple": 1, "requires_approval": 0}
 		pending_row = [SimpleNamespace(name="PD-0001")]
@@ -1517,6 +1665,117 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 
 		self.assertIn("PAIS NACIMIENTO", missing)
 		self.assertIn("DEPTO EXPEDICION", missing)
+
+	def test_datos_contratacion_does_not_copy_cellphone_into_landline_contact(self):
+		datos = self._DocStub(candidato="CAND-001", telefono_contacto_siesa="")
+		candidate_doc = self._DocStub(
+			tipo_documento="Cedula",
+			numero_documento="1001",
+			nombres="Ana",
+			primer_apellido="Perez",
+			segundo_apellido="Lopez",
+			telefono_fijo="",
+			celular="3001234567",
+		)
+
+		with patch("hubgh.hubgh.doctype.datos_contratacion.datos_contratacion.frappe.get_doc", return_value=candidate_doc):
+			DatosContratacion._sync_from_candidate(datos)
+
+		self.assertEqual(datos.telefono_contacto_siesa or "", "")
+
+	def test_validar_candidato_para_siesa_skips_bank_requirements_when_candidate_has_no_account(self):
+		datos = self._DocStub(
+			name="DC-001",
+			estado_datos="Completo",
+			tipo_documento="Cedula",
+			numero_documento="1001",
+			nombres="Ana",
+			primer_apellido="Perez",
+			segundo_apellido="Lopez",
+			fecha_nacimiento="2000-01-01",
+			fecha_expedicion="2018-05-01",
+			genero="Femenino",
+			estado_civil="Soltero",
+			nivel_educativo_siesa="MEDIA",
+			direccion="CL 1 # 2-3",
+			ciudad_residencia_siesa="001",
+			email="ana@example.com",
+			tiene_cuenta_bancaria="No",
+			fecha_ingreso="2026-03-01",
+			salario="1500000",
+			contrato="CONT-001",
+		)
+		candidate_doc = self._DocStub(
+			name="CAND-001",
+			tipo_documento="Cedula",
+			numero_documento="1001",
+			nombres="Ana",
+			primer_apellido="Perez",
+			segundo_apellido="Lopez",
+			fecha_nacimiento="2000-01-01",
+			fecha_expedicion="2018-05-01",
+			genero="Femenino",
+			estado_civil="Soltero",
+			nivel_educativo_siesa="MEDIA",
+			direccion="CL 1 # 2-3",
+			ciudad_residencia_siesa="001",
+			email="ana@example.com",
+			tiene_cuenta_bancaria="No",
+		)
+		contract_doc = self._DocStub(docstatus=1)
+
+		def fake_get_doc(doctype, name):
+			if doctype == "Datos Contratacion":
+				return datos
+			if doctype == "Contrato":
+				return contract_doc
+			return candidate_doc
+
+		with patch("hubgh.hubgh.contratacion_service.frappe.db.get_value", return_value="DC-001"), patch(
+			"hubgh.hubgh.contratacion_service.frappe.get_doc", side_effect=fake_get_doc
+		), patch("hubgh.hubgh.contratacion_service.ensure_reference_catalog"), patch(
+			"hubgh.hubgh.contratacion_service._resolve_siesa_catalog_name", return_value="MEDIA"
+		), patch(
+			"hubgh.hubgh.contratacion_service._resolve_required_siesa_fields",
+			return_value={
+				"tipo_cotizante_siesa": "TC",
+				"centro_costos_siesa": "CC",
+				"unidad_negocio_siesa": "UN",
+				"centro_trabajo_siesa": "CT",
+				"grupo_empleados_siesa": "GE",
+				"pdv_destino": "PDV-1",
+				"cargo_postulado": "CAR-1",
+				"tipo_contrato": "Indefinido",
+			}
+		), patch("hubgh.hubgh.contratacion_service._missing_required_siesa_fields", return_value=[]), patch(
+			"hubgh.hubgh.contratacion_service.get_or_create_affiliation",
+			return_value=SimpleNamespace(arl_afiliado=1, eps_afiliado=1, afp_afiliado=1, cesantias_afiliado=1, caja_afiliado=1),
+		):
+			result = contratacion_service.validar_candidato_para_siesa("CAND-001")
+
+		self.assertTrue(result["ok"])
+		self.assertNotIn("Falta banco", result["errors"])
+
+	def test_candidate_progress_ignores_bank_document_when_candidate_has_no_account(self):
+		required_docs = [
+			SimpleNamespace(name="Certificación bancaria (No mayor a 30 días).", document_name="Certificación bancaria (No mayor a 30 días).", requires_approval=0, allows_multiple=0),
+			SimpleNamespace(name="Hoja de vida actualizada.", document_name="Hoja de vida actualizada.", requires_approval=0, allows_multiple=0),
+		]
+
+		with patch("hubgh.hubgh.document_service.frappe.get_all", return_value=required_docs), patch(
+			"hubgh.hubgh.document_service.frappe.db.get_value",
+			return_value={"tiene_cuenta_bancaria": "No", "banco_siesa": "", "tipo_cuenta_bancaria": "", "numero_cuenta_bancaria": ""},
+		), patch(
+			"hubgh.hubgh.document_service._build_person_dossier",
+			return_value={
+				"vigentes": [{"document_type": "Hoja de vida actualizada.", "file": "/files/hv.pdf", "status": "Subido"}]
+			},
+		):
+			progress = document_service.get_candidate_progress("CAND-001")
+
+		self.assertEqual(progress["required_total"], 1)
+		self.assertEqual(progress["required_ok"], 1)
+		self.assertTrue(progress["is_complete"])
 
 	def test_build_contract_context_requires_complete_operational_codes(self):
 		data = SimpleNamespace(candidato="CAND-001", contrato="CONT-001", aplica_auxilio_transporte="3", arl_codigo_siesa="")
@@ -1697,6 +1956,108 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 			payload = contratacion_service.affiliation_contract_snapshot("CAND-001")
 
 		self.assertEqual(payload["blocks"]["seguridad_social"]["ccf_siesa"], "001")
+
+	def test_affiliation_contract_snapshot_exposes_human_readable_labels_alongside_codes(self):
+		candidate_doc = SimpleNamespace(
+			name="CAND-001",
+			numero_documento="1001",
+			nombres="Ana",
+			apellidos="Paz",
+			tipo_documento="CC",
+			primer_apellido=None,
+			segundo_apellido=None,
+			fecha_nacimiento=None,
+			fecha_expedicion=None,
+			direccion="Calle 1",
+			ciudad="001",
+			celular="3001234567",
+			email="ana@example.com",
+			pdv_destino="PDV-1",
+			cargo_postulado="CAR-1",
+			fecha_tentativa_ingreso="2026-03-20",
+			eps_siesa="EPS-1",
+			afp_siesa="AFP-1",
+			cesantias_siesa="CES-1",
+			ccf_siesa="001",
+		)
+
+		datos_map = {
+			"direccion": "Calle 1",
+			"barrio": "Centro",
+			"ciudad_residencia_siesa": "001",
+			"departamento_residencia_siesa": "11",
+			"pais_residencia_siesa": "169",
+			"celular": "3001234567",
+			"email": "ana@example.com",
+			"banco_siesa": "1059",
+			"pdv_destino": "PDV-1",
+			"eps_siesa": "EPS-1",
+			"afp_siesa": "AFP-1",
+			"cesantias_siesa": "CES-1",
+			"ccf_siesa": "001",
+		}
+		datos_doc = SimpleNamespace(name="DC-001", get=lambda fieldname: datos_map.get(fieldname))
+
+		def fake_get_value(doctype, filters, fieldname=None):
+			if doctype == "Datos Contratacion":
+				return "DC-001"
+			if doctype == "Afiliacion Seguridad Social":
+				return None
+			return None
+
+		def fake_get_doc(doctype, name):
+			if doctype == "Candidato":
+				return candidate_doc
+			if doctype == "Datos Contratacion":
+				return datos_doc
+			raise AssertionError(f"unexpected get_doc call: {doctype} {name}")
+
+		def fake_catalog_label(doctype, value):
+			return {
+				("Entidad EPS Siesa", "EPS-1"): "Sanitas",
+				("Entidad AFP Siesa", "AFP-1"): "Porvenir",
+				("Entidad Cesantias Siesa", "CES-1"): "Protección",
+				("Entidad CCF Siesa", "001"): "Compensar",
+			}.get((doctype, value), value)
+
+		with patch("hubgh.hubgh.contratacion_service.validate_hr_access"), patch(
+			"hubgh.hubgh.contratacion_service.frappe.db.exists",
+			side_effect=lambda dt, name: dt == "Candidato" and name == "CAND-001",
+		), patch(
+			"hubgh.hubgh.contratacion_service.frappe.db.get_value",
+			side_effect=fake_get_value,
+		), patch(
+			"hubgh.hubgh.contratacion_service.frappe.get_doc",
+			side_effect=fake_get_doc,
+		), patch(
+			"hubgh.hubgh.contratacion_service.resolve_candidate_location_labels",
+			return_value={"pais": "Colombia", "departamento": "Cundinamarca", "ciudad": "Armenia"},
+		), patch(
+			"hubgh.hubgh.contratacion_service.resolve_siesa_bank_name",
+			return_value="Bancolombia",
+		), patch(
+			"hubgh.hubgh.contratacion_service.get_punto_display_name",
+			return_value="Punto Norte",
+		), patch(
+			"hubgh.hubgh.contratacion_service.resolve_catalog_display_name",
+			side_effect=fake_catalog_label,
+		):
+			payload = contratacion_service.affiliation_contract_snapshot("CAND-001")
+
+		self.assertEqual(payload["blocks"]["contacto"]["ciudad"], "001")
+		self.assertEqual(payload["blocks"]["contacto"]["ciudad_nombre"], "Armenia")
+		self.assertEqual(payload["blocks"]["contacto"]["departamento_residencia_siesa"], "11")
+		self.assertEqual(payload["blocks"]["contacto"]["departamento_residencia_nombre"], "Cundinamarca")
+		self.assertEqual(payload["blocks"]["contacto"]["pais_residencia_siesa"], "169")
+		self.assertEqual(payload["blocks"]["contacto"]["pais_residencia_nombre"], "Colombia")
+		self.assertEqual(payload["blocks"]["bancarios"]["banco_siesa"], "1059")
+		self.assertEqual(payload["blocks"]["bancarios"]["banco_siesa_nombre"], "Bancolombia")
+		self.assertEqual(payload["blocks"]["laborales"]["pdv_destino"], "PDV-1")
+		self.assertEqual(payload["blocks"]["laborales"]["pdv_destino_nombre"], "Punto Norte")
+		self.assertEqual(payload["blocks"]["seguridad_social"]["eps_siesa"], "EPS-1")
+		self.assertEqual(payload["blocks"]["seguridad_social"]["eps_siesa_nombre"], "Sanitas")
+		self.assertEqual(payload["blocks"]["seguridad_social"]["ccf_siesa"], "001")
+		self.assertEqual(payload["blocks"]["seguridad_social"]["ccf_siesa_nombre"], "Compensar")
 
 	def test_ensure_official_ccf_catalog_disables_non_official_rows(self):
 		rows = [

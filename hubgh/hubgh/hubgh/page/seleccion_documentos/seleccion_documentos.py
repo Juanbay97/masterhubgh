@@ -10,9 +10,11 @@ from hubgh.hubgh.candidate_states import (
 	STATE_LISTO_CONTRATAR,
 	is_candidate_status,
 )
+from hubgh.hubgh.display_labels import get_punto_name_map, resolve_candidate_location_labels, resolve_siesa_bank_name
 from hubgh.hubgh.document_service import (
 	build_candidate_documents_zip,
 	ensure_candidate_required_documents,
+	get_person_document_rows,
 	get_candidate_progress,
 	hire_candidate,
 	send_candidate_to_labor_relations,
@@ -91,18 +93,21 @@ def _candidate_apellidos_fallback(row):
 	return " ".join([p.strip() for p in [primer, segundo] if p and str(p).strip()]).strip()
 
 
+def _candidate_pdv_name_map(rows):
+	return get_punto_name_map([(row.get("pdv_destino") if isinstance(row, dict) else getattr(row, "pdv_destino", None)) for row in (rows or [])])
+
+
 def _has_uploaded_document(candidate, document_type):
-	rows = frappe.get_all(
-		"Person Document",
-		filters=[
-			["person_type", "=", "Candidato"],
-			["person", "=", candidate],
-			["document_type", "in", get_selection_document_lookup_names(document_type)],
-			["status", "in", ["Subido", "Aprobado"]],
-			["file", "is", "set"],
-		],
+	rows = get_person_document_rows(
+		"Candidato",
+		candidate,
 		fields=["name"],
-		limit_page_length=1,
+		extra_filters={
+			"document_type": ["in", get_selection_document_lookup_names(document_type)],
+			"status": ["in", ["Subido", "Aprobado"]],
+			"file": ["is", "set"],
+		},
+		limit_page_length=50,
 	)
 	return bool(rows)
 
@@ -244,10 +249,11 @@ def _resolve_medical_document_type(document_type=None):
 
 
 def _candidate_has_medical_exam_doc(candidate):
-	rows = frappe.get_all(
-		"Person Document",
-		filters={"person_type": "Candidato", "person": candidate, "status": ["in", ["Subido", "Aprobado"]], "file": ["is", "set"]},
+	rows = get_person_document_rows(
+		"Candidato",
+		candidate,
 		fields=["document_type"],
+		extra_filters={"status": ["in", ["Subido", "Aprobado"]], "file": ["is", "set"]},
 	)
 	for row in rows:
 		doc_type = _normalize_text(row.document_type)
@@ -289,6 +295,7 @@ def list_candidates(search=None):
 		],
 		order_by="creation desc",
 	)
+	pdv_name_map = _candidate_pdv_name_map(rows)
 	data = []
 	for row in rows:
 		if is_candidate_status(row.estado_proceso, "Rechazado", STATE_AFILIACION, STATE_LISTO_CONTRATAR, "Contratado"):
@@ -301,6 +308,7 @@ def list_candidates(search=None):
 			"full_name": f"{row.nombres or ''} {_candidate_apellidos_fallback(row) or ''}".strip(),
 			"numero_documento": row.numero_documento,
 			"pdv_destino": row.pdv_destino,
+			"pdv_destino_nombre": pdv_name_map.get(row.pdv_destino, row.pdv_destino or ""),
 			"cargo_postulado": row.cargo_postulado,
 			"creation": row.creation,
 			"estado_proceso": row.estado_proceso,
@@ -322,9 +330,9 @@ def candidate_detail(candidate):
 	ensure_candidate_required_documents(candidate)
 	cand = frappe.get_doc("Candidato", candidate)
 
-	docs = frappe.get_all(
-		"Person Document",
-		filters={"person_type": "Candidato", "person": candidate},
+	docs = get_person_document_rows(
+		"Candidato",
+		candidate,
 		fields=["name", "document_type", "status", "file", "uploaded_by", "uploaded_on", "approved_by", "approved_on", "notes"],
 		order_by="modified desc",
 	)
@@ -340,6 +348,12 @@ def candidate_detail(candidate):
 	selection_doc_status = _selection_docs_status(candidate)
 	selection_docs_complete = all((not row["required"]) or row["uploaded_ok"] for row in selection_doc_status)
 	upload_doc_types = _active_candidate_document_types()
+	location_labels = resolve_candidate_location_labels(
+		pais=cand.procedencia_pais,
+		departamento=cand.procedencia_departamento,
+		ciudad=cand.procedencia_ciudad,
+	)
+	pdv_destino_nombre = get_punto_name_map([getattr(cand, "pdv_destino", None)]).get(getattr(cand, "pdv_destino", None), getattr(cand, "pdv_destino", "") or "") if getattr(cand, "pdv_destino", None) else ""
 	return {
 		"candidate": {
 			"name": cand.name,
@@ -352,10 +366,16 @@ def candidate_detail(candidate):
 			"barrio": cand.barrio,
 			"ciudad": cand.ciudad,
 			"localidad": cand.localidad or cand.localidad_otras,
-			"procedencia_pais": cand.procedencia_pais,
-			"procedencia_departamento": cand.procedencia_departamento,
-			"procedencia_ciudad": cand.procedencia_ciudad,
-			"banco_siesa": cand.banco_siesa,
+			"procedencia_pais": location_labels.get("pais") or cand.procedencia_pais,
+			"procedencia_pais_codigo": cand.procedencia_pais,
+			"procedencia_departamento": location_labels.get("departamento") or cand.procedencia_departamento,
+			"procedencia_departamento_codigo": cand.procedencia_departamento,
+			"procedencia_ciudad": location_labels.get("ciudad") or cand.procedencia_ciudad,
+			"procedencia_ciudad_codigo": cand.procedencia_ciudad,
+			"banco_siesa": resolve_siesa_bank_name(cand.banco_siesa),
+			"banco_siesa_codigo": cand.banco_siesa,
+			"pdv_destino": getattr(cand, "pdv_destino", None),
+			"pdv_destino_nombre": pdv_destino_nombre,
 			"tipo_cuenta_bancaria": cand.tipo_cuenta_bancaria,
 			"numero_cuenta_bancaria": cand.numero_cuenta_bancaria,
 		},
@@ -485,6 +505,7 @@ def list_medical_exam_candidates(search=None):
 		],
 		order_by="fecha_envio_examen_medico asc, creation asc",
 	)
+	pdv_name_map = _candidate_pdv_name_map(rows)
 
 	responsable = _medical_alert_responsible()
 	today = getdate(nowdate())
@@ -493,6 +514,7 @@ def list_medical_exam_candidates(search=None):
 		"full_name": f"{row.nombres or ''} {_candidate_apellidos_fallback(row) or ''}".strip(),
 		"numero_documento": row.numero_documento,
 		"pdv_destino": row.pdv_destino,
+		"pdv_destino_nombre": pdv_name_map.get(row.pdv_destino, row.pdv_destino or ""),
 		"cargo_postulado": row.cargo_postulado,
 		"fecha_envio_examen_medico": row.fecha_envio_examen_medico,
 		"concepto_medico": row.concepto_medico,
@@ -541,12 +563,14 @@ def list_medical_exam_history(search=None):
 		],
 		order_by="modified desc",
 	)
+	pdv_name_map = _candidate_pdv_name_map(rows)
 
 	history = [{
 		"name": row.name,
 		"full_name": f"{row.nombres or ''} {_candidate_apellidos_fallback(row) or ''}".strip(),
 		"numero_documento": row.numero_documento,
 		"pdv_destino": row.pdv_destino,
+		"pdv_destino_nombre": pdv_name_map.get(row.pdv_destino, row.pdv_destino or ""),
 		"cargo_postulado": row.cargo_postulado,
 		"fecha_envio_examen_medico": row.fecha_envio_examen_medico,
 		"concepto_medico": row.concepto_medico if can_view_clinical else "Restringido",

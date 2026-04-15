@@ -64,6 +64,62 @@
 	padding: 0 20px;
 }
 
+.persona360-overview-search-card {
+	display: flex;
+	justify-content: space-between;
+	align-items: end;
+	gap: 16px;
+	flex-wrap: wrap;
+	padding: 0 20px 16px;
+}
+
+.persona360-overview-search-card h5 {
+	margin: 0 0 6px;
+	font-size: 20px;
+	font-weight: 700;
+	color: #111827;
+}
+
+.persona360-overview-search-controls {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	width: min(100%, 620px);
+}
+
+.persona360-overview-search-input-wrap {
+	position: relative;
+	flex: 1 1 320px;
+	min-width: 260px;
+}
+
+.persona360-overview-search-input-wrap i {
+	position: absolute;
+	left: 14px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: #64748b;
+	font-size: 14px;
+	pointer-events: none;
+}
+
+.persona360-overview-search-input {
+	height: 44px;
+	padding-left: 40px;
+	border-radius: 12px;
+	border: 1px solid #cbd5e1;
+	box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+	background: #fff;
+}
+
+.persona360-overview-search-controls .btn {
+	height: 44px;
+	border-radius: 12px;
+	padding: 0 16px;
+	font-weight: 700;
+}
+
 .persona360-overview-count {
 	display: inline-flex;
 	align-items: center;
@@ -177,6 +233,20 @@
 
 	.persona360-overview-header {
 		padding: 0 12px;
+	}
+
+	.persona360-overview-search-card {
+		padding: 0 12px 16px;
+	}
+
+	.persona360-overview-search-controls,
+	.persona360-overview-search-input-wrap {
+		width: 100%;
+		min-width: 100%;
+	}
+
+	.persona360-overview-search-controls .btn {
+		width: 100%;
 	}
 
 	.persona360-quick-actions {

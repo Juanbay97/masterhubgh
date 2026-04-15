@@ -6,6 +6,7 @@ from pathlib import Path
 import frappe
 from frappe.utils import getdate, now_datetime
 
+from hubgh.hubgh.document_service import get_person_document_rows
 from hubgh.hubgh.candidate_states import (
 	STATE_AFILIACION,
 	STATE_LISTO_CONTRATAR,
@@ -15,6 +16,12 @@ from hubgh.hubgh.people_ops_handoffs import validate_handoff_contract
 from hubgh.hubgh.payroll_employee_compat import normalize_tipo_jornada
 from hubgh.hubgh.role_matrix import user_has_any_role
 from hubgh.hubgh.siesa_reference_matrix import ensure_reference_catalog, normalize_code_for_doctype
+from hubgh.hubgh.display_labels import (
+	get_punto_display_name,
+	resolve_candidate_location_labels,
+	resolve_catalog_display_name,
+	resolve_siesa_bank_name,
+)
 
 
 AFFILIATION_TYPES = {
@@ -628,6 +635,12 @@ def validar_candidato_para_siesa(candidate):
 	def _missing(value):
 		return value is None or (isinstance(value, str) and not value.strip())
 
+	def _has_bank_account_flag():
+		value = _value("tiene_cuenta_bancaria")
+		if str(value or "").strip().lower() in {"si", "sí", "1", "true", "yes"}:
+			return True
+		return any(not _missing(_value(fieldname)) for fieldname in ("banco_siesa", "tipo_cuenta_bancaria", "numero_cuenta_bancaria"))
+
 	apellidos_raw = (_value("apellidos") or "").strip()
 	primer_apellido = (_value("primer_apellido") or "").strip()
 	segundo_apellido = (_value("segundo_apellido") or "").strip()
@@ -668,12 +681,13 @@ def validar_candidato_para_siesa(candidate):
 		errors.append("Falta ciudad de residencia")
 	if _missing(_value("email")) and _missing(_value("celular")):
 		errors.append("Falta email o celular (al menos uno)")
-	if _missing(_value("banco_siesa")):
-		errors.append("Falta banco")
-	if _missing(_value("tipo_cuenta_bancaria")):
-		errors.append("Falta tipo de cuenta bancaria")
-	if _missing(_value("numero_cuenta_bancaria")):
-		errors.append("Falta número de cuenta bancaria")
+	if _has_bank_account_flag():
+		if _missing(_value("banco_siesa")):
+			errors.append("Falta banco")
+		if _missing(_value("tipo_cuenta_bancaria")):
+			errors.append("Falta tipo de cuenta bancaria")
+		if _missing(_value("numero_cuenta_bancaria")):
+			errors.append("Falta número de cuenta bancaria")
 	resolved_siesa = _resolve_required_siesa_fields(candidato, datos, {
 		"tipo_cotizante_siesa": _value("tipo_cotizante_siesa"),
 		"centro_costos_siesa": _value("centro_costos_siesa"),
@@ -807,9 +821,9 @@ def affiliation_detail(candidate):
 	validate_hr_access()
 	a = get_or_create_affiliation(candidate)
 	c = frappe.get_doc("Candidato", candidate)
-	docs = frappe.get_all(
-		"Person Document",
-		filters={"person_type": "Candidato", "person": candidate},
+	docs = get_person_document_rows(
+		"Candidato",
+		candidate,
 		fields=["name", "document_type", "status", "file", "uploaded_on", "uploaded_by"],
 		order_by="modified desc",
 	)
@@ -917,6 +931,25 @@ def affiliation_contract_snapshot(candidate):
 		if not segundo_apellido and len(partes_apellidos) >= 2:
 			segundo_apellido = " ".join(partes_apellidos[1:]).strip()
 
+	ciudad_residencia = _first_value(datos.get("ciudad_residencia_siesa") if datos else None, datos.get("ciudad") if datos else None, candidato.ciudad)
+	departamento_residencia = datos.get("departamento_residencia_siesa") if datos else None
+	pais_residencia = datos.get("pais_residencia_siesa") if datos else None
+	location_labels = resolve_candidate_location_labels(
+		pais=pais_residencia,
+		departamento=departamento_residencia,
+		ciudad=ciudad_residencia,
+	)
+	banco_siesa = datos.get("banco_siesa") if datos else None
+	pdv_destino = _first_value(datos.get("pdv_destino") if datos else None, candidato.pdv_destino)
+	eps_siesa = _first_value(datos.get("eps_siesa") if datos else None, candidato.eps_siesa)
+	afp_siesa = _first_value(datos.get("afp_siesa") if datos else None, candidato.afp_siesa)
+	cesantias_siesa = _first_value(datos.get("cesantias_siesa") if datos else None, candidato.cesantias_siesa)
+	ccf_siesa = _first_value(datos.get("ccf_siesa") if datos else None, candidato.ccf_siesa)
+	arl_codigo_siesa = _first_value(
+		datos.get("arl_codigo_siesa") if datos else None,
+		afiliacion.get("arl_numero_afiliacion") if afiliacion else None,
+	)
+
 	return {
 		"candidate": {
 			"name": candidato.name,
@@ -937,19 +970,25 @@ def affiliation_contract_snapshot(candidate):
 			"contacto": {
 				"direccion": _first_value(datos.get("direccion") if datos else None, candidato.direccion),
 				"barrio": datos.get("barrio") if datos else None,
-				"ciudad": _first_value(datos.get("ciudad_residencia_siesa") if datos else None, datos.get("ciudad") if datos else None, candidato.ciudad),
-				"departamento_residencia_siesa": datos.get("departamento_residencia_siesa") if datos else None,
-				"pais_residencia_siesa": datos.get("pais_residencia_siesa") if datos else None,
+				"ciudad": ciudad_residencia,
+				"ciudad_nombre": location_labels.get("ciudad") or ciudad_residencia,
+				"departamento_residencia_siesa": departamento_residencia,
+				"departamento_residencia_nombre": location_labels.get("departamento") or departamento_residencia,
+				"pais_residencia_siesa": pais_residencia,
+				"pais_residencia_nombre": location_labels.get("pais") or pais_residencia,
 				"celular": _first_value(datos.get("celular") if datos else None, candidato.celular),
 				"email": _first_value(datos.get("email") if datos else None, candidato.email),
 			},
 			"bancarios": {
-				"banco_siesa": datos.get("banco_siesa") if datos else None,
+				"tiene_cuenta_bancaria": _first_value(datos.get("tiene_cuenta_bancaria") if datos else None, getattr(candidato, "tiene_cuenta_bancaria", None)),
+				"banco_siesa": banco_siesa,
+				"banco_siesa_nombre": resolve_siesa_bank_name(banco_siesa),
 				"tipo_cuenta_bancaria": datos.get("tipo_cuenta_bancaria") if datos else None,
 				"numero_cuenta_bancaria": datos.get("numero_cuenta_bancaria") if datos else None,
 			},
 			"laborales": {
-				"pdv_destino": _first_value(datos.get("pdv_destino") if datos else None, candidato.pdv_destino),
+				"pdv_destino": pdv_destino,
+				"pdv_destino_nombre": get_punto_display_name(pdv_destino),
 				"cargo_postulado": _first_value(datos.get("cargo_postulado") if datos else None, candidato.cargo_postulado),
 				"salario": datos.get("salario") if datos else None,
 				"tipo_contrato": datos.get("tipo_contrato") if datos else None,
@@ -959,14 +998,15 @@ def affiliation_contract_snapshot(candidate):
 				"horas_trabajadas_mes": datos.get("horas_trabajadas_mes") if datos else None,
 			},
 			"seguridad_social": {
-				"eps_siesa": _first_value(datos.get("eps_siesa") if datos else None, candidato.eps_siesa),
-				"afp_siesa": _first_value(datos.get("afp_siesa") if datos else None, candidato.afp_siesa),
-				"cesantias_siesa": _first_value(datos.get("cesantias_siesa") if datos else None, candidato.cesantias_siesa),
-				"ccf_siesa": _first_value(datos.get("ccf_siesa") if datos else None, candidato.ccf_siesa),
-				"arl_codigo_siesa": _first_value(
-					datos.get("arl_codigo_siesa") if datos else None,
-					afiliacion.get("arl_numero_afiliacion") if afiliacion else None,
-				),
+				"eps_siesa": eps_siesa,
+				"eps_siesa_nombre": resolve_catalog_display_name("Entidad EPS Siesa", eps_siesa),
+				"afp_siesa": afp_siesa,
+				"afp_siesa_nombre": resolve_catalog_display_name("Entidad AFP Siesa", afp_siesa),
+				"cesantias_siesa": cesantias_siesa,
+				"cesantias_siesa_nombre": resolve_catalog_display_name("Entidad Cesantias Siesa", cesantias_siesa),
+				"ccf_siesa": ccf_siesa,
+				"ccf_siesa_nombre": resolve_catalog_display_name("Entidad CCF Siesa", ccf_siesa),
+				"arl_codigo_siesa": arl_codigo_siesa,
 			},
 		},
 	}

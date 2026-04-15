@@ -11,8 +11,10 @@ _ORIGINAL_MODULES = {name: sys.modules.get(name) for name in [
 	"frappe.utils.file_manager",
 	"hubgh.hubgh.candidate_states",
 	"hubgh.hubgh.doctype.document_type.document_type",
+	"hubgh.person_identity",
 	"hubgh.hubgh.people_ops_handoffs",
 	"hubgh.hubgh.people_ops_policy",
+	"hubgh.hubgh.permissions",
 	"hubgh.hubgh.role_matrix",
 	"hubgh.hubgh.selection_document_types",
 ]}
@@ -28,6 +30,7 @@ def _install_stubs():
 	frappe_module.session = SimpleNamespace(user="candidate@example.com")
 	frappe_module.get_doc = lambda *args, **kwargs: None
 	frappe_module.get_all = lambda *args, **kwargs: []
+	frappe_module.get_roles = lambda *args, **kwargs: []
 	frappe_module.throw = lambda msg: (_ for _ in ()).throw(Exception(msg))
 	frappe_module._ = lambda value: value
 	sys.modules["frappe"] = frappe_module
@@ -46,10 +49,15 @@ def _install_stubs():
 	candidate_states.STATE_DOCUMENTACION = "Documentación"
 	candidate_states.STATE_EXAMEN_MEDICO = "Examen Médico"
 	candidate_states.STATE_LISTO_CONTRATAR = "Listo para contratar"
+	candidate_states.candidate_status_filter_values = lambda *values: list(values)
 	candidate_states.get_candidate_status_options = lambda *args, **kwargs: []
 	candidate_states.is_candidate_status = lambda *args, **kwargs: False
 	candidate_states.resolve_candidate_status_for_storage = lambda value, **kwargs: value
 	sys.modules["hubgh.hubgh.candidate_states"] = candidate_states
+
+	person_identity_module = types.ModuleType("hubgh.person_identity")
+	person_identity_module.resolve_employee_for_user = lambda user: SimpleNamespace(employee=None)
+	sys.modules["hubgh.person_identity"] = person_identity_module
 
 	doc_type_module = types.ModuleType("hubgh.hubgh.doctype.document_type.document_type")
 	doc_type_module.get_effective_area_roles = lambda role: [role]
@@ -60,11 +68,16 @@ def _install_stubs():
 	sys.modules["hubgh.hubgh.people_ops_handoffs"] = handoffs_module
 
 	policy_module = types.ModuleType("hubgh.hubgh.people_ops_policy")
+	policy_module.DIMENSION_ROLE_MATRIX = {}
 	policy_module.evaluate_dimension_access = lambda *args, **kwargs: True
+	policy_module.get_user_dimension_access = lambda *args, **kwargs: {"operational": True}
 	policy_module.resolve_document_dimension = lambda *args, **kwargs: "general"
+	policy_module.user_can_access_dimension = lambda *args, **kwargs: True
 	sys.modules["hubgh.hubgh.people_ops_policy"] = policy_module
 
 	role_matrix_module = types.ModuleType("hubgh.hubgh.role_matrix")
+	role_matrix_module.GH_ADMIN_CANONICAL_ROLES = set()
+	role_matrix_module.OPS_POINT_CANONICAL_ROLES = set()
 	role_matrix_module.roles_have_any = lambda *args, **kwargs: False
 	role_matrix_module.user_has_any_role = lambda *args, **kwargs: False
 	sys.modules["hubgh.hubgh.role_matrix"] = role_matrix_module
@@ -77,6 +90,7 @@ def _install_stubs():
 _install_stubs()
 
 from hubgh.hubgh import document_service
+from hubgh.hubgh import permissions
 
 
 def tearDownModule():
@@ -122,6 +136,16 @@ class TestPersonDocumentIdentity(TestCase):
 			return_value={"effective_allowed": False},
 		):
 			self.assertFalse(document_service.can_user_read_person_document(doc, user="rrll@example.com"))
+
+	def test_person_document_write_requires_relaciones_laborales_jefe_for_employee_records(self):
+		doc = SimpleNamespace(person_type="Empleado")
+		with patch("hubgh.hubgh.permissions.user_has_any_role", return_value=False):
+			self.assertFalse(permissions.person_document_has_permission(doc, user="rrll@example.com", permission_type="write"))
+
+	def test_person_document_write_allows_relaciones_laborales_jefe_for_employee_records(self):
+		doc = SimpleNamespace(person_type="Empleado")
+		with patch("hubgh.hubgh.permissions.user_has_any_role", side_effect=lambda user, *roles: "Relaciones Laborales Jefe" in roles):
+			self.assertTrue(permissions.person_document_has_permission(doc, user="rrll.jefe@example.com", permission_type="write"))
 
 	def test_new_person_document_sets_candidate_identity_fields(self):
 		captured = {}
@@ -200,6 +224,67 @@ class TestPersonDocumentIdentity(TestCase):
 			resolved = document_service._resolve_person_name("Candidato", "333333")
 
 		self.assertEqual(resolved, "CAND-0001")
+
+	def test_resolve_person_name_falls_back_to_candidate_linked_employee(self):
+		def _exists(doctype, name=None, *args, **kwargs):
+			if doctype == "Candidato" and name == "EMP-0001":
+				return False
+			if doctype == "Ficha Empleado" and name == "EMP-0001":
+				return True
+			return False
+
+		def _get_value(doctype, filters=None, fieldname=None, *args, **kwargs):
+			if doctype == "Candidato" and filters == {"numero_documento": "EMP-0001"}:
+				return None
+			if doctype == "Candidato" and filters == {"persona": "EMP-0001"}:
+				return "CAND-0009"
+			return None
+
+		with patch("hubgh.hubgh.document_service.frappe.db.exists", side_effect=_exists), patch(
+			"hubgh.hubgh.document_service.frappe.db.get_value", side_effect=_get_value
+		), patch("hubgh.hubgh.document_service.frappe.get_all", return_value=[]):
+			resolved = document_service._resolve_person_name("Candidato", "EMP-0001")
+
+		self.assertEqual(resolved, "CAND-0009")
+
+	def test_get_person_document_rows_matches_candidate_aliases(self):
+		rows = [
+			{
+				"name": "PD-001",
+				"person": "EMP-0001",
+				"candidate": "CAND-0001",
+				"employee": "EMP-0001",
+				"document_type": "SAGRILAFT",
+			}
+		]
+
+		def _exists(doctype, name=None, *args, **kwargs):
+			if doctype == "Candidato" and name == "CAND-0001":
+				return True
+			if doctype == "Ficha Empleado" and name == "EMP-0001":
+				return True
+			return False
+
+		def _get_value(doctype, filters=None, fieldname=None, *args, **kwargs):
+			if doctype == "Candidato" and filters == "CAND-0001" and fieldname == "numero_documento":
+				return "333333"
+			if doctype == "Candidato" and filters == "CAND-0001" and fieldname == "persona":
+				return "EMP-0001"
+			if doctype == "Ficha Empleado" and filters == "EMP-0001" and fieldname == "cedula":
+				return "333333"
+			return None
+
+		with patch("hubgh.hubgh.document_service.frappe.db.exists", side_effect=_exists), patch(
+			"hubgh.hubgh.document_service.frappe.db.get_value", side_effect=_get_value
+		), patch("hubgh.hubgh.document_service.frappe.get_all", return_value=rows):
+			matched = document_service.get_person_document_rows(
+				"Candidato",
+				"CAND-0001",
+				fields=["name", "document_type"],
+			)
+
+		self.assertEqual(len(matched), 1)
+		self.assertEqual(matched[0]["name"], "PD-001")
 
 	def test_repair_person_document_links_backfills_candidate_identity(self):
 		rows = [

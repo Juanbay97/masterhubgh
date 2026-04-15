@@ -193,3 +193,41 @@ class TestNovedadSST(FrappeTestCase):
 
 		self.assertTrue(any(call.args[:3] == ("SST Alerta", "ALERTA-001", {"empleado": "EMP-001", "punto_venta": "PDV-001", "fecha_programada": "2026-03-20", "tipo_alerta": "Seguimiento", "asignado_a": "sst@example.com", "mensaje": "Mensaje refrescado", "canal": "In-app", "estado": "Atendida"}) for call in set_value_mock.call_args_list))
 		self.assertTrue(any(call.args[:3] == ("SST Alerta", "ALERTA-001", "referencia_todo") for call in set_value_mock.call_args_list))
+
+	def test_long_incapacidad_auto_schedules_post_exam_alert_seven_days_before_end(self):
+		doc = frappe.get_doc({"doctype": "Novedad SST"})
+		doc.tipo_novedad = "Incapacidad por enfermedad general"
+		doc.fecha_inicio = "2026-03-01"
+		doc.fecha_fin = "2026-04-05"
+		doc.alerta_activa = 1
+		doc.calculate_dias_incapacidad()
+
+		doc.ensure_alerta_base()
+
+		self.assertEqual(doc.dias_incapacidad, 36)
+		self.assertEqual(doc.crear_alerta, 1)
+		self.assertEqual(doc.tipo_alerta, "Examen post incapacidad")
+		self.assertEqual(doc.proxima_alerta_fecha, "2026-03-29")
+
+	def test_short_incapacidad_does_not_auto_generate_post_exam_alert(self):
+		doc = frappe.get_doc({"doctype": "Novedad SST"})
+		doc.tipo_novedad = "Incapacidad por enfermedad general"
+		doc.fecha_inicio = "2026-03-01"
+		doc.fecha_fin = "2026-03-30"
+		doc.alerta_activa = 1
+		doc.calculate_dias_incapacidad()
+
+		doc.ensure_alerta_base()
+
+		self.assertEqual(doc.dias_incapacidad, 30)
+		self.assertFalse(doc.crear_alerta)
+		self.assertFalse(doc.proxima_alerta_fecha)
+
+	def test_manual_alert_requires_explicit_fire_date(self):
+		doc = frappe.get_doc({"doctype": "Novedad SST"})
+		doc.tipo_novedad = "Seguimiento SST"
+		doc.alerta_activa = 1
+		doc.crear_alerta = 1
+
+		with self.assertRaises(frappe.ValidationError):
+			doc.ensure_alerta_base()
