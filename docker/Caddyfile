@@ -1,6 +1,11 @@
 {$PUBLIC_DOMAIN} {
 	encode gzip zstd
 
+	@private_files path /private/files/*
+	handle @private_files {
+		reverse_proxy backend:8000
+	}
+
 	@forbidden path /.env /.git* /sites/* /private/* /backups/* /logs/* /terraform* /helm/*
 	respond @forbidden 404
 
