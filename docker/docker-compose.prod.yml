@@ -62,6 +62,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
+      - bench_data:/home/frappe/frappe-bench:ro
+      - ../hubgh:/home/frappe/frappe-bench/apps/hubgh:ro
+      - sites_data:/home/frappe/frappe-bench/sites:ro
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config

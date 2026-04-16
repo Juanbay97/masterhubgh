@@ -4,6 +4,18 @@
 	@forbidden path /.env /.git* /sites/* /private/* /backups/* /logs/* /terraform* /helm/*
 	respond @forbidden 404
 
+	@assets path /assets/*
+	handle @assets {
+		root * /home/frappe/frappe-bench/sites
+		file_server
+	}
+
+	@public_files path /files/*
+	handle @public_files {
+		root * /home/frappe/frappe-bench/sites
+		file_server
+	}
+
 	header {
 		X-Content-Type-Options nosniff
 		X-Frame-Options SAMEORIGIN
