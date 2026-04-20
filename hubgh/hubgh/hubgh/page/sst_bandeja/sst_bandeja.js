@@ -253,6 +253,28 @@ function bindEvents(page) {
 		}, {});
 		render(page);
 	});
+
+	// T11: Row click handler — opens caso completo drawer via get_caso_completo
+	// Uses event delegation on $root; button clicks are excluded via closest check.
+	$root.off("click.sst-row-click").on("click.sst-row-click", "tr[data-novedad-name]", function(e) {
+		// Don't trigger drawer if user clicked a button inside the row
+		if ($(e.target).closest("button, a").length) return;
+		const novedadName = $(this).data("novedad-name");
+		if (!novedadName || !String(novedadName).startsWith("NOV-")) return;
+		frappe.call({
+			method: "hubgh.hubgh.page.sst_bandeja.sst_bandeja.get_caso_completo",
+			args: { novedad_name: novedadName },
+			callback: function(r) {
+				if (!r || !r.message) return;
+				const content = renderCasoTimeline(r.message);
+				frappe.msgprint({
+					title: `Caso: ${novedadName}`,
+					message: content,
+					wide: true,
+				});
+			},
+		});
+	});
 }
 
 function openReprogramDialog(alertaName, page) {
@@ -325,10 +347,21 @@ function tableCardHtml(tableKey, rows) {
 	`;
 }
 
+// T9: _canEscalarRrll — single source of truth for RRLL button gate
+// Both getPrimaryAction and rowHtml use this helper to avoid duplication.
+function _canEscalarRrll(row) {
+	return (
+		row.name && String(row.name).startsWith("NOV-") &&
+		!row.rrll_handoff_name &&
+		row.origen_incapacidad === "Accidente laboral" &&
+		row.causa_evento === "Acto inseguro"
+	);
+}
+
 function getPrimaryAction(actions, row) {
 	const actionList = actions || [];
 	if (actionList.includes("atender")) return { type: "attend", label: "Cerrar", tone: "btn-success" };
-	if (actionList.includes("escalar_rrll") && row.name && String(row.name).startsWith("NOV-") && !row.rrll_handoff_name) {
+	if (actionList.includes("escalar_rrll") && _canEscalarRrll(row)) {
 		return { type: "handoff", label: "Escalar RRLL", tone: "btn-warning" };
 	}
 	if (actionList.includes("reprogramar")) return { type: "reprogram", label: "Reprogramar", tone: "btn-primary" };
@@ -352,7 +385,7 @@ function rowHtml(row, cols, actions) {
 	} else if (actions.includes("abrir_novedad") && row.name && String(row.name).startsWith("NOV-") && (!primary || primary.type !== "open_novedad")) {
 		secondary.push(`<button class="btn btn-xs btn-link action-open-doc" data-doctype="Novedad SST" data-name="${escapeHtml(row.name || "")}">Abrir</button>`);
 	}
-	if (actions.includes("escalar_rrll") && row.name && String(row.name).startsWith("NOV-") && !row.rrll_handoff_name && (!primary || primary.type !== "handoff")) {
+	if (actions.includes("escalar_rrll") && _canEscalarRrll(row) && (!primary || primary.type !== "handoff")) {
 		secondary.push(`<button class="btn btn-xs btn-link action-handoff-rrll" data-name="${escapeHtml(row.name || "")}">Escalar RRLL</button>`);
 	}
 	if (actions.includes("escalar_rrll") && row.rrll_handoff_name) {
@@ -375,7 +408,63 @@ function rowHtml(row, cols, actions) {
 		}[primary.type]
 		: "-";
 
-	return `<tr>${cells}<td class="sst-actions"><div class="sst-actions-primary">${primaryButton || "-"}</div><div class="sst-actions-secondary">${secondary.join(" ")}</div></td></tr>`;
+	// T10: data-novedad-name on every row for the click handler (T11)
+	const novedadAttr = escapeHtml(row.name || row.novedad || "");
+	return `<tr data-novedad-name="${novedadAttr}">${cells}<td class="sst-actions"><div class="sst-actions-primary">${primaryButton || "-"}</div><div class="sst-actions-secondary">${secondary.join(" ")}</div></td></tr>`;
+}
+
+// T12: renderCasoTimeline — merges prorrogas/seguimientos/alertas/rrll_handoff
+// into a single ascending-date list and renders HTML for the drawer.
+function renderCasoTimeline(caseData) {
+	const items = [];
+
+	(caseData.prorrogas || []).forEach(p => items.push({
+		date: p.fecha_seguimiento || "",
+		icon: "⏱",
+		label: "Prórroga",
+		detail: p.detalle || "",
+	}));
+	(caseData.seguimientos || []).forEach(s => items.push({
+		date: s.fecha_seguimiento || "",
+		icon: "📋",
+		label: s.tipo_seguimiento || "Seguimiento",
+		detail: s.detalle || "",
+	}));
+	(caseData.alertas || []).forEach(a => {
+		// Backend pads Date values to "YYYY-MM-DD 00:00:00" for sort; use as-is
+		const dateVal = a.fecha_programada || "";
+		items.push({
+			date: dateVal,
+			icon: "🔔",
+			label: a.tipo_alerta || "Alerta",
+			detail: a.mensaje || "",
+		});
+	});
+	if (caseData.rrll_handoff) {
+		items.push({
+			date: "",
+			icon: "⚖️",
+			label: "Escalado RRLL",
+			detail: caseData.rrll_handoff.estado || "",
+		});
+	}
+
+	items.sort((a, b) => (a.date || "") < (b.date || "") ? -1 : 1);
+
+	if (!items.length) {
+		return `<div class="sst-timeline"><p class="text-muted">Sin eventos registrados</p></div>`;
+	}
+
+	const rows = items.map(i =>
+		`<div class="sst-timeline-item" style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;">
+			<span style="font-size:16px;min-width:20px;">${i.icon}</span>
+			<span style="color:#6b7280;font-size:11px;min-width:140px;">${escapeHtml(i.date)}</span>
+			<span style="font-weight:600;min-width:140px;">${escapeHtml(i.label)}</span>
+			<span style="color:#374151;">${escapeHtml(i.detail)}</span>
+		</div>`
+	).join("");
+
+	return `<div class="sst-timeline" style="max-height:480px;overflow-y:auto;">${rows}</div>`;
 }
 
 function kpiCardHtml(label, value, tone) {

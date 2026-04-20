@@ -231,3 +231,38 @@ class TestNovedadSST(FrappeTestCase):
 
 		with self.assertRaises(frappe.ValidationError):
 			doc.ensure_alerta_base()
+
+	# --- T1: create_rrll_handoff business-rule gate ---
+
+	def test_create_rrll_handoff_blocks_when_origen_not_accidente_laboral(self):
+		"""REQ-1: escalation must be rejected when origen_incapacidad != 'Accidente laboral'."""
+		from hubgh.hubgh.doctype.novedad_sst.novedad_sst import _validate_rrll_escalation_rules
+
+		doc = frappe.get_doc({"doctype": "Novedad SST"})
+		doc.origen_incapacidad = "Enfermedad General"
+		doc.causa_evento = "Acto inseguro"
+
+		with self.assertRaises(frappe.ValidationError):
+			_validate_rrll_escalation_rules(doc)
+
+	def test_create_rrll_handoff_blocks_when_causa_evento_not_acto_inseguro(self):
+		"""REQ-2: escalation must be rejected when causa_evento != 'Acto inseguro'."""
+		from hubgh.hubgh.doctype.novedad_sst.novedad_sst import _validate_rrll_escalation_rules
+
+		doc = frappe.get_doc({"doctype": "Novedad SST"})
+		doc.origen_incapacidad = "Accidente laboral"
+		doc.causa_evento = "Condición insegura"
+
+		with self.assertRaises(frappe.ValidationError):
+			_validate_rrll_escalation_rules(doc)
+
+	def test_create_rrll_handoff_succeeds_when_both_conditions_hold(self):
+		"""REQ-3: escalation must proceed without exception when both fields match."""
+		from hubgh.hubgh.doctype.novedad_sst.novedad_sst import _validate_rrll_escalation_rules
+
+		doc = frappe.get_doc({"doctype": "Novedad SST"})
+		doc.origen_incapacidad = "Accidente laboral"
+		doc.causa_evento = "Acto inseguro"
+
+		# Must NOT raise — implicitly asserts no exception
+		_validate_rrll_escalation_rules(doc)
