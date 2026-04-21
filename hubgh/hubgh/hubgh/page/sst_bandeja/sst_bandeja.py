@@ -280,6 +280,28 @@ def get_sst_bandeja(punto_venta=None, categoria=None, responsable=None):
 	cola_recomendaciones = _build_cola_recomendaciones_medicas(novedad_names)
 	cola_prorrogas_pendientes = _build_cola_prorrogas_pendientes(novedad_names)
 
+	# cola_examenes_pendientes — Citas en estado activo (Pendiente Agendamiento o Agendada)
+	citas_activas = frappe.get_all(
+		"Cita Examen Medico",
+		filters={"estado": ["in", ["Pendiente Agendamiento", "Agendada"]]},
+		fields=["name", "candidato", "ips", "fecha_cita", "hora_cita", "estado", "token"],
+	)
+	# Bulk-fetch candidato nombre para evitar N+1
+	candidato_names = list({r.get("candidato") for r in citas_activas if r.get("candidato")})
+	candidato_nombre_map = {}
+	if candidato_names:
+		candidato_rows = frappe.get_all(
+			"Candidato",
+			filters={"name": ["in", candidato_names]},
+			fields=["name", "nombres", "primer_apellido"],
+			limit_page_length=len(candidato_names),
+		)
+		for cr in candidato_rows:
+			label = " ".join(filter(None, [cr.get("nombres"), cr.get("primer_apellido")])).strip()
+			candidato_nombre_map[cr.get("name")] = label or cr.get("name")
+	for cita in citas_activas:
+		cita["candidato_nombre"] = candidato_nombre_map.get(cita.get("candidato"), cita.get("candidato") or "")
+
 	resumen_examenes = {
 		"pendientes": 0,
 		"historico": 0,
@@ -317,6 +339,8 @@ def get_sst_bandeja(punto_venta=None, categoria=None, responsable=None):
 		# T6: new queue keys
 		"cola_recomendaciones": cola_recomendaciones,
 		"cola_prorrogas_pendientes": cola_prorrogas_pendientes,
+		# Batch 5: citas de examen médico activas (Pendiente Agendamiento + Agendada)
+		"cola_examenes_pendientes": citas_activas,
 		"resumen_examenes": resumen_examenes,
 		"kpis": {
 			"total_alertas": len(cola_alertas),
@@ -331,6 +355,8 @@ def get_sst_bandeja(punto_venta=None, categoria=None, responsable=None):
 			# T6: new KPI keys
 			"recomendaciones_activas": len(cola_recomendaciones),
 			"prorrogas_pendientes": len(cola_prorrogas_pendientes),
+			# Batch 5
+			"citas_examen_activas": len(citas_activas),
 		},
 	}
 
@@ -446,3 +472,79 @@ def atender_alerta(alerta_name, reprogramar_fecha=None, comentario=None, cerrar=
 	alerta.save(ignore_permissions=True)
 	novedad.save(ignore_permissions=True)
 	return {"ok": True}
+
+
+@frappe.whitelist()
+def sst_accion_cita(
+	cita_name,
+	accion,
+	concepto=None,
+	motivo=None,
+	instrucciones=None,
+):
+	"""
+	Registra el resultado de una Cita Examen Medico desde la bandeja SST.
+
+	Acciones soportadas:
+	  - realizada        → set_exam_outcome con estado="Realizada" y concepto
+	  - aplazada         → set_exam_outcome con estado="Aplazada", motivo e instrucciones
+	  - no_asistio_rebook → set_exam_outcome con estado="No Asistió", action="rebook"
+	  - no_asistio_close → set_exam_outcome con estado="No Asistió", action="close"
+
+	Requiere rol HR SST.
+
+	Returns:
+		{"ok": True, "cita": cita_name}
+
+	Raises:
+		frappe.PermissionError: Si el usuario no tiene rol HR SST.
+		frappe.ValidationError: Si acción no es válida o cita_name no existe.
+	"""
+	if not cita_name:
+		frappe.throw(_("Falta cita_name"), frappe.ValidationError)
+
+	roles = set(frappe.get_roles() or [])
+	allowed_roles = {"HR SST", "System Manager"}
+	if not roles.intersection(allowed_roles):
+		frappe.throw(
+			_("Solo usuarios con rol HR SST pueden registrar resultados de exámenes médicos."),
+			frappe.PermissionError,
+		)
+
+	ACCIONES_VALIDAS = {"realizada", "aplazada", "no_asistio_rebook", "no_asistio_close"}
+	accion = (accion or "").strip().lower()
+	if accion not in ACCIONES_VALIDAS:
+		frappe.throw(
+			_("Acción inválida. Valores permitidos: realizada, aplazada, no_asistio_rebook, no_asistio_close."),
+			frappe.ValidationError,
+		)
+
+	from hubgh.hubgh.examen_medico.cita_service import set_exam_outcome
+
+	if accion == "realizada":
+		set_exam_outcome(
+			cita_name=cita_name,
+			estado="Realizada",
+			concepto=concepto,
+		)
+	elif accion == "aplazada":
+		set_exam_outcome(
+			cita_name=cita_name,
+			estado="Aplazada",
+			motivo=motivo,
+			instrucciones=instrucciones,
+		)
+	elif accion == "no_asistio_rebook":
+		set_exam_outcome(
+			cita_name=cita_name,
+			estado="No Asistió",
+			action="rebook",
+		)
+	elif accion == "no_asistio_close":
+		set_exam_outcome(
+			cita_name=cita_name,
+			estado="No Asistió",
+			action="close",
+		)
+
+	return {"ok": True, "cita": cita_name}

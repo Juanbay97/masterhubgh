@@ -1,0 +1,104 @@
+[
+ {
+  "doctype": "IPS",
+  "name": "Zonamedica MR SAS",
+  "nombre": "Zonamedica MR SAS",
+  "direccion": "Calle 40 # 26 A 50 Barrio La Soledad",
+  "ciudad": "Bogotá",
+  "email_notificacion": "recepcion@zonamedicaips.com",
+  "telefono": "7514626 / 3168774072 / 3138536350",
+  "activa": 1,
+  "requiere_orden_servicio": 0,
+  "horarios": [
+   {
+    "doctype": "IPS Horario",
+    "dia_semana": "L",
+    "hora_inicio": "07:00:00",
+    "hora_fin": "11:00:00",
+    "intervalo_minutos": 60,
+    "cupos_por_slot": 3
+   },
+   {
+    "doctype": "IPS Horario",
+    "dia_semana": "M",
+    "hora_inicio": "07:00:00",
+    "hora_fin": "11:00:00",
+    "intervalo_minutos": 60,
+    "cupos_por_slot": 3
+   },
+   {
+    "doctype": "IPS Horario",
+    "dia_semana": "X",
+    "hora_inicio": "07:00:00",
+    "hora_fin": "11:00:00",
+    "intervalo_minutos": 60,
+    "cupos_por_slot": 3
+   },
+   {
+    "doctype": "IPS Horario",
+    "dia_semana": "J",
+    "hora_inicio": "07:00:00",
+    "hora_fin": "11:00:00",
+    "intervalo_minutos": 60,
+    "cupos_por_slot": 3
+   },
+   {
+    "doctype": "IPS Horario",
+    "dia_semana": "V",
+    "hora_inicio": "07:00:00",
+    "hora_fin": "11:00:00",
+    "intervalo_minutos": 60,
+    "cupos_por_slot": 3
+   }
+  ],
+  "emails_por_ciudad": [
+   {
+    "doctype": "IPS Email Por Ciudad",
+    "ciudad": "Cartagena",
+    "email": "ejecutivocuenta@zonamedicaips.com"
+   },
+   {
+    "doctype": "IPS Email Por Ciudad",
+    "ciudad": "Medellín",
+    "email": "ejecutivocuenta@zonamedicaips.com"
+   }
+  ],
+  "examenes_estandar": [
+   {
+    "doctype": "IPS Examen Estandar Por Cargo",
+    "cargo": "Auxiliar de Cocina",
+    "codigo_examen": "EXM-INGRESO",
+    "nombre_examen": "Examen médico con énfasis osteomuscular",
+    "celda_excel": ""
+   },
+   {
+    "doctype": "IPS Examen Estandar Por Cargo",
+    "cargo": "Auxiliar de Cocina",
+    "codigo_examen": "EXM-OPTO",
+    "nombre_examen": "Optometría",
+    "celda_excel": ""
+   },
+   {
+    "doctype": "IPS Examen Estandar Por Cargo",
+    "cargo": "Auxiliar de Cocina",
+    "codigo_examen": "EXM-KOH",
+    "nombre_examen": "KOH",
+    "celda_excel": ""
+   },
+   {
+    "doctype": "IPS Examen Estandar Por Cargo",
+    "cargo": "Auxiliar de Cocina",
+    "codigo_examen": "EXM-COPRO",
+    "nombre_examen": "Coprológico",
+    "celda_excel": ""
+   },
+   {
+    "doctype": "IPS Examen Estandar Por Cargo",
+    "cargo": "Auxiliar de Cocina",
+    "codigo_examen": "EXM-FROTIS-G",
+    "nombre_examen": "Frotis de garganta",
+    "celda_excel": ""
+   }
+  ]
+ }
+]

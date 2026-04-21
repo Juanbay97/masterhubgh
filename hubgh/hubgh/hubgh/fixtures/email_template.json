@@ -1,0 +1,37 @@
+[
+ {
+  "doctype": "Email Template",
+  "name": "examen_medico_link_agendar",
+  "subject": "Agenda tu examen médico — Home Burgers",
+  "response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Te informamos que has sido seleccionado para continuar con tu proceso de vinculación. El siguiente paso es agendar tu examen médico de ingreso.</p>\n<p>Para agendarlo, por favor ten a mano <strong>tu cédula</strong> y hacé clic en el botón a continuación. Vas a poder elegir el día y la hora que mejor te quede dentro de los horarios disponibles de la IPS.</p>\n<p style=\"text-align:center;margin:24px 0;\">\n  <a href=\"{{ portal_url }}\" style=\"background:#1d4ed8;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;\">Agendar mi examen médico</a>\n</p>\n<p>Una vez confirmada tu cita, recibirás un correo con los detalles del lugar, la fecha y la hora.</p>\n<p>Si tenés alguna duda, podés escribirnos a <a href=\"mailto:SST@homeburgers.com\">SST@homeburgers.com</a>.</p>\n<p>¡Mucho éxito en tu proceso!</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+  "use_html": 1
+ },
+ {
+  "doctype": "Email Template",
+  "name": "examen_medico_confirmacion",
+  "subject": "Confirmación de cita — examen médico",
+  "response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Tu examen médico ha quedado confirmado con los siguientes datos:</p>\n<ul>\n  <li><strong>Fecha:</strong> {{ cita.fecha_cita }}</li>\n  <li><strong>Hora:</strong> {{ cita.hora_cita }}</li>\n  <li><strong>IPS:</strong> {{ ips.nombre }}</li>\n  <li><strong>Dirección:</strong> {{ ips.direccion }}</li>\n</ul>\n<p>Si necesitás cambiar la fecha o la hora, podés reagendar haciendo clic aquí:</p>\n<p style=\"text-align:center;margin:24px 0;\">\n  <a href=\"{{ portal_url }}\" style=\"background:#059669;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;\">Reagendar mi cita</a>\n</p>\n<p>Recordá llegar puntual y traer tu documento de identidad.</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+  "use_html": 1
+ },
+ {
+  "doctype": "Email Template",
+  "name": "examen_medico_ips_notificacion",
+  "subject": "Programación de examen médico — {{ candidato.nombre }}",
+  "response": "<p>Buenas tardes.</p>\n<p>Me ayudan por favor agendando a esta persona para el día <strong>{{ cita.fecha_cita }}</strong> a las <strong>{{ cita.hora_cita }}</strong>.</p>\n<ul>\n  <li><strong>CC:</strong> {{ candidato.cedula }}</li>\n  <li><strong>Nombre:</strong> {{ candidato.nombre }}</li>\n  <li><strong>Cargo:</strong> {{ candidato.cargo }}</li>\n  <li><strong>Ciudad:</strong> {{ candidato.ciudad }}</li>\n</ul>\n<p><strong>Exámenes a realizar:</strong></p>\n<ul>\n  {% for examen in context.examenes %}\n  <li>{{ examen.nombre_examen }}</li>\n  {% endfor %}\n</ul>\n<p><strong>Empresa que remite:</strong> Comidas Varpel S.A.S.</p>\n<p>Muchas gracias.</p>\n<p><em>SST — Home Burgers<br>SST@homeburgers.com</em></p>",
+  "use_html": 1
+ },
+ {
+  "doctype": "Email Template",
+  "name": "examen_medico_aplazado",
+  "subject": "Tu examen médico fue aplazado — reagendá aquí",
+  "response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Tu examen médico del <strong>{{ cita.fecha_cita }}</strong> fue aplazado.</p>\n<p><strong>Motivo:</strong> {{ motivo_aplazamiento }}</p>\n{% if instrucciones_reagendamiento %}\n<p><strong>Instrucciones para tu próxima cita:</strong></p>\n<p>{{ instrucciones_reagendamiento }}</p>\n{% endif %}\n<p>Podés elegir una nueva fecha y hora haciendo clic aquí:</p>\n<p style=\"text-align:center;margin:24px 0;\">\n  <a href=\"{{ portal_url }}\" style=\"background:#d97706;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;\">Reagendar mi examen</a>\n</p>\n<p>Si tenés preguntas, escribinos a <a href=\"mailto:SST@homeburgers.com\">SST@homeburgers.com</a>.</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+  "use_html": 1
+ },
+ {
+  "doctype": "Email Template",
+  "name": "examen_medico_recordatorio",
+  "subject": "Recordatorio — examen médico mañana",
+  "response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Te recordamos que <strong>mañana {{ cita.fecha_cita }}</strong> a las <strong>{{ cita.hora_cita }}</strong> tenés tu examen médico en:</p>\n<ul>\n  <li><strong>{{ ips.nombre }}</strong></li>\n  <li>{{ ips.direccion }}</li>\n</ul>\n<p>Por favor llegá puntual con tu documento de identidad.</p>\n<p>¡Te esperamos!</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+  "use_html": 1
+ }
+]

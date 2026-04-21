@@ -9,7 +9,16 @@ app_license = "mit"
 # Los Workspace en {module}/workspace/*.json se sincronizan automáticamente,
 # pero los listamos aquí también como red de seguridad.
 fixtures = [
-    {"dt": "Workspace", "filters": [["module", "=", "Hubgh"]]},
+	{"dt": "Workspace", "filters": [["module", "=", "Hubgh"]]},
+	{"dt": "Ciudad"},
+	{"dt": "IPS", "filters": [["nombre", "=", "Zonamedica MR SAS"]]},
+	{"dt": "Email Template", "filters": [["name", "in", [
+		"examen_medico_link_agendar",
+		"examen_medico_confirmacion",
+		"examen_medico_ips_notificacion",
+		"examen_medico_aplazado",
+		"examen_medico_recordatorio",
+	]]]},
 ]
 
 # Apps
@@ -261,7 +270,12 @@ scheduler_events = {
 		"hubgh.tasks.bienestar_marcar_vencidos_diario",
 		"hubgh.hubgh.people_ops_event_publishers.reconcile_people_ops_events_warn",
 		"hubgh.user_groups.sync_all_user_groups",
-	]
+	],
+	"cron": {
+		"0 17 * * *": [
+			"hubgh.hubgh.examen_medico.tasks.enviar_recordatorios_examen_medico",
+		],
+	},
 }
 
 # scheduler_events = {

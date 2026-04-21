@@ -1,0 +1,17 @@
+[
+ {
+  "doctype": "Ciudad",
+  "name": "Bogotá",
+  "nombre": "Bogotá"
+ },
+ {
+  "doctype": "Ciudad",
+  "name": "Medellín",
+  "nombre": "Medellín"
+ },
+ {
+  "doctype": "Ciudad",
+  "name": "Cartagena",
+  "nombre": "Cartagena"
+ }
+]

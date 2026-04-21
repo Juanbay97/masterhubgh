@@ -1,0 +1,70 @@
+{
+ "actions": [],
+ "creation": "2026-04-20 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "dia_semana",
+  "hora_inicio",
+  "hora_fin",
+  "intervalo_minutos",
+  "cupos_por_slot"
+ ],
+ "fields": [
+  {
+   "fieldname": "dia_semana",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Día Semana",
+   "options": "L\nM\nX\nJ\nV\nS\nD",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hora_inicio",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Hora Inicio",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hora_fin",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Hora Fin",
+   "reqd": 1
+  },
+  {
+   "default": "60",
+   "fieldname": "intervalo_minutos",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Intervalo (min)",
+   "reqd": 1
+  },
+  {
+   "default": "3",
+   "fieldname": "cupos_por_slot",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Cupos por Slot",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-04-20 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "IPS Horario",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,177 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:nombre",
+ "creation": "2026-04-20 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "nombre",
+  "ciudad",
+  "direccion",
+  "email_notificacion",
+  "telefono",
+  "contacto_responsable",
+  "activa",
+  "requiere_orden_servicio",
+  "template_orden_servicio",
+  "section_horarios",
+  "horarios",
+  "section_dias_bloqueados",
+  "dias_bloqueados",
+  "section_examenes",
+  "examenes_estandar",
+  "section_emails",
+  "emails_por_ciudad"
+ ],
+ "fields": [
+  {
+   "fieldname": "nombre",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "ciudad",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Ciudad",
+   "options": "Ciudad",
+   "reqd": 1
+  },
+  {
+   "fieldname": "direccion",
+   "fieldtype": "Data",
+   "label": "Dirección"
+  },
+  {
+   "fieldname": "email_notificacion",
+   "fieldtype": "Data",
+   "label": "Email Notificación",
+   "options": "Email",
+   "reqd": 1
+  },
+  {
+   "fieldname": "telefono",
+   "fieldtype": "Data",
+   "label": "Teléfono"
+  },
+  {
+   "fieldname": "contacto_responsable",
+   "fieldtype": "Data",
+   "label": "Contacto Responsable"
+  },
+  {
+   "default": "1",
+   "fieldname": "activa",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Activa"
+  },
+  {
+   "fieldname": "requiere_orden_servicio",
+   "fieldtype": "Check",
+   "label": "Requiere Orden de Servicio"
+  },
+  {
+   "fieldname": "template_orden_servicio",
+   "fieldtype": "Attach",
+   "label": "Template Orden de Servicio (FRSN-02)",
+   "mandatory_depends_on": "eval:doc.requiere_orden_servicio==1"
+  },
+  {
+   "fieldname": "section_horarios",
+   "fieldtype": "Section Break",
+   "label": "Horarios de Atención"
+  },
+  {
+   "fieldname": "horarios",
+   "fieldtype": "Table",
+   "label": "Horarios",
+   "options": "IPS Horario"
+  },
+  {
+   "fieldname": "section_dias_bloqueados",
+   "fieldtype": "Section Break",
+   "label": "Días Bloqueados"
+  },
+  {
+   "fieldname": "dias_bloqueados",
+   "fieldtype": "Table",
+   "label": "Días Bloqueados",
+   "options": "IPS Dia Bloqueado"
+  },
+  {
+   "fieldname": "section_examenes",
+   "fieldtype": "Section Break",
+   "label": "Exámenes Estándar por Cargo"
+  },
+  {
+   "fieldname": "examenes_estandar",
+   "fieldtype": "Table",
+   "label": "Exámenes Estándar",
+   "options": "IPS Examen Estandar Por Cargo"
+  },
+  {
+   "fieldname": "section_emails",
+   "fieldtype": "Section Break",
+   "label": "Emails por Ciudad"
+  },
+  {
+   "fieldname": "emails_por_ciudad",
+   "fieldtype": "Table",
+   "label": "Emails por Ciudad",
+   "options": "IPS Email Por Ciudad"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-20 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "IPS",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "title_field": "nombre",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR SST",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Selection",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

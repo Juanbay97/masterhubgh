@@ -1,0 +1,211 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-04-20 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "candidato",
+  "ips",
+  "cargo_al_enviar",
+  "section_cita",
+  "fecha_cita",
+  "hora_cita",
+  "estado",
+  "section_token",
+  "token",
+  "token_expira",
+  "token_usado",
+  "section_resultado",
+  "concepto_resultado",
+  "motivo_aplazamiento",
+  "instrucciones_reagendamiento",
+  "section_seguimiento",
+  "enviado_confirmacion",
+  "enviado_recordatorio",
+  "enviado_ips",
+  "cita_anterior"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "CEM-.YYYY.-.####"
+  },
+  {
+   "fieldname": "candidato",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Candidato",
+   "options": "Candidato",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ips",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "IPS",
+   "options": "IPS",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cargo_al_enviar",
+   "fieldtype": "Data",
+   "label": "Cargo al Enviar",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_cita",
+   "fieldtype": "Section Break",
+   "label": "Datos de la Cita"
+  },
+  {
+   "fieldname": "fecha_cita",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Cita"
+  },
+  {
+   "fieldname": "hora_cita",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Hora Cita"
+  },
+  {
+   "default": "Pendiente Agendamiento",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Pendiente Agendamiento\nAgendada\nRealizada\nAplazada\nNo Asistió\nCancelada"
+  },
+  {
+   "fieldname": "section_token",
+   "fieldtype": "Section Break",
+   "label": "Token de Agendamiento"
+  },
+  {
+   "fieldname": "token",
+   "fieldtype": "Data",
+   "label": "Token",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "token_expira",
+   "fieldtype": "Datetime",
+   "label": "Token Expira",
+   "read_only": 1
+  },
+  {
+   "fieldname": "token_usado",
+   "fieldtype": "Check",
+   "label": "Token Usado",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_resultado",
+   "fieldtype": "Section Break",
+   "label": "Resultado"
+  },
+  {
+   "fieldname": "concepto_resultado",
+   "fieldtype": "Select",
+   "label": "Concepto Resultado",
+   "options": "Favorable\nDesfavorable\nAplazado"
+  },
+  {
+   "fieldname": "motivo_aplazamiento",
+   "fieldtype": "Small Text",
+   "label": "Motivo Aplazamiento",
+   "depends_on": "eval:doc.estado=='Aplazada'"
+  },
+  {
+   "fieldname": "instrucciones_reagendamiento",
+   "fieldtype": "Small Text",
+   "label": "Instrucciones Reagendamiento",
+   "depends_on": "eval:doc.estado=='Aplazada'"
+  },
+  {
+   "fieldname": "section_seguimiento",
+   "fieldtype": "Section Break",
+   "label": "Seguimiento"
+  },
+  {
+   "fieldname": "enviado_confirmacion",
+   "fieldtype": "Check",
+   "label": "Enviado Confirmación",
+   "read_only": 1
+  },
+  {
+   "fieldname": "enviado_recordatorio",
+   "fieldtype": "Check",
+   "label": "Enviado Recordatorio",
+   "read_only": 1
+  },
+  {
+   "fieldname": "enviado_ips",
+   "fieldtype": "Check",
+   "label": "Enviado IPS",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cita_anterior",
+   "fieldtype": "Link",
+   "label": "Cita Anterior",
+   "options": "Cita Examen Medico"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-20 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Cita Examen Medico",
+ "naming_rule": "Naming Series",
+ "owner": "Administrator",
+ "title_field": "candidato",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR SST",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Selection",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

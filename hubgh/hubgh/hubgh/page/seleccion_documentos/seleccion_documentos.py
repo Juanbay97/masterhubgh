@@ -425,10 +425,15 @@ def send_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso
 
 
 @frappe.whitelist()
-def send_to_medical_exam(candidate):
+def send_to_medical_exam(candidate, cargo=None):
 	_validate_selection_access(candidate)
 	if not _can_manage_candidates():
 		frappe.throw("No autorizado")
+	if cargo:
+		frappe.db.set_value("Candidato", candidate, "cargo", cargo)
+	cand_cargo = cargo or frappe.db.get_value("Candidato", candidate, "cargo")
+	if not cand_cargo:
+		frappe.throw("Cargo es obligatorio para enviar a examen médico")
 	frappe.db.set_value(
 		"Candidato",
 		candidate,
@@ -438,6 +443,9 @@ def send_to_medical_exam(candidate):
 			"concepto_medico": "Pendiente",
 		},
 	)
+	if frappe.conf.get("hubgh_agendamiento_autogestionado_enabled"):
+		from hubgh.hubgh.examen_medico.cita_service import create_cita_and_send_link
+		create_cita_and_send_link(candidate, cand_cargo)
 	return {"ok": True, "status": STATE_EXAMEN_MEDICO}
 
 

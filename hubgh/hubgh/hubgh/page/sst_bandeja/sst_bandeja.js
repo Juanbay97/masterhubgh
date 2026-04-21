@@ -6,6 +6,7 @@ let sstBandejaState = {
 		cola_incapacidades: "",
 		cola_radar: "",
 		cola_novedades: "",
+		cola_examenes_pendientes: "",
 	},
 	data: null,
 };
@@ -75,6 +76,17 @@ const TABLE_CONFIG = {
 			{ key: "rrll_handoff_label", label: "Handoff RRLL" },
 		],
 		actions: ["abrir_novedad", "escalar_rrll"],
+	},
+	cola_examenes_pendientes: {
+		title: "Exámenes médicos activos",
+		columns: [
+			{ key: "candidato_nombre", label: "Candidato" },
+			{ key: "ips", label: "IPS" },
+			{ key: "fecha_cita", label: "Fecha" },
+			{ key: "hora_cita", label: "Hora" },
+			{ key: "estado", label: "Estado" },
+		],
+		actions: ["marcar_realizada", "marcar_aplazada", "no_asistio"],
 	},
 };
 
@@ -190,6 +202,9 @@ function render(page) {
 				<div class="col-md-6">${tableCardHtml("cola_radar", applyFilters(data.cola_radar || [], "cola_radar"))}</div>
 				<div class="col-md-6">${tableCardHtml("cola_novedades", applyFilters(data.cola_novedades || [], "cola_novedades"))}</div>
 			</div>
+			<div class="row sst-grid-row">
+				<div class="col-md-12">${tableCardExamenes(applyFilters(data.cola_examenes_pendientes || [], "cola_examenes_pendientes"), page)}</div>
+			</div>
 		</div>
 	`);
 
@@ -253,6 +268,9 @@ function bindEvents(page) {
 		}, {});
 		render(page);
 	});
+
+	// Batch 5: bind exam action buttons (realizada / aplazada / no asistió)
+	bindExamActions(page);
 
 	// T11: Row click handler — opens caso completo drawer via get_caso_completo
 	// Uses event delegation on $root; button clicks are excluded via closest check.
@@ -413,6 +431,8 @@ function rowHtml(row, cols, actions) {
 	return `<tr data-novedad-name="${novedadAttr}">${cells}<td class="sst-actions"><div class="sst-actions-primary">${primaryButton || "-"}</div><div class="sst-actions-secondary">${secondary.join(" ")}</div></td></tr>`;
 }
 
+// rowHtmlExamenes and tableCardExamenes are defined below (Batch 5)
+
 // T12: renderCasoTimeline — merges prorrogas/seguimientos/alertas/rrll_handoff
 // into a single ascending-date list and renders HTML for the drawer.
 function renderCasoTimeline(caseData) {
@@ -537,6 +557,213 @@ function escapeHtml(value) {
 		.replace(/>/g, "&gt;")
 		.replace(/"/g, "&quot;")
 		.replace(/'/g, "&#39;");
+}
+
+// ─── Exam action dialogs ────────────────────────────────────────────────────
+
+/**
+ * Open dialog to mark a Cita Examen Medico as Realizada.
+ * Asks for concepto (Favorable / Desfavorable) and calls sst_accion_cita.
+ *
+ * @param {string} citaName - Cita Examen Medico document name
+ * @param {Function} afterAction - callback to refresh the view after action
+ */
+function openMarcarRealizadaDialog(citaName, afterAction) {
+	const d = new frappe.ui.Dialog({
+		title: "Marcar Examen Realizado",
+		fields: [
+			{
+				fieldname: "concepto",
+				fieldtype: "Select",
+				label: "Concepto médico",
+				options: "\nFavorable\nDesfavorable",
+				reqd: 1,
+			},
+		],
+		primary_action_label: "Confirmar",
+		primary_action(values) {
+			frappe.call({
+				method: "hubgh.hubgh.page.sst_bandeja.sst_bandeja.sst_accion_cita",
+				args: {
+					cita_name: citaName,
+					accion: "realizada",
+					concepto: values.concepto,
+				},
+				callback: r => {
+					d.hide();
+					frappe.show_alert({ message: "Examen marcado como Realizado.", indicator: "green" });
+					if (typeof afterAction === "function") afterAction();
+				},
+			});
+		},
+	});
+	d.show();
+}
+
+/**
+ * Open dialog to mark a Cita Examen Medico as Aplazada.
+ * Asks for motivo and instrucciones de reagendamiento.
+ *
+ * @param {string} citaName - Cita Examen Medico document name
+ * @param {Function} afterAction - callback to refresh the view after action
+ */
+function openMarcarAplazadaDialog(citaName, afterAction) {
+	const d = new frappe.ui.Dialog({
+		title: "Marcar Examen Aplazado",
+		fields: [
+			{
+				fieldname: "motivo",
+				fieldtype: "Data",
+				label: "Motivo de aplazamiento",
+				reqd: 1,
+			},
+			{
+				fieldname: "instrucciones",
+				fieldtype: "Small Text",
+				label: "Instrucciones para reagendar",
+			},
+		],
+		primary_action_label: "Confirmar",
+		primary_action(values) {
+			frappe.call({
+				method: "hubgh.hubgh.page.sst_bandeja.sst_bandeja.sst_accion_cita",
+				args: {
+					cita_name: citaName,
+					accion: "aplazada",
+					motivo: values.motivo,
+					instrucciones: values.instrucciones || "",
+				},
+				callback: r => {
+					d.hide();
+					frappe.show_alert({ message: "Examen marcado como Aplazado. Se enviará nuevo link al candidato.", indicator: "orange" });
+					if (typeof afterAction === "function") afterAction();
+				},
+			});
+		},
+	});
+	d.show();
+}
+
+/**
+ * Open dialog for "No Asistió" — asks whether to re-agendar or cerrar the Cita.
+ *
+ * @param {string} citaName - Cita Examen Medico document name
+ * @param {Function} afterAction - callback to refresh the view after action
+ */
+function openNoAsistioDialog(citaName, afterAction) {
+	const d = new frappe.ui.Dialog({
+		title: "No Asistió al Examen",
+		fields: [
+			{
+				fieldname: "tipo_accion",
+				fieldtype: "Select",
+				label: "¿Qué hacer con la cita?",
+				options: "\nRe-agendar (envía nuevo link)\nCerrar (sin reagendar)",
+				reqd: 1,
+			},
+		],
+		primary_action_label: "Confirmar",
+		primary_action(values) {
+			const accion = values.tipo_accion === "Re-agendar (envía nuevo link)"
+				? "no_asistio_rebook"
+				: "no_asistio_close";
+
+			frappe.call({
+				method: "hubgh.hubgh.page.sst_bandeja.sst_bandeja.sst_accion_cita",
+				args: {
+					cita_name: citaName,
+					accion: accion,
+				},
+				callback: r => {
+					d.hide();
+					const msg = accion === "no_asistio_rebook"
+						? "Cita cerrada. Nueva cita creada y link enviado al candidato."
+						: "Cita cerrada sin reagendar.";
+					frappe.show_alert({ message: msg, indicator: "blue" });
+					if (typeof afterAction === "function") afterAction();
+				},
+			});
+		},
+	});
+	d.show();
+}
+
+// ─── Exámenes pendientes table ──────────────────────────────────────────────
+
+function tableCardExamenes(rows, page) {
+	const cfg = TABLE_CONFIG["cola_examenes_pendientes"];
+	const cols = cfg.columns || [];
+
+	const rowsHtml = rows.length
+		? rows.map(r => rowHtmlExamenes(r, cols, page)).join("")
+		: `<tr><td colspan="${cols.length + 1}" class="sst-empty"><div class="sst-empty-state"><strong>Sin citas activas</strong><span>No hay exámenes en estado Pendiente Agendamiento ni Agendada.</span></div></td></tr>`;
+
+	return `
+		<div class="sst-card card-shadow">
+			<div class="sst-card-header">
+				<div>
+					<div class="sst-card-title">${escapeHtml(cfg.title)}</div>
+					<div class="sst-card-copy">Citas en estado Pendiente Agendamiento o Agendada. Registrá el resultado directamente desde aquí.</div>
+				</div>
+				<div class="sst-card-count">${rows.length}</div>
+			</div>
+			<div class="sst-filter-row">
+				<input data-table-key="cola_examenes_pendientes" class="form-control sst-table-filter" placeholder="Filtrar bloque..." value="${escapeHtml((sstBandejaState.tableFilters || {})["cola_examenes_pendientes"] || "")}" />
+			</div>
+			<div class="sst-table-wrap">
+				<table class="table table-sm sst-table">
+					<thead>
+						<tr>
+							${cols.map(c => `<th>${escapeHtml(c.label)}</th>`).join("")}
+							<th>Acciones</th>
+						</tr>
+					</thead>
+					<tbody>
+						${rowsHtml}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	`;
+}
+
+function rowHtmlExamenes(row, cols, page) {
+	const citaName = escapeHtml(row.name || "");
+	const cells = cols.map(c => `<td>${escapeHtml(String(row[c.key] || ""))}</td>`).join("");
+
+	const afterAction = () => fetchAndRender(page);
+
+	const actionsId = `exam-actions-${citaName}`;
+
+	// Buttons are rendered as HTML; event binding happens via delegated listeners in bindExamActions.
+	// We embed the cita name as data attributes for delegation.
+	const primaryBtn = `<button class="btn btn-xs btn-success action-exam-realizada" data-cita="${citaName}">Marcar Realizada</button>`;
+	const secondaryBtns = [
+		`<button class="btn btn-xs btn-link action-exam-aplazada" data-cita="${citaName}">Marcar Aplazada</button>`,
+		`<button class="btn btn-xs btn-link action-exam-no-asistio" data-cita="${citaName}">No Asistió</button>`,
+	].join(" ");
+
+	return `<tr>${cells}<td class="sst-actions"><div class="sst-actions-primary">${primaryBtn}</div><div class="sst-actions-secondary">${secondaryBtns}</div></td></tr>`;
+}
+
+function bindExamActions(page) {
+	const $root = $(page.main || page.body);
+	const afterAction = () => fetchAndRender(page);
+
+	$root.find(".action-exam-realizada").off("click").on("click", function() {
+		const citaName = $(this).data("cita");
+		openMarcarRealizadaDialog(citaName, afterAction);
+	});
+
+	$root.find(".action-exam-aplazada").off("click").on("click", function() {
+		const citaName = $(this).data("cita");
+		openMarcarAplazadaDialog(citaName, afterAction);
+	});
+
+	$root.find(".action-exam-no-asistio").off("click").on("click", function() {
+		const citaName = $(this).data("cita");
+		openNoAsistioDialog(citaName, afterAction);
+	});
 }
 
 function injectStylesOnce() {
