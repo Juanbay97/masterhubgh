@@ -161,4 +161,90 @@ def book_slot(token: str, fecha: str, hora: str) -> dict:
 	from hubgh.hubgh.examen_medico.token_manager import consume_token
 	consume_token(cita_name)
 
+	# Enviar emails post-agendamiento (best-effort — no bloquear respuesta HTTP)
+	try:
+		from hubgh.hubgh.examen_medico.email_service import send_exam_email, get_ips_email
+		from hubgh.hubgh.examen_medico.frsn02_generator import generate_frsn02
+
+		cita = frappe.get_doc("Cita Examen Medico", cita_name)
+		candidato = frappe.get_doc("Candidato", cita.candidato)
+		ips_doc = frappe.get_doc("IPS", ips_name) if ips_name else None
+
+		candidato_nombre = " ".join(filter(None, [
+			getattr(candidato, "nombres", None),
+			getattr(candidato, "primer_apellido", None),
+			getattr(candidato, "segundo_apellido", None),
+		])) or cita.candidato
+
+		# Email 1: confirmación al candidato
+		candidato_email = getattr(candidato, "email", None) or ""
+		if candidato_email and ips_doc:
+			try:
+				site_url = frappe.utils.get_url()
+			except Exception:
+				site_url = ""
+			portal_url = f"{site_url}/agendar_examen?token={token}"
+			try:
+				send_exam_email(
+					template_name="examen_medico_confirmacion",
+					recipients=[candidato_email],
+					context={
+						"candidato": {"nombre": candidato_nombre},
+						"cita": {"fecha_cita": fecha, "hora_cita": hora},
+						"ips": {
+							"nombre": ips_doc.nombre or ips_name,
+							"direccion": ips_doc.direccion or "",
+						},
+						"portal_url": portal_url,
+					},
+				)
+				frappe.db.set_value("Cita Examen Medico", cita_name, "enviado_confirmacion", 1)
+			except Exception:
+				pass
+
+		# Email 2: notificación a la IPS
+		if ips_doc:
+			candidato_ciudad = getattr(candidato, "ciudad", None) or ""
+			ips_email = get_ips_email(ips_doc.as_dict(), candidato_ciudad)
+			if ips_email:
+				cargo_cita = cita.cargo_al_enviar or ""
+				examenes = [
+					{"nombre_examen": row.nombre_examen}
+					for row in (ips_doc.examenes_estandar or [])
+					if (row.cargo or "") == cargo_cita
+				]
+				attachments = []
+				if getattr(ips_doc, "requiere_orden_servicio", 0):
+					try:
+						xlsx_bytes = generate_frsn02(ips_doc.as_dict(), candidato.as_dict())
+						if xlsx_bytes:
+							attachments = [{
+								"fname": f"FRSN-02_{candidato.name}.xlsx",
+								"fcontent": xlsx_bytes,
+							}]
+					except Exception:
+						pass
+				try:
+					send_exam_email(
+						template_name="examen_medico_ips_notificacion",
+						recipients=[ips_email],
+						context={
+							"candidato": {
+								"nombre": candidato_nombre,
+								"cedula": cita.candidato,
+								"cargo": cargo_cita,
+								"ciudad": candidato_ciudad,
+							},
+							"cita": {"fecha_cita": fecha, "hora_cita": hora},
+							"examenes": examenes,
+						},
+						attachments=attachments,
+					)
+					frappe.db.set_value("Cita Examen Medico", cita_name, "enviado_ips", 1)
+				except Exception:
+					pass
+		frappe.db.commit()
+	except Exception:
+		pass
+
 	return {"status": "ok", "cita_name": cita_name, "fecha": fecha, "hora": hora}

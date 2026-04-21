@@ -66,35 +66,35 @@
   "examenes_estandar": [
    {
     "doctype": "IPS Examen Estandar Por Cargo",
-    "cargo": "Auxiliar de Cocina",
+    "cargo": "416",
     "codigo_examen": "EXM-INGRESO",
     "nombre_examen": "Examen médico con énfasis osteomuscular",
     "celda_excel": ""
    },
    {
     "doctype": "IPS Examen Estandar Por Cargo",
-    "cargo": "Auxiliar de Cocina",
+    "cargo": "416",
     "codigo_examen": "EXM-OPTO",
     "nombre_examen": "Optometría",
     "celda_excel": ""
    },
    {
     "doctype": "IPS Examen Estandar Por Cargo",
-    "cargo": "Auxiliar de Cocina",
+    "cargo": "416",
     "codigo_examen": "EXM-KOH",
     "nombre_examen": "KOH",
     "celda_excel": ""
    },
    {
     "doctype": "IPS Examen Estandar Por Cargo",
-    "cargo": "Auxiliar de Cocina",
+    "cargo": "416",
     "codigo_examen": "EXM-COPRO",
     "nombre_examen": "Coprológico",
     "celda_excel": ""
    },
    {
     "doctype": "IPS Examen Estandar Por Cargo",
-    "cargo": "Auxiliar de Cocina",
+    "cargo": "416",
     "codigo_examen": "EXM-FROTIS-G",
     "nombre_examen": "Frotis de garganta",
     "celda_excel": ""

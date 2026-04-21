@@ -78,7 +78,7 @@ def validate_token(token: str) -> dict:
 	if not cita:
 		frappe.throw("Token de agendamiento no válido.", frappe.ValidationError)
 
-	if cita.get("token_usado"):
+	if cita.get("token_usado") and (cita.get("estado") or "") != "Agendada":
 		frappe.throw("Este link ya fue utilizado.", frappe.ValidationError)
 
 	expiry = cita.get("token_expira")

@@ -17,7 +17,7 @@
   "doctype": "Email Template",
   "name": "examen_medico_ips_notificacion",
   "subject": "Programación de examen médico — {{ candidato.nombre }}",
-  "response": "<p>Buenas tardes.</p>\n<p>Me ayudan por favor agendando a esta persona para el día <strong>{{ cita.fecha_cita }}</strong> a las <strong>{{ cita.hora_cita }}</strong>.</p>\n<ul>\n  <li><strong>CC:</strong> {{ candidato.cedula }}</li>\n  <li><strong>Nombre:</strong> {{ candidato.nombre }}</li>\n  <li><strong>Cargo:</strong> {{ candidato.cargo }}</li>\n  <li><strong>Ciudad:</strong> {{ candidato.ciudad }}</li>\n</ul>\n<p><strong>Exámenes a realizar:</strong></p>\n<ul>\n  {% for examen in context.examenes %}\n  <li>{{ examen.nombre_examen }}</li>\n  {% endfor %}\n</ul>\n<p><strong>Empresa que remite:</strong> Comidas Varpel S.A.S.</p>\n<p>Muchas gracias.</p>\n<p><em>SST — Home Burgers<br>SST@homeburgers.com</em></p>",
+  "response": "<p>Buenas tardes.</p>\n<p>Me ayudan por favor agendando a esta persona para el día <strong>{{ cita.fecha_cita }}</strong> a las <strong>{{ cita.hora_cita }}</strong>.</p>\n<ul>\n  <li><strong>CC:</strong> {{ candidato.cedula }}</li>\n  <li><strong>Nombre:</strong> {{ candidato.nombre }}</li>\n  <li><strong>Cargo:</strong> {{ candidato.cargo }}</li>\n  <li><strong>Ciudad:</strong> {{ candidato.ciudad }}</li>\n</ul>\n<p><strong>Exámenes a realizar:</strong></p>\n<ul>\n  {% for examen in examenes %}\n  <li>{{ examen.nombre_examen }}</li>\n  {% endfor %}\n</ul>\n<p><strong>Empresa que remite:</strong> Comidas Varpel S.A.S.</p>\n<p>Muchas gracias.</p>\n<p><em>SST — Home Burgers<br>SST@homeburgers.com</em></p>",
   "use_html": 1
  },
  {

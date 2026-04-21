@@ -6,26 +6,26 @@
 <div class="container" style="max-width:760px;margin:2rem auto;font-family:sans-serif;">
 
   {# ── Error / enlace inválido ────────────────────────────────────────────── #}
-  {% if context.error %}
+  {% if error %}
   <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:1.5rem;text-align:center;">
     <h2 style="color:#856404;">⚠️ Enlace inválido</h2>
-    <p style="color:#533f03;">{{ context.error }}</p>
+    <p style="color:#533f03;">{{ error }}</p>
     <p style="font-size:.9rem;color:#777;">Si necesitás un nuevo link, contactá a tu responsable de Gestión Humana.</p>
   </div>
 
   {# ── Cita ya agendada ───────────────────────────────────────────────────── #}
-  {% elif context.mode == "booked" %}
+  {% elif mode == "booked" %}
   <div style="background:#d4edda;border:1px solid #c3e6cb;border-radius:8px;padding:1.5rem;text-align:center;">
     <h2 style="color:#155724;">✅ Tu examen ya está agendado</h2>
-    {% if context.cita %}
+    {% if cita %}
     <p style="font-size:1.1rem;">
-      <strong>Fecha:</strong> {{ context.cita.fecha_cita or "—" }}<br>
-      <strong>Hora:</strong> {{ context.cita.hora_cita or "—" }}<br>
-      {% if context.ips %}
-      <strong>IPS:</strong> {{ context.ips.nombre or context.cita.ips }}<br>
-      <strong>Dirección:</strong> {{ context.ips.direccion or "—" }}
+      <strong>Fecha:</strong> {{ cita.fecha_cita or "—" }}<br>
+      <strong>Hora:</strong> {{ cita.hora_cita or "—" }}<br>
+      {% if ips %}
+      <strong>IPS:</strong> {{ ips.nombre or cita.ips }}<br>
+      <strong>Dirección:</strong> {{ ips.direccion or "—" }}
       {% else %}
-      <strong>IPS:</strong> {{ context.cita.ips or "—" }}
+      <strong>IPS:</strong> {{ cita.ips or "—" }}
       {% endif %}
     </p>
     {% endif %}
@@ -33,15 +33,15 @@
   </div>
 
   {# ── Confirmación post-agendamiento ─────────────────────────────────────── #}
-  {% elif context.success %}
+  {% elif success %}
   <div style="background:#d4edda;border:1px solid #c3e6cb;border-radius:8px;padding:1.5rem;text-align:center;">
     <h2 style="color:#155724;">✅ ¡Agendado con éxito!</h2>
-    {% if context.cita_confirmada %}
+    {% if cita_confirmada %}
     <p style="font-size:1.1rem;">
-      <strong>Fecha:</strong> {{ context.cita_confirmada.fecha }}<br>
-      <strong>Hora:</strong> {{ context.cita_confirmada.hora }}<br>
-      {% if context.cita_confirmada.ips_nombre %}
-      <strong>IPS:</strong> {{ context.cita_confirmada.ips_nombre }}<br>
+      <strong>Fecha:</strong> {{ cita_confirmada.fecha }}<br>
+      <strong>Hora:</strong> {{ cita_confirmada.hora }}<br>
+      {% if cita_confirmada.ips_nombre %}
+      <strong>IPS:</strong> {{ cita_confirmada.ips_nombre }}<br>
       {% endif %}
     </p>
     {% endif %}
@@ -49,37 +49,37 @@
   </div>
 
   {# ── Calendario de slots disponibles ────────────────────────────────────── #}
-  {% elif context.mode == "pending" %}
+  {% elif mode == "pending" %}
 
   <h1 style="margin-bottom:.5rem;">📅 Agendá tu examen médico</h1>
 
-  {% if context.ips %}
+  {% if ips %}
   <div style="background:#f8f9fa;border-radius:6px;padding:1rem;margin-bottom:1.5rem;font-size:.95rem;">
-    <strong>IPS:</strong> {{ context.ips.nombre or "—" }}<br>
-    <strong>Dirección:</strong> {{ context.ips.direccion or "—" }}<br>
-    {% if context.ips.telefono %}
-    <strong>Teléfono:</strong> {{ context.ips.telefono }}<br>
+    <strong>IPS:</strong> {{ ips.nombre or "—" }}<br>
+    <strong>Dirección:</strong> {{ ips.direccion or "—" }}<br>
+    {% if ips.telefono %}
+    <strong>Teléfono:</strong> {{ ips.telefono }}<br>
     {% endif %}
-    {% if context.ips.contacto_responsable %}
-    <strong>Contacto:</strong> {{ context.ips.contacto_responsable }}
+    {% if ips.contacto_responsable %}
+    <strong>Contacto:</strong> {{ ips.contacto_responsable }}
     {% endif %}
   </div>
   {% endif %}
 
-  {% if context.slots %}
+  {% if slots %}
 
   <p style="color:#555;margin-bottom:1rem;">Seleccioná el día y horario que mejor te quede:</p>
 
   {# Agrupar slots por fecha — Jinja no tiene groupby nativo, usamos un set de fechas #}
   {% set fechas_vistas = namespace(lista=[]) %}
-  {% for slot in context.slots %}
+  {% for slot in slots %}
     {% if slot.fecha not in fechas_vistas.lista %}
       {% set fechas_vistas.lista = fechas_vistas.lista + [slot.fecha] %}
     {% endif %}
   {% endfor %}
 
-  <form id="agendamiento-form" method="POST" action="/agendar-examen">
-    <input type="hidden" name="token" value="{{ context.token or '' }}">
+  <form id="agendamiento-form">
+    <input type="hidden" name="token" value="{{ token or '' }}">
 
     {% for fecha in fechas_vistas.lista %}
     <div class="fecha-bloque" style="margin-bottom:1.5rem;">
@@ -87,7 +87,7 @@
         📆 {{ fecha }}
       </h3>
       <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
-        {% for slot in context.slots %}
+        {% for slot in slots %}
           {% if slot.fecha == fecha %}
           <label class="slot-label" style="cursor:pointer;">
             <input
@@ -191,7 +191,8 @@
     });
   });
 
-  // Al submit: separar fecha y hora del valor combinado y agregarlos al form
+  // Al submit: llamar al endpoint whitelisted book_slot via fetch.
+  // Success → recargar página (el backend detecta estado=Agendada y renderiza mode="booked").
   if (form) {
     form.addEventListener("submit", function (e) {
       e.preventDefault();
@@ -201,21 +202,44 @@
       var parts = selected.value.split("|");
       var fecha = parts[0];
       var hora = parts[1];
+      var tokenInput = form.querySelector('input[name="token"]');
+      var token = tokenInput ? tokenInput.value : "";
 
-      // Agregar campos ocultos
-      var fFecha = document.createElement("input");
-      fFecha.type = "hidden";
-      fFecha.name = "fecha";
-      fFecha.value = fecha;
-      form.appendChild(fFecha);
+      btnAgendar.disabled = true;
+      btnAgendar.textContent = "Agendando…";
 
-      var fHora = document.createElement("input");
-      fHora.type = "hidden";
-      fHora.name = "hora";
-      fHora.value = hora;
-      form.appendChild(fHora);
+      var body = "token=" + encodeURIComponent(token) +
+                 "&fecha=" + encodeURIComponent(fecha) +
+                 "&hora=" + encodeURIComponent(hora);
 
-      form.submit();
+      var csrfToken = (typeof frappe !== "undefined" && frappe.csrf_token) || "";
+      fetch("/api/method/hubgh.hubgh.www.agendar_examen.book_slot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-Frappe-CSRF-Token": csrfToken
+        },
+        body: body
+      })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+        .then(function (res) {
+          if (res.ok && res.body && res.body.message && res.body.message.status === "ok") {
+            // Recargar — el backend ahora mostrará la vista "booked"
+            window.location.reload();
+          } else {
+            var msg = (res.body && (res.body._error_message || res.body.exception)) ||
+                      "No se pudo agendar. Intentá de nuevo.";
+            alert(msg);
+            btnAgendar.disabled = false;
+            btnAgendar.textContent = "Confirmar agendamiento";
+          }
+        })
+        .catch(function (err) {
+          alert("Error de conexión: " + err);
+          btnAgendar.disabled = false;
+          btnAgendar.textContent = "Confirmar agendamiento";
+        });
     });
   }
 })();

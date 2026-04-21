@@ -178,7 +178,7 @@ def send_user_activation_email(user_id):
 
 	user_doc = frappe.get_doc("User", user_id)
 	with override_public_base_url_for_frappe():
-		reset_url = user_doc.reset_password(send_email=True)
+		reset_url = user_doc._reset_password(send_email=True)
 
 	return build_public_url(reset_url)
 
