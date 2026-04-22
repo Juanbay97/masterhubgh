@@ -112,7 +112,7 @@
      "fieldtype": "Select",
      "hidden": 0,
      "label": "Ciudad",
-     "options": "Bogota\nMedellin\nCartagena",
+     "options": "Bogota\nMedellin\nCartagena\nChia",
      "max_length": 0,
      "max_value": 0,
      "precision": "",

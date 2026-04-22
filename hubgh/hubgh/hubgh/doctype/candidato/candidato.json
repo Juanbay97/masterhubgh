@@ -182,7 +182,7 @@
     "fieldname": "ciudad",
     "fieldtype": "Select",
    "label": "Ciudad",
-   "options": "Bogota\nMedellin\nCartagena",
+   "options": "Bogota\nMedellin\nCartagena\nChia",
    "reqd": 1
   },
   {
