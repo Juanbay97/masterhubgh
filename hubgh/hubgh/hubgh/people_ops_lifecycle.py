@@ -206,12 +206,10 @@ def _sync_contract_retirement(employee, contract_status):
 
 
 def _ensure_payroll_liquidation_case(employee, retirement_date):
-	if not frappe.db.exists("DocType", "Payroll Liquidation Case"):
-		return None
-	from hubgh.hubgh.doctype.payroll_liquidation_case.payroll_liquidation_case import create_liquidation_case
-
-	case_doc = create_liquidation_case(employee, retirement_date=retirement_date)
-	return getattr(case_doc, "name", None)
+	# Liquidación final fuera de scope durante la reescritura de novedades.
+	# Volverá a hacer algo cuando se construya el módulo de liquidación
+	# sobre el nuevo modelo `hubgh.payroll`.
+	return None
 
 
 def _deactivate_tarjeta_empleado_if_exists(employee):

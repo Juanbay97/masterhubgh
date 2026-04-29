@@ -393,15 +393,9 @@ def _resolve_retirement_export_context(contrato):
 	if not contrato or (getattr(contrato, "estado_contrato", "") or "") != "Retirado":
 		return {"fecha_retiro": "", "id_motivo_retiro": "", "ind_estado": "0"}
 
-	retirement_date = ""
-	if getattr(contrato, "empleado", None) and frappe.db.exists("DocType", "Payroll Liquidation Case"):
-		retirement_date = frappe.db.get_value(
-			"Payroll Liquidation Case",
-			{"employee": contrato.empleado, "status": ["not in", ["Cancelado"]]},
-			"retirement_date",
-		) or ""
-	if not retirement_date:
-		retirement_date = getattr(contrato, "fecha_fin_contrato", None) or ""
+	# `Payroll Liquidation Case` se eliminó en la reescritura de novedades.
+	# Mientras no exista un reemplazo, la fecha de retiro se toma del Contrato.
+	retirement_date = getattr(contrato, "fecha_fin_contrato", None) or ""
 	return {
 		"fecha_retiro": _safe_ymd(retirement_date),
 		"id_motivo_retiro": "",

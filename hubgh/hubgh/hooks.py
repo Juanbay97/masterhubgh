@@ -176,9 +176,6 @@ permission_query_conditions = {
 	"Acta Descargos": "hubgh.hubgh.permissions.get_acta_descargos_permission_query",
 	"Comunicado Sancion": "hubgh.hubgh.permissions.get_comunicado_sancion_permission_query",
 	"Evidencia Disciplinaria": "hubgh.hubgh.permissions.get_evidencia_disciplinaria_permission_query",
-	"Payroll Import Batch": "hubgh.hubgh.payroll_permissions.get_payroll_import_batch_query",
-	"Payroll Import Line": "hubgh.hubgh.payroll_permissions.get_payroll_import_line_query",
-	"Payroll Liquidation Case": "hubgh.hubgh.payroll_permissions.get_payroll_liquidation_case_query",
 }
 
 has_permission = {
@@ -198,9 +195,6 @@ has_permission = {
 	"Acta Descargos": "hubgh.hubgh.permissions.acta_descargos_has_permission",
 	"Comunicado Sancion": "hubgh.hubgh.permissions.comunicado_sancion_has_permission",
 	"Evidencia Disciplinaria": "hubgh.hubgh.permissions.evidencia_disciplinaria_has_permission",
-	"Payroll Import Batch": "hubgh.hubgh.payroll_permissions.payroll_import_batch_has_permission",
-	"Payroll Import Line": "hubgh.hubgh.payroll_permissions.payroll_import_line_has_permission",
-	"Payroll Liquidation Case": "hubgh.hubgh.payroll_permissions.payroll_liquidation_case_has_permission",
 }
 
 # DocType Class

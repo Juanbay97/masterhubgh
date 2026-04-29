@@ -54,39 +54,16 @@ class TestHubghModuleDashboardsApi(FrappeTestCase):
 		payload = module_dashboards.get_module_dashboard("nomina")
 		self._assert_contract(payload, "nomina")
 		routes = {item.get("route") for item in payload.get("actions", [])}
-		self.assertIn("app/payroll_incapacity_tray", routes)
+		self.assertIn("app/payroll_workspace", routes)
 
-	def test_dashboard_nomina_recobro_weighted_contract(self):
-		original_getdate = _frappe_getdate
-
-		def _count(doctype, filters=None):
-			if doctype != "Payroll Import Line":
-				return 0
-			if filters == {"tc_status": ["in", ["Pendiente", "Revisado"]]}:
-				return 5
-			if filters == {"tc_status": "Aprobado", "tp_status": ["in", ["Pendiente", "Revisado"]]}:
-				return 3
-			return 11
-
-		rows = [
-			{"name": "PIL-1", "amount": -250000, "novedad_date": "2026-03-01"},
-			{"name": "PIL-2", "amount": -15000, "novedad_date": "2026-03-10"},
-		]
-
-		with patch("hubgh.api.module_dashboards._doctype_exists", return_value=True), patch(
-			"hubgh.api.module_dashboards.frappe.db.count",
-			side_effect=_count,
-		), patch("hubgh.api.module_dashboards.frappe.get_all", return_value=rows), patch(
-			"hubgh.api.module_dashboards.frappe.utils.getdate",
-			side_effect=lambda value=None: original_getdate(value or "2026-03-20"),
-		):
-			payload = module_dashboards.get_module_dashboard("nomina")
-
+	def test_dashboard_nomina_returns_empty_during_rewrite(self):
+		# El módulo de novedades de nómina está en reescritura: el dashboard
+		# devuelve un empty payload con un único action al futuro workspace.
+		payload = module_dashboards.get_module_dashboard("nomina")
+		self.assertTrue(payload.get("empty"))
 		self.assertEqual(payload["module"]["key"], "nomina")
-		kpis = {item["key"]: item["value"] for item in payload["kpis"]["items"]}
-		self.assertEqual(kpis["nomina_tc_pendiente"], 5)
-		self.assertEqual(kpis["nomina_tp_pendiente"], 3)
-		self.assertGreaterEqual(kpis["nomina_recobro_weighted"], 1)
+		self.assertEqual(len(payload["actions"]), 1)
+		self.assertEqual(payload["actions"][0]["route"], "app/payroll_workspace")
 
 	def test_dashboard_empty_state_seleccion_when_doctype_is_missing(self):
 		with patch("hubgh.api.module_dashboards._doctype_exists", return_value=False):
