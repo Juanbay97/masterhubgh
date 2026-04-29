@@ -13,3 +13,5 @@ class PayrollParametrosGlobales(Document):
 			frappe.throw("Valor hora TP debe ser mayor a 0.")
 		if (self.jornada_induccion_tp_horas or 0) <= 0:
 			frappe.throw("Jornada inducción TP debe ser mayor a 0 horas.")
+		if (self.salario_minimo_mensual or 0) <= 0:
+			frappe.throw("Salario mínimo mensual debe ser mayor a 0.")

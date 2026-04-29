@@ -62,6 +62,7 @@ class GlobalParams:
 	auxilio_transporte: float = 249095.0
 	jornada_induccion_tp_horas: float = 7.33
 	divisor_hora_tc: float = 240.0
+	salario_minimo_mensual: float = 1_750_905.0  # SMMLV 2026
 
 
 @dataclass
@@ -377,6 +378,9 @@ def build_runtime_context() -> EnrichmentContext:
 					doc.jornada_induccion_tp_horas or params.jornada_induccion_tp_horas
 				),
 				divisor_hora_tc=float(doc.divisor_hora_tc or params.divisor_hora_tc),
+				salario_minimo_mensual=float(
+					doc.salario_minimo_mensual or params.salario_minimo_mensual
+				),
 			)
 		except Exception:
 			pass

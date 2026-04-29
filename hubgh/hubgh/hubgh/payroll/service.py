@@ -225,6 +225,124 @@ def export_run(run_name: str) -> str:
 # Helpers
 # ──────────────────────────────────────────────────────────────────────
 
+@frappe.whitelist()
+def list_runs(limit: int = 20) -> list[dict]:
+	"""Lista los Payroll Run más recientes para el selector del workspace."""
+	return frappe.get_all(
+		"Payroll Run",
+		fields=["name", "period_year", "period_month", "status", "started_at", "closed_at"],
+		order_by="creation desc",
+		limit_page_length=int(limit or 20),
+	)
+
+
+@frappe.whitelist()
+def get_run_summary(run_name: str) -> dict:
+	"""Devuelve el header data + resumen de archivos + conteos."""
+	if not frappe.db.exists("Payroll Run", run_name):
+		frappe.throw(_("Payroll Run no existe: {0}").format(run_name))
+	run = frappe.get_doc("Payroll Run", run_name)
+	files = frappe.get_all(
+		"Payroll Run File",
+		filters={"run": run_name},
+		fields=[
+			"name", "file_url", "file_name", "detected_source",
+			"detected_period_year", "detected_period_month",
+			"parse_status", "parse_log",
+		],
+		order_by="creation asc",
+	)
+	novedades_count = frappe.db.count("Payroll Novedad", {"run": run_name})
+	by_status = frappe.db.sql(
+		"""
+		SELECT calc_status, COUNT(*) AS qty
+		FROM `tabPayroll Novedad`
+		WHERE run = %s
+		GROUP BY calc_status
+		""",
+		(run_name,),
+		as_dict=True,
+	)
+	summary = {}
+	try:
+		summary = json.loads(run.summary_json or "{}")
+	except Exception:
+		summary = {}
+	return {
+		"run": run.as_dict(no_default_fields=True),
+		"files": files,
+		"counts": {
+			"novedades": novedades_count,
+			"by_status": {row["calc_status"]: row["qty"] for row in by_status},
+		},
+		"summary": summary,
+		"valid_sources": [s.id for s in catalogs.SOURCES],
+	}
+
+
+@frappe.whitelist()
+def list_novedades(run_name: str, limit: int = 500, jornada: str = "", tipo: str = "") -> list[dict]:
+	"""Lista paginada de novedades para la tabla de revisión."""
+	filters: dict = {"run": run_name}
+	if jornada in {"Tiempo Completo", "Tiempo Parcial"}:
+		filters["tipo_jornada_snapshot"] = jornada
+	if tipo:
+		filters["tipo_novedad"] = tipo
+	rows = frappe.get_all(
+		"Payroll Novedad",
+		filters=filters,
+		fields=[
+			"name", "empleado", "documento_identidad", "tipo_jornada_snapshot",
+			"tipo_novedad", "unidad", "valor", "cantidad", "fecha_desde",
+			"fecha_hasta", "calc_status", "computed_amount",
+			"computed_quantity", "calc_notes", "manual_override",
+		],
+		order_by="documento_identidad asc, tipo_novedad asc",
+		limit_page_length=int(limit or 500),
+	)
+	# Enriquecer con nombre del empleado.
+	emp_names = {r.get("empleado") for r in rows if r.get("empleado")}
+	if emp_names:
+		emp_meta = {
+			r["name"]: r
+			for r in frappe.get_all(
+				"Ficha Empleado",
+				filters={"name": ["in", list(emp_names)]},
+				fields=["name", "nombres", "apellidos"],
+				limit_page_length=0,
+			)
+		}
+		for row in rows:
+			meta = emp_meta.get(row.get("empleado"), {})
+			row["empleado_label"] = (
+				f"{meta.get('nombres', '')} {meta.get('apellidos', '')}".strip()
+			) or row.get("empleado") or row.get("documento_identidad")
+	return rows
+
+
+@frappe.whitelist()
+def update_detected_source(run_file_name: str, detected_source: str) -> dict:
+	"""Permite al operador corregir manualmente la fuente detectada."""
+	valid = {s.id for s in catalogs.SOURCES}
+	if detected_source not in valid:
+		frappe.throw(_("Fuente '{0}' no es válida.").format(detected_source))
+	frappe.db.set_value(
+		"Payroll Run File", run_file_name, "detected_source", detected_source
+	)
+	return {"ok": True, "name": run_file_name, "detected_source": detected_source}
+
+
+@frappe.whitelist()
+def delete_run_file(run_file_name: str) -> dict:
+	"""Elimina un archivo del Run (sólo si el Run no está exported)."""
+	doc = frappe.get_doc("Payroll Run File", run_file_name)
+	run = frappe.get_doc("Payroll Run", doc.run)
+	if run.status == "exported":
+		frappe.throw(_("No se puede eliminar archivos de un Run ya exportado."))
+	frappe.delete_doc("Payroll Run File", run_file_name, force=1)
+	return {"ok": True}
+
+
 def get_global_param(key: str) -> float:
 	if frappe.db.exists("DocType", "Payroll Parametros Globales"):
 		try:

@@ -386,10 +386,11 @@ NOVEDAD_TYPES_BY_ID: dict[str, NovedadTypeSpec] = {spec.id: spec for spec in NOV
 # ──────────────────────────────────────────────────────────────────────
 
 PARAMETROS_GLOBALES_DEFAULTS: dict[str, float] = {
-	"hora_tp_fija": 9530.0,         # COP, ajustar por año
-	"auxilio_transporte": 249095.0, # COP, ajustar por año
+	"hora_tp_fija": 9530.0,            # COP, ajustar por año
+	"auxilio_transporte": 249095.0,    # COP, ajustar por año
 	"jornada_induccion_tp_horas": 7.33,
-	"divisor_hora_tc": 240.0,       # salario_mensual / 240 = valor hora TC
+	"divisor_hora_tc": 240.0,          # salario_mensual / 240 = valor hora TC
+	"salario_minimo_mensual": 1750905.0,  # SMMLV 2026 (Colombia)
 }
 
 

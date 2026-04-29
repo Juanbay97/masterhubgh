@@ -6,6 +6,7 @@
  "field_order": [
   "vigencia_section",
   "anio_vigente",
+  "salario_minimo_mensual",
   "column_break_av",
   "valor_hora_tp_fija",
   "valores_section",
@@ -25,6 +26,14 @@
    "fieldname": "anio_vigente",
    "fieldtype": "Int",
    "label": "Año vigente",
+   "reqd": 1
+  },
+  {
+   "default": "1750905",
+   "description": "Salario mínimo mensual legal vigente (SMMLV). Determina el tope para auxilio de transporte (≤ 2 SMMLV) y otros cálculos legales.",
+   "fieldname": "salario_minimo_mensual",
+   "fieldtype": "Currency",
+   "label": "Salario mínimo mensual (SMMLV)",
    "reqd": 1
   },
   {
