@@ -207,6 +207,27 @@ def _build_contextual_actions(user, employee_id, is_gh, is_jefe, is_emp, can_vie
     }
 
 
+def _build_documentary_context(employee_id, contextual_actions):
+    document_action = next(
+        (
+            action
+            for action in (contextual_actions or {}).get("quick_actions", [])
+            if action.get("key") == "view_documents"
+        ),
+        None,
+    )
+
+    return {
+        "preferred_action_key": "view_documents",
+        "available": bool(document_action and document_action.get("visible")),
+        "route": "/app/query-report/Person%20Documents",
+        "route_options": {"persona": employee_id},
+        "title": "Carpeta documental",
+        "description": "Acceso directo a Person Documents para revisar soportes y trazabilidad documental sin salir del contexto de la persona.",
+        "action": document_action,
+    }
+
+
 def _can_access_retirado(user):
     return user_has_any_role(user, "System Manager", "HR Labor Relations", "GH - RRLL", "Gerente GH")
 
@@ -579,6 +600,7 @@ def get_persona_stats(
         is_emp=is_emp,
         can_view_sensitive=show_disciplinarios,
     )
+    documentary_context = _build_documentary_context(employee_id, contextual_actions)
 
     return {
         "info": info,
@@ -600,6 +622,7 @@ def get_persona_stats(
             "date_to": date_to,
         },
         "contextual_actions": contextual_actions,
+        "documentary_context": documentary_context,
         "bienestar_followups": bienestar_followups,
         "bienestar_ruta_ingreso": bienestar_followups,
         "bienestar_periodo_prueba": [

@@ -72,6 +72,7 @@ class TestPeopleOpsBackbone(FrappeTestCase):
 			"sst_cards",
 			"filters_applied",
 			"contextual_actions",
+			"documentary_context",
 			"bienestar_followups",
 		]:
 			self.assertIn(key, payload)
@@ -126,6 +127,7 @@ class TestPeopleOpsBackbone(FrappeTestCase):
 		self.assertIn("feeds", payload["actionable_hub"])
 		self.assertIn("contextual_actions", payload["actionable_hub"])
 		self.assertIn("tray_reports", payload["actionable_hub"])
+		self.assertIn("empleados", payload)
 
 	def test_operacion_punto_lite_uses_sst_as_canonical_source_for_incapacidad(self):
 		personas = [{"name": "EMP-001", "nombres": "Ana", "apellidos": "Paz", "estado": "Activo", "email": "ana@example.com"}]

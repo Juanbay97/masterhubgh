@@ -1,194 +1,436 @@
-
-.dashboard-card-stat {
-    border: 1px solid #d1d8dd;
-    border-radius: 8px;
-    padding: 12px;
-    text-align: center;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.stat-label {
-    display: block;
-    font-size: 12px;
-    color: #6c757d;
-    text-transform: uppercase;
-    font-weight: 600;
-}
-
-.stat-val {
-    display: block;
-    font-size: 24px;
-    font-weight: bold;
-    color: #1f272e;
-    margin-top: 5px;
-}
-
-.dashboard-section {
-    background: white;
-    padding: 14px;
-    border: 1px solid #d1d8dd;
-    border-radius: 8px;
-    margin-bottom: 16px;
-}
-
-.punto360-shell {
-	padding: 20px;
-}
-
-.punto360-detail-shell {
+.punto360-render-root {
 	padding-top: 8px;
 }
 
-.punto360-kickers {
-	display: flex;
-	gap: 8px;
-	flex-wrap: wrap;
+.punto360-toolbar-field {
+	display: inline-flex;
+	align-items: flex-end;
+	margin-right: 16px;
+}
+
+.punto360-toolbar-field .form-group {
 	margin-bottom: 8px;
 }
 
-.punto360-kickers span {
-	border-radius: 999px;
-	padding: 4px 10px;
-	background: #dbeafe;
-	color: #1d4ed8;
-	font-size: 11px;
+.punto360-toolbar-field .control-label {
+	font-size: 10px;
+	line-height: 1.4;
 	font-weight: 700;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: #71717a;
+	margin-bottom: 4px;
 }
 
-.punto360-overview-header {
+.punto360-toolbar-field .control-input,
+.punto360-toolbar-field input,
+.punto360-toolbar-field .awesomplete input {
+	background: #fafaf9;
+	border: 0;
+	border-bottom: 1px solid rgba(39, 39, 42, 0.14);
+	border-radius: 4px 4px 0 0;
+	box-shadow: none;
+	color: #18181b;
+	min-height: 36px;
+	transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.punto360-toolbar-field input:focus,
+.punto360-toolbar-field .awesomplete input:focus {
+	background: #f4f4f3;
+	border-bottom-color: rgba(24, 24, 27, 0.6);
+	box-shadow: none;
+}
+
+.punto360-shell {
+	padding: 12px 20px 24px;
+	color: #18181b;
+}
+
+.punto360-hero,
+.punto360-panel,
+.punto360-kpi-card,
+.punto360-overview-card {
+	background: #ffffff;
+	border-radius: 4px;
+	border: 1px solid rgba(24, 24, 27, 0.07);
+	box-shadow: none;
+}
+
+.punto360-hero {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+	gap: 18px;
+	padding: 22px;
+	margin-bottom: 18px;
+	background: #ffffff;
+}
+
+.punto360-hero-executive {
+	grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
+	padding: 20px 22px;
+	gap: 20px;
+	background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+	border-color: rgba(24, 24, 27, 0.1);
+}
+
+.punto360-eyebrow,
+.punto360-panel-label,
+.punto360-card-kicker,
+.punto360-aside-label,
+.punto360-kpi-label,
+.punto360-archive-item span,
+.punto360-row-date {
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: #71717a;
+}
+
+.punto360-hero h2,
+.punto360-panel h3,
+.punto360-overview-card h3 {
+	margin: 6px 0;
+	font-size: 28px;
+	line-height: 1.05;
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	color: #111111;
+}
+
+.punto360-hero p,
+.punto360-overview-card p,
+.punto360-kpi-meta,
+.punto360-panel-caption,
+.punto360-row-meta,
+.punto360-empty-state {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.6;
+	color: #52525b;
+}
+
+.punto360-hero-aside {
 	display: flex;
+	flex-direction: column;
 	justify-content: space-between;
-	align-items: flex-start;
-	gap: 12px;
-	flex-wrap: wrap;
-	padding: 0 20px;
+	gap: 10px;
+	padding-left: 18px;
+	border-left: 1px solid rgba(24, 24, 27, 0.08);
 }
 
-.punto360-overview-count {
-	display: inline-flex;
-	align-items: center;
-	padding: 6px 10px;
-	border-radius: 999px;
-	background: #eff6ff;
-	color: #1d4ed8;
-	font-size: 12px;
+.punto360-aside-value,
+.punto360-kpi-value {
+	font-size: 38px;
 	font-weight: 700;
+	letter-spacing: -0.06em;
+	color: #111111;
+	line-height: 1;
+}
+
+.punto360-aside-meta,
+.punto360-card-status {
+	font-size: 12px;
+	color: #71717a;
+}
+
+.punto360-list-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 12px;
 }
 
 .punto360-overview-card {
 	cursor: pointer;
-	background: white;
-	padding: 15px;
-	border-radius: 12px;
-	box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
-	margin-bottom: 20px;
-	transition: transform 0.2s ease, box-shadow 0.2s ease;
-	border: 1px solid #ebf0f7;
+	padding: 18px;
+	transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
 
 .punto360-overview-card:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+	transform: translateY(-1px);
+	background: #fcfcfb;
+	border-color: rgba(24, 24, 27, 0.1);
 }
 
-.punto360-card-name {
-	font-weight: 700;
-	font-size: 16px;
-	margin-bottom: 5px;
-	color: #1f2937;
-}
-
-.punto360-card-metrics {
-	gap: 8px;
-}
-
-.punto360-detail-header {
+.punto360-card-topline,
+.punto360-meta-strip,
+.punto360-panel-head,
+.punto360-data-row {
 	display: flex;
 	justify-content: space-between;
 	align-items: flex-start;
-	gap: 16px;
+	gap: 10px;
 	flex-wrap: wrap;
 }
 
-.punto360-detail-header h3 {
-	margin: 0 0 6px;
-	font-size: 24px;
-	font-weight: 700;
-	color: #1f2937;
-}
-
-.punto360-detail-meta {
-	display: flex;
+.punto360-meta-strip {
+	margin-top: 12px;
 	gap: 8px;
-	flex-wrap: wrap;
-	font-size: 12px;
-	color: #64748b;
 }
 
-.punto360-detail-meta span {
+.punto360-meta-strip span {
 	padding: 6px 10px;
-	border-radius: 999px;
-	background: #f8fafc;
-	border: 1px solid #e2e8f0;
-}
-
-.punto360-quick-actions {
-	min-width: 280px;
-	max-width: 360px;
-	width: 100%;
-	padding: 12px;
-	border-radius: 12px;
-	background: #f8fafc;
-	border: 1px solid #dbe6f1;
-}
-
-.punto360-quick-actions-title {
+	border-radius: 4px;
+	background: #fafaf9;
+	color: #3f3f46;
 	font-size: 12px;
-	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	color: #64748b;
-	margin-bottom: 8px;
+	border: 1px solid rgba(24, 24, 27, 0.06);
 }
 
-.punto360-quick-actions-body {
+.punto360-actions-panel,
+.punto360-data-panel {
+	padding: 18px;
+	margin-bottom: 14px;
+}
+
+.punto360-actions-panel h3 {
+	font-size: 22px;
+	margin: 6px 0 2px;
+}
+
+.punto360-executive-notes {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
+	margin-top: 16px;
+}
+
+.punto360-executive-notes > div {
+	padding: 12px 14px;
+	border-radius: 4px;
+	background: #fafaf9;
+	border: 1px solid rgba(24, 24, 27, 0.07);
+	display: grid;
+	gap: 4px;
+}
+
+.punto360-note-label {
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: #71717a;
+}
+
+.punto360-executive-notes strong {
+	font-size: 14px;
+	line-height: 1.35;
+	color: #18181b;
+}
+
+.punto360-action-list {
 	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 10px;
+}
+
+.punto360-action-list .btn {
+	padding: 8px 12px;
+	border-radius: 4px;
+	background: #fafaf9;
+	border: 1px solid rgba(24, 24, 27, 0.08);
+	color: #18181b;
+	font-weight: 600;
+	box-shadow: none;
+}
+
+.punto360-action-list .btn:hover {
+	background: #f4f4f3;
+}
+
+.punto360-kpi-band-primary .punto360-kpi-card {
+	background: #18181b;
+	border-color: #18181b;
+}
+
+.punto360-kpi-band-primary .punto360-kpi-label,
+.punto360-kpi-band-primary .punto360-kpi-value,
+.punto360-kpi-band-primary .punto360-kpi-meta {
+	color: #f8fafc;
+}
+
+.punto360-kpi-band {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 10px;
+	margin-bottom: 14px;
+}
+
+.punto360-kpi-card {
+	padding: 16px;
+}
+
+.punto360-kpi-band-secondary .punto360-kpi-value {
+	font-size: 30px;
+}
+
+.punto360-archive-list,
+.punto360-data-list {
+	display: grid;
+	gap: 10px;
+	margin-top: 14px;
+}
+
+.punto360-archive-item,
+.punto360-data-row {
+	padding: 0;
+	border: 0;
+}
+
+.punto360-archive-item strong,
+.punto360-row-title,
+.punto360-data-row a {
+	font-size: 14px;
+	line-height: 1.45;
+	font-weight: 600;
+	color: #18181b;
+	text-decoration: none;
+	margin: 0;
+}
+
+.punto360-inline-link {
+	border-bottom: 1px solid rgba(24, 24, 27, 0.16);
+}
+
+.punto360-row-date {
+	text-align: right;
+	max-width: 130px;
+}
+
+.punto360-data-row-linkable {
+	align-items: center;
+}
+
+.punto360-row-side {
+	display: flex;
+	align-items: center;
 	gap: 8px;
 	flex-wrap: wrap;
+	justify-content: flex-end;
 }
 
-.punto360-quick-actions-body .btn {
+.punto360-feedback-row .punto360-row-meta {
+	max-width: 860px;
+}
+
+.punto360-person-row {
+	align-items: center;
+	padding-bottom: 2px;
+}
+
+.punto360-person-signals {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 6px;
+}
+
+.punto360-pill {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 8px;
 	border-radius: 999px;
+	background: #fafaf9;
+	border: 1px solid rgba(24, 24, 27, 0.08);
+	font-size: 11px;
 	font-weight: 700;
+	line-height: 1.2;
+	color: #3f3f46;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
 }
 
-.text-danger {
-    color: #e24c4c !important;
+.punto360-pill-positive,
+.punto360-pill-signal-stable {
+	background: #f8faf8;
 }
 
-@media (max-width: 768px) {
+.punto360-pill-warning,
+.punto360-pill-signal-attention,
+.punto360-pill-signal-limited {
+	background: #faf9f7;
+}
+
+.punto360-pill-attention,
+.punto360-pill-critical,
+.punto360-pill-signal-critical {
+	background: #f5f5f4;
+}
+
+.punto360-data-row-operativa,
+.punto360-data-row-risk,
+.punto360-data-row-continuity,
+.punto360-person-row {
+	padding: 12px 0;
+	border-bottom: 1px solid rgba(24, 24, 27, 0.06);
+}
+
+.punto360-data-list > .punto360-data-row:last-child {
+	border-bottom: 0;
+}
+
+.punto360-empty-state {
+	padding: 24px 16px;
+	background: #fcfcfb;
+	border-radius: 4px;
+	border: 1px solid rgba(24, 24, 27, 0.07);
+}
+
+@media (max-width: 991px) {
+	.punto360-hero,
+	.punto360-kpi-band {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.punto360-executive-notes {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 767px) {
 	.punto360-shell {
-		padding: 12px;
+		padding: 8px 12px 20px;
 	}
 
-	.punto360-overview-header {
-		padding: 0 12px;
+	.punto360-hero,
+	.punto360-kpi-band {
+		grid-template-columns: 1fr;
 	}
 
-	.punto360-quick-actions {
+	.punto360-executive-notes {
+		grid-template-columns: 1fr;
+	}
+
+	.punto360-hero-aside {
+		padding-left: 0;
+		border-left: 0;
+		border-top: 1px solid rgba(24, 24, 27, 0.08);
+		padding-top: 14px;
+	}
+
+	.punto360-hero h2,
+	.punto360-panel h3,
+	.punto360-overview-card h3 {
+		font-size: 24px;
+	}
+
+	.punto360-toolbar-field {
+		display: block;
+		margin-right: 0;
+	}
+
+	.punto360-row-date {
+		text-align: left;
 		max-width: none;
 	}
 
-	.punto360-quick-actions-body .btn {
-		flex: 1 1 100%;
+	.punto360-person-signals {
+		justify-content: flex-start;
 	}
 
-	.dashboard-card-stat,
-	.dashboard-section {
-		padding: 12px;
+	.punto360-row-side {
+		justify-content: flex-start;
 	}
-	.stat-val {
-		font-size: 20px;
 	}
-}

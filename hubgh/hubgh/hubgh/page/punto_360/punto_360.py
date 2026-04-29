@@ -136,9 +136,52 @@ def _assignment_for_employee(emp_row, punto_doc):
 def _employee_rows_for_point(punto_venta):
 	return frappe.get_all(
 		"Ficha Empleado",
-		filters={"pdv": punto_venta, "estado": "Activo"},
-		fields=["name", "nombres", "apellidos", "cargo", "email"],
+		filters={"pdv": punto_venta},
+		fields=["name", "nombres", "apellidos", "cargo", "email", "estado"],
 	)
+
+
+def _build_point_employee_summary(employee_rows, novedades_activas):
+	novedades_by_employee = {}
+	for nov in novedades_activas or []:
+		emp_id = str(_row_value(nov, "empleado", "") or "")
+		if not emp_id:
+			continue
+		novedades_by_employee.setdefault(emp_id, []).append(nov)
+
+	rows = []
+	for emp in employee_rows or []:
+		emp_id = str(_row_value(emp, "name", "") or "")
+		emp_novedades = novedades_by_employee.get(emp_id, [])
+		has_novedad = bool(emp_novedades)
+		en_radar = any(bool(_row_value(nov, "en_radar", 0)) for nov in emp_novedades)
+		incapacidad_activa = any(_is_sst_incapacidad(nov) for nov in emp_novedades)
+		signal = "stable"
+		if incapacidad_activa:
+			signal = "limited"
+		elif en_radar or has_novedad:
+			signal = "attention"
+
+		rows.append(
+			{
+				"empleado": emp_id,
+				"nombre": f"{str(_row_value(emp, 'nombres', '') or '').strip()} {str(_row_value(emp, 'apellidos', '') or '').strip()}".strip(),
+				"cargo": _row_value(emp, "cargo"),
+				"estado": _row_value(emp, "estado") or "Sin estado",
+				"tiene_novedad": has_novedad,
+				"signal": signal,
+				"signal_label": (
+					"Disponibilidad limitada"
+					if signal == "limited"
+					else ("Requiere atención" if signal == "attention" else "Estable")
+				),
+				"novedades_activas": len(emp_novedades),
+				"en_radar": en_radar,
+				"incapacidad_activa": incapacidad_activa,
+			}
+		)
+
+	return sorted(rows, key=lambda row: (0 if str(row.get("estado") or "") == "Activo" else 1, str(row.get("nombre") or "")))
 
 
 def _feed_sort_key(item):
@@ -406,8 +449,9 @@ def get_punto_stats(pdv_id):
         "pdv": pdv_id,
         "estado": "Activo"
     })
-    
-    empleados_pdv = [e.name for e in frappe.get_all("Ficha Empleado", filters={"pdv": pdv_id})]
+
+    employee_rows = _employee_rows_for_point(pdv_id)
+    empleados_pdv = [str(_row_value(e, "name", "") or "") for e in employee_rows if _row_value(e, "name")]
 
     # 3. Novedades Activas
     novedades_activas = frappe.get_all(
@@ -725,22 +769,23 @@ def get_punto_stats(pdv_id):
     cobertura_pct = round((headcount / punto.planta_autorizada) * 100, 2) if punto.planta_autorizada else 0
     riesgo_operativo_total = personas_radar + disciplinarios_abiertos_count + alertas_pendientes_count
     faltantes = max((punto.planta_autorizada or 0) - headcount, 0)
+    point_employee_rows = _build_point_employee_summary(employee_rows, novedades_activas)
     actionable_hub = _build_actionable_hub(
-		pdv_id=pdv_id,
-		punto=punto,
-		headcount=headcount,
-		faltantes=faltantes,
-		cobertura_pct=cobertura_pct,
-		novedades_activas=novedades_activas,
-		alertas_sst=alertas_sst,
-		disciplinarios=disciplinarios,
-		feedback=feedback,
-		personas_radar=personas_radar,
-		ingresos_formalizados_30d=ingresos_formalizados_30d,
-		riesgo_operativo_total=riesgo_operativo_total,
-		sensitive_policy=sensitive_policy,
-		user=user,
-	)
+        pdv_id=pdv_id,
+        punto=punto,
+        headcount=headcount,
+        faltantes=faltantes,
+        cobertura_pct=cobertura_pct,
+        novedades_activas=novedades_activas,
+        alertas_sst=alertas_sst,
+        disciplinarios=disciplinarios,
+        feedback=feedback,
+        personas_radar=personas_radar,
+        ingresos_formalizados_30d=ingresos_formalizados_30d,
+        riesgo_operativo_total=riesgo_operativo_total,
+        sensitive_policy=sensitive_policy,
+        user=user,
+    )
 
     return {
         "info": {
@@ -759,30 +804,30 @@ def get_punto_stats(pdv_id):
                 "sst_abiertos": sst_abiertos_count,
                 "riesgo_operativo_total": riesgo_operativo_total,
             },
-			"kpi_sst": {
-				"accidentes_periodo": accidentes_periodo,
-				"incapacidades_activas": incapacidades_activas,
-				"incapacidades_rrll_handoff": incapacidades_rrll_handoff,
-				"personas_radar": personas_radar,
-				"alertas_pendientes": len(alertas_sst),
-				"fuente_canonica_incapacidad": "Novedad SST",
-				"_fuentes": {
-					"incapacidades_legacy": incapacidades_activas_sst,
-					"incapacidades_gh_novedad": incapacidades_rrll_handoff,
-					"accidentes_legacy": accidentes_periodo_legacy,
-					"accidentes_gh_novedad": accidentes_periodo_gh,
-				},
+            "kpi_sst": {
+                "accidentes_periodo": accidentes_periodo,
+                "incapacidades_activas": incapacidades_activas,
+                "incapacidades_rrll_handoff": incapacidades_rrll_handoff,
+                "personas_radar": personas_radar,
+                "alertas_pendientes": len(alertas_sst),
+                "fuente_canonica_incapacidad": "Novedad SST",
+                "_fuentes": {
+                    "incapacidades_legacy": incapacidades_activas_sst,
+                    "incapacidades_gh_novedad": incapacidades_rrll_handoff,
+                    "accidentes_legacy": accidentes_periodo_legacy,
+                    "accidentes_gh_novedad": accidentes_periodo_gh,
+                },
             },
             "kpi_ingreso": {
                 "ingresos_formalizados_30d": ingresos_formalizados_30d,
             },
             "kpi_liderazgo": {
-				"faltantes_dotacion": faltantes,
-				"cobertura_dotacion_pct": cobertura_pct,
-				"ingresos_formalizados_30d": ingresos_formalizados_30d,
-				"riesgo_operativo_total": riesgo_operativo_total,
-				"personas_radar": personas_radar,
-			},
+                "faltantes_dotacion": faltantes,
+                "cobertura_dotacion_pct": cobertura_pct,
+                "ingresos_formalizados_30d": ingresos_formalizados_30d,
+                "riesgo_operativo_total": riesgo_operativo_total,
+                "personas_radar": personas_radar,
+            },
             "kpi_bienestar": {
                 "feedback_30d": feedback_count_30d,
                 "valoracion_promedio_30d": feedback_avg_30d,
@@ -811,8 +856,9 @@ def get_punto_stats(pdv_id):
         "feedback": feedback,
         "no_disponibles": no_disponibles,
         "alertas_sst": alertas_sst,
+        "empleados": point_employee_rows,
         "navigation_context": navigation_context,
-		"actionable_hub": actionable_hub,
+        "actionable_hub": actionable_hub,
     }
 
 @frappe.whitelist()

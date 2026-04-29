@@ -397,6 +397,9 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		self.assertTrue(actions["view_documents"]["visible"])
 		self.assertEqual(actions["create_wellbeing"]["doctype"], "Bienestar Compromiso")
 		self.assertEqual(actions["create_wellbeing_alert"]["doctype"], "Bienestar Alerta")
+		self.assertEqual(res["documentary_context"]["preferred_action_key"], "view_documents")
+		self.assertTrue(res["documentary_context"]["available"])
+		self.assertEqual(res["documentary_context"]["route_options"]["persona"], "EMP-001")
 
 	def test_persona_360_blocks_retirado_for_non_rrll_roles(self):
 		emp = SimpleNamespace(
@@ -956,6 +959,74 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		self.assertFalse(actions["open_rl_view"]["visible"])
 		self.assertTrue(actions["view_documents"]["visible"])
 
+	def test_punto_360_exposes_employee_list_for_point(self):
+		punto_doc = SimpleNamespace(nombre_pdv="PDV 1", zona="Norte", planta_autorizada=10)
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Ficha Empleado":
+				return [
+					SimpleNamespace(name="EMP-001", nombres="Ana", apellidos="Paz", cargo="Auxiliar", email="ana@example.com", estado="Activo"),
+					SimpleNamespace(name="EMP-002", nombres="Luis", apellidos="Roa", cargo="Supervisor", email="luis@example.com", estado="Suspendido"),
+				]
+			if doctype == "Novedad SST":
+				return [
+					{
+						"name": "NOV-001",
+						"empleado": "EMP-001",
+						"empleado_nombres": "Ana",
+						"empleado_apellidos": "Paz",
+						"tipo_novedad": "Incapacidad",
+						"estado": "Abierto",
+						"fecha_inicio": "2026-03-18",
+						"fecha_fin": None,
+						"es_incapacidad": 1,
+						"origen_incapacidad": "EG",
+						"proxima_alerta_fecha": None,
+						"en_radar": 1,
+						"ref_doctype": None,
+						"ref_docname": None,
+					}
+				]
+			return []
+
+		def fake_exists(doctype, name=None):
+			if doctype == "DocType":
+				return name == "GH Novedad"
+			return True
+
+		with patch("hubgh.hubgh.page.punto_360.punto_360.frappe.has_permission", return_value=True), patch(
+			"hubgh.hubgh.page.punto_360.punto_360.frappe.get_doc",
+			return_value=punto_doc,
+		), patch(
+			"hubgh.hubgh.page.punto_360.punto_360.nowdate",
+			return_value="2026-03-21",
+		), patch(
+			"hubgh.hubgh.page.punto_360.punto_360.frappe.db.count",
+			return_value=1,
+		), patch(
+			"hubgh.hubgh.page.punto_360.punto_360.frappe.get_all",
+			side_effect=fake_get_all,
+		), patch(
+			"hubgh.hubgh.page.punto_360.punto_360.frappe.db.exists",
+			side_effect=fake_exists,
+		), patch(
+			"hubgh.hubgh.page.punto_360.punto_360.frappe.session",
+			new=SimpleNamespace(user="jefe@example.com"),
+		), patch(
+			"hubgh.hubgh.page.punto_360.punto_360.user_has_any_role",
+			side_effect=lambda user, *roles: "Jefe_PDV" in roles,
+		), patch(
+			"hubgh.hubgh.page.punto_360.punto_360.evaluate_dimension_permission",
+			return_value={"effective_allowed": False},
+		):
+			res = punto_360.get_punto_stats("PDV-1")
+
+		self.assertEqual(len(res["empleados"]), 2)
+		self.assertEqual(res["empleados"][0]["empleado"], "EMP-001")
+		self.assertTrue(res["empleados"][0]["tiene_novedad"])
+		self.assertEqual(res["empleados"][0]["signal"], "limited")
+		self.assertEqual(res["empleados"][1]["estado"], "Suspendido")
+
 	def test_punto_360_uses_sst_as_canonical_source_for_incapacidad(self):
 		punto_doc = SimpleNamespace(nombre_pdv="PDV 1", zona="Norte", planta_autorizada=10)
 
@@ -1422,6 +1493,46 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		self.assertIn("PAIS NACIMIENTO", missing)
 		self.assertIn("DEPTO EXPEDICION", missing)
 
+	def test_build_employee_context_exports_nivel_educativo_as_catalog_code(self):
+		data = SimpleNamespace(
+			candidato=None,
+			contrato=None,
+			numero_documento="1001",
+			tipo_documento="Cedula",
+			nombres="ANA",
+			primer_apellido="PEREZ",
+			segundo_apellido="LOPEZ",
+			fecha_ingreso="2026-03-01",
+			fecha_nacimiento="2000-01-01",
+			fecha_expedicion="2018-05-01",
+			nivel_educativo_siesa="MEDIA",
+			genero="Femenino",
+			estado_civil="Soltero",
+			direccion="CL 1 # 2-3",
+			pais_residencia_siesa="169",
+			departamento_residencia_siesa="11",
+			ciudad_residencia_siesa="001",
+			telefono_contacto_siesa="3001234567",
+			email="ana@example.com",
+			es_extranjero=0,
+			pais_nacimiento_siesa="169",
+			departamento_nacimiento_siesa="11",
+			ciudad_nacimiento_siesa="001",
+			pais_expedicion_siesa="169",
+			departamento_expedicion_siesa="11",
+			ciudad_expedicion_siesa="001",
+			prefijo_cuenta_extranjero="",
+			barrio="",
+			celular="",
+			ciudad="",
+		)
+
+		with patch("hubgh.hubgh.siesa_export._catalog_code", side_effect=lambda dt, value: "04" if dt == "Nivel Educativo Siesa" else value):
+			ctx, missing = siesa_export._build_employee_context(data)
+
+		self.assertEqual(ctx["nivel_educativo"], "04")
+		self.assertEqual(missing, [])
+
 	def test_build_contract_context_requires_complete_operational_codes(self):
 		data = SimpleNamespace(candidato="CAND-001", contrato="CONT-001", aplica_auxilio_transporte="3", arl_codigo_siesa="")
 		contract_doc = SimpleNamespace(
@@ -1547,6 +1658,72 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		):
 			self.assertEqual(siesa_export._catalog_code("Entidad AFP Siesa", "colpenciones_afc"), "230301")
 			self.assertEqual(siesa_export._catalog_code("Entidad AFP Siesa", "COLPENSIONES"), "230301")
+
+	def test_validar_candidato_para_siesa_reports_missing_educational_level_before_export(self):
+		datos = SimpleNamespace(
+			estado_datos="Completo",
+			contrato="CONT-001",
+			get=lambda fieldname: {
+				"tipo_documento": "Cedula",
+				"numero_documento": "1001",
+				"nombres": "Ana",
+				"primer_apellido": "Paz",
+				"segundo_apellido": "Lopez",
+				"fecha_nacimiento": "2000-01-01",
+				"fecha_expedicion": "2018-01-01",
+				"genero": "Femenino",
+				"estado_civil": "Soltero",
+				"direccion": "CL 1",
+				"ciudad_residencia_siesa": "001",
+				"email": "ana@example.com",
+				"banco_siesa": "BAN-1",
+				"tipo_cuenta_bancaria": "Ahorros",
+				"numero_cuenta_bancaria": "123",
+				"salario": 1500000,
+				"fecha_ingreso": "2026-03-01",
+				"nivel_educativo_siesa": "",
+			}.get(fieldname),
+			save=lambda **kwargs: None,
+			reload=lambda: None,
+		)
+		candidato = SimpleNamespace(get=lambda fieldname: None)
+		afiliacion = SimpleNamespace(arl_afiliado=1, eps_afiliado=1, afp_afiliado=1, cesantias_afiliado=1, caja_afiliado=1)
+		contrato = SimpleNamespace(docstatus=1)
+
+		def fake_get_value(doctype, filters=None, fieldname=None, *args, **kwargs):
+			if doctype == "Datos Contratacion":
+				return "DC-001"
+			if doctype == "Contrato":
+				return "CONT-001"
+			return None
+
+		def fake_get_doc(doctype, name):
+			if doctype == "Datos Contratacion":
+				return datos
+			if doctype == "Candidato":
+				return candidato
+			if doctype == "Contrato":
+				return contrato
+			raise AssertionError(f"unexpected get_doc call: {doctype} {name}")
+
+		with patch("hubgh.hubgh.contratacion_service.frappe.db.get_value", side_effect=fake_get_value), patch(
+			"hubgh.hubgh.contratacion_service.frappe.get_doc", side_effect=fake_get_doc
+		), patch(
+			"hubgh.hubgh.contratacion_service._resolve_required_siesa_fields",
+			return_value={
+				"tipo_cotizante_siesa": "01",
+				"centro_costos_siesa": "110102",
+				"unidad_negocio_siesa": "999",
+				"centro_trabajo_siesa": "001",
+				"grupo_empleados_siesa": "001",
+			},
+		), patch(
+			"hubgh.hubgh.contratacion_service.get_or_create_affiliation", return_value=afiliacion
+		):
+			result = contratacion_service.validar_candidato_para_siesa("CAND-001")
+
+		self.assertFalse(result["ok"])
+		self.assertIn("Falta nivel educativo SIESA", result["errors"])
 
 	def test_affiliation_contract_snapshot_falls_back_to_candidate_ccf(self):
 		candidate_doc = SimpleNamespace(
@@ -1694,6 +1871,42 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		self.assertTrue(any(c.args[:4] == ("Datos Contratacion", "DC-1", "centro_trabajo_siesa", "CT-001") for c in set_calls))
 		self.assertTrue(any(c.args[:4] == ("Centro Trabajo Siesa", "CT-BAD", "enabled", 0) for c in set_calls))
 
+	def test_ensure_official_nivel_educativo_catalog_repoints_and_disables_non_official(self):
+		nivel_rows = [
+			{"name": "04", "code": "04", "description": "MEDIA", "enabled": 1},
+			{"name": "12", "code": "12", "description": "SIN DEFINIR", "enabled": 1},
+			{"name": "NV-BAD", "code": "99", "description": "LEGACY", "enabled": 1},
+		]
+
+		def fake_exists(doctype, name=None):
+			if doctype == "DocType":
+				return name in {"Candidato", "Datos Contratacion"}
+			return doctype in {"Candidato", "Datos Contratacion"}
+
+		def fake_get_all(doctype, fields=None, filters=None):
+			if doctype == "Nivel Educativo Siesa":
+				return nivel_rows
+			if doctype == "Candidato":
+				return [{"name": "CAND-1", "nivel_educativo_siesa": "MEDIA"}]
+			if doctype == "Datos Contratacion":
+				return [{"name": "DC-1", "nivel_educativo_siesa": "NO-EXISTE"}]
+			return []
+
+		with patch("hubgh.hubgh.siesa_reference_matrix.ensure_reference_catalog") as ensure_ref_mock, patch(
+			"hubgh.hubgh.siesa_reference_matrix.frappe.db.exists",
+			side_effect=fake_exists,
+		), patch(
+			"hubgh.hubgh.siesa_reference_matrix.frappe.get_all",
+			side_effect=fake_get_all,
+		), patch("hubgh.hubgh.siesa_reference_matrix.frappe.db.set_value") as set_value_mock:
+			siesa_reference_matrix.ensure_official_nivel_educativo_catalog(strict_disable_others=True)
+
+		ensure_ref_mock.assert_called_once_with("Nivel Educativo Siesa")
+		set_calls = set_value_mock.call_args_list
+		self.assertTrue(any(c.args[:4] == ("Candidato", "CAND-1", "nivel_educativo_siesa", "04") for c in set_calls))
+		self.assertTrue(any(c.args[:4] == ("Datos Contratacion", "DC-1", "nivel_educativo_siesa", "12") for c in set_calls))
+		self.assertTrue(any(c.args[:4] == ("Nivel Educativo Siesa", "NV-BAD", "enabled", 0) for c in set_calls))
+
 	def test_sync_reference_masters_enforces_official_catalog_guards(self):
 		with patch("hubgh.hubgh.siesa_reference_matrix.ensure_reference_catalog") as ensure_catalog_mock, patch(
 			"hubgh.hubgh.siesa_reference_matrix.ensure_official_ccf_catalog"
@@ -1702,6 +1915,8 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		) as ensure_un_mock, patch(
 			"hubgh.hubgh.siesa_reference_matrix.ensure_official_centro_trabajo_catalog"
 		) as ensure_ct_mock, patch(
+			"hubgh.hubgh.siesa_reference_matrix.ensure_official_nivel_educativo_catalog"
+		) as ensure_nivel_mock, patch(
 			"hubgh.hubgh.siesa_reference_matrix.ensure_banco_reference_catalog"
 		) as ensure_banco_mock, patch(
 			"hubgh.hubgh.siesa_reference_matrix.ensure_official_cargo_matrix"
@@ -1714,6 +1929,7 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 		ensure_ccf_mock.assert_called_once_with(strict_disable_others=True)
 		ensure_un_mock.assert_called_once_with(strict_disable_others=True)
 		ensure_ct_mock.assert_called_once_with(strict_disable_others=True)
+		ensure_nivel_mock.assert_called_once_with(strict_disable_others=True)
 		ensure_banco_mock.assert_called_once()
 		ensure_cargo_mock.assert_called_once()
 		commit_mock.assert_called_once()
