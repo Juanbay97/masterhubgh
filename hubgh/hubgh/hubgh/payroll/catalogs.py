@@ -21,6 +21,19 @@ JORNADA_VALUES = (JORNADA_TC, JORNADA_TP)
 
 
 # ──────────────────────────────────────────────────────────────────────
+# Periodo de corte por jornada
+# ──────────────────────────────────────────────────────────────────────
+# Confirmado por el dueño 2026-04-29:
+#   - TC: del día 16 del mes anterior al día 15 del mes vigente.
+#   - TP: del día 23 del mes anterior al día 22 del mes vigente.
+# El adapter usa estos valores para validar el rango del archivo y para
+# alinear el `Payroll Run.period_year/period_month` con el rango leído.
+
+PERIODO_CORTE_TC = {"start_day_prev_month": 16, "end_day_current_month": 15}
+PERIODO_CORTE_TP = {"start_day_prev_month": 23, "end_day_current_month": 22}
+
+
+# ──────────────────────────────────────────────────────────────────────
 # Multiplicadores de horas (sobre valor hora base)
 # ──────────────────────────────────────────────────────────────────────
 
@@ -257,6 +270,40 @@ NOVEDAD_TYPES: tuple[NovedadTypeSpec, ...] = (
 		notas="valor_día_actual × días_hábiles.",
 	),
 
+	# ── Beneficios remunerados (CLONK Novedades) ─────────────────────
+	NovedadTypeSpec(
+		"DESCANSO",
+		"Descanso compensatorio remunerado",
+		"dias",
+		JORNADA_BOTH,
+		porcentaje_default=1.00,
+		notas="100% del valor día. Concepto más frecuente del CLONK.",
+	),
+	NovedadTypeSpec(
+		"DIA_FAMILIA",
+		"Día de la familia",
+		"dias",
+		JORNADA_BOTH,
+		porcentaje_default=1.00,
+		notas="Beneficio empresa, 100% del valor día.",
+	),
+	NovedadTypeSpec(
+		"DIA_CUMPLEANOS",
+		"Día de cumpleaños",
+		"dias",
+		JORNADA_BOTH,
+		porcentaje_default=1.00,
+		notas="Beneficio empresa, 100% del valor día.",
+	),
+	NovedadTypeSpec(
+		"LICENCIA_MATERNIDAD",
+		"Licencia de maternidad",
+		"dias",
+		JORNADA_BOTH,
+		porcentaje_default=1.00,
+		notas="100% del valor día; lo cubre la EPS, la empresa registra y reclama.",
+	),
+
 	# ── Pagos / auxilios ─────────────────────────────────────────────
 	NovedadTypeSpec(
 		"AUXILIO_MOVILIZACION_DOM_FEST",
@@ -352,17 +399,28 @@ PARAMETROS_GLOBALES_DEFAULTS: dict[str, float] = {
 # Útil para los adapters al traducir conceptos crudos del archivo a tipos canónicos.
 
 CONCEPT_ALIASES: dict[str, str] = {
-	# Ausentismos (hoja AUSENTISMOS del prenómina)
+	# Ausentismos (hoja AUSENTISMOS del prenómina + CLONK Novedades)
 	"ausencia no justificada": "AUSENCIA_INJUSTIFICADA",
+	"ausentismo": "AUSENCIA_INJUSTIFICADA",  # CLONK lo nombra así
 	"incapacidad >180 dias": "INCAPACIDAD_MAYOR_180_DIAS",
 	"incapacidad accidente trabajo": "INCAPACIDAD_ACCIDENTE_TRABAJO",
+	"incapacidad at": "INCAPACIDAD_ACCIDENTE_TRABAJO",  # CLONK
 	"incapacidad enfermedad general": "INCAPACIDAD_ENFERMEDAD_GENERAL",
+	"incapacidad eg": "INCAPACIDAD_ENFERMEDAD_GENERAL",  # CLONK
 	"incapacidad pagada empresa": "INCAPACIDAD_PAGADA_EMPRESA",
 	"licencia no remunerada": "LICENCIA_NO_REMUNERADA",
+	"l. no remunerada": "LICENCIA_NO_REMUNERADA",  # CLONK
 	"licencia por luto": "LICENCIA_LUTO",
 	"licencia remunerada": "LICENCIA_REMUNERADA",
 	"permiso por calamidad domestica": "PERMISO_CALAMIDAD",
 	"suspension de contrato": "SUSPENSION_CONTRATO",
+	"suspension": "SUSPENSION_CONTRATO",  # CLONK
+	"maternidad": "LICENCIA_MATERNIDAD",  # CLONK
+	# Beneficios remunerados (CLONK)
+	"descanso": "DESCANSO",
+	"dia familia": "DIA_FAMILIA",
+	"dia cumpleanos": "DIA_CUMPLEANOS",
+	"dia cumpleano": "DIA_CUMPLEANOS",
 	# Vacaciones
 	"vacaciones": "VACACIONES",
 	# Pagos / auxilios

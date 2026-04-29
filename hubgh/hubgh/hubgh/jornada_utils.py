@@ -26,7 +26,18 @@ def normalize_tipo_jornada(value: str | None) -> str:
 		"full time",
 		"full-time",
 		"fulltime",
+		# Variantes vistas en CLONK real (Toda la empresa - Jan 16 - Feb 15, 2026):
+		"tc administracion",
+		"tc administracion administrativo",
+		"administracion",
+		"administrativo",
+		"aprendizaje",
+		"aprendiz",
+		"aprendiz sena",
 	}
+	# Cualquier "tc - <algo>" colapsa a TC.
+	if text.startswith("tc ") or text.startswith("tc-"):
+		return TIPO_JORNADA_FULL_TIME
 	part_time_values = {
 		"tp",
 		"tiempo parcial",
