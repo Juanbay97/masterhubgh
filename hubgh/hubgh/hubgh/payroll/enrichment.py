@@ -99,8 +99,12 @@ class EnrichedNovedad:
 	calc_status: str        # pending | computed | skipped | error
 	calc_notes: str
 	valor_hora_base: float | None  # útil para tipos en horas
+	salario_mensual: float = 0.0   # para tipos en días: valor_día = salario/30
+	# Computed (lo llena el módulo compute, no enrich):
+	computed_amount: float | None = None
+	computed_quantity: float | None = None
 	# Auditoría
-	raw_payload: dict
+	raw_payload: dict = field(default_factory=dict)
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -185,6 +189,7 @@ def enrich(
 		calc_status="pending",
 		calc_notes="",
 		valor_hora_base=valor_hora,
+		salario_mensual=float(contrato.salario or 0.0),
 		raw_payload=dict(novedad.raw_payload),
 	)
 
