@@ -9,9 +9,11 @@ from frappe.utils import now_datetime
 VALID_TRANSITIONS: dict[str, set[str]] = {
 	"draft": {"ingesting", "failed", "archived"},
 	"ingesting": {"parsed", "failed"},
-	"parsed": {"reviewing", "failed"},
+	# Desde "parsed" se puede ir directo a "exported" (revisión es
+	# opcional en v1) o pasar primero por "reviewing".
+	"parsed": {"reviewing", "exported", "failed"},
 	"reviewing": {"exported", "failed"},
-	"exported": {"archived"},
+	"exported": {"reviewing", "archived"},
 	"archived": set(),
 	"failed": {"draft", "archived"},
 }

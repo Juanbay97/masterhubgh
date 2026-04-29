@@ -195,12 +195,17 @@ def enrich(
 	)
 
 
-def compute_period_window(year: int, month: int, jornada: str) -> tuple[date, date]:
+def compute_period_window(year, month, jornada: str) -> tuple[date, date]:
 	"""Devuelve (start, end) del periodo según jornada.
 
 	- TC: del 16 del mes anterior al 15 del mes vigente.
 	- TP: del 23 del mes anterior al 22 del mes vigente.
+
+	`year` y `month` se castean a int para tolerar el caso de Frappe
+	pasando el campo Select `period_month` como string.
 	"""
+	year = int(year)
+	month = int(month)
 	cutoff = catalogs.PERIODO_CORTE_TC if jornada == TIPO_JORNADA_FULL_TIME else catalogs.PERIODO_CORTE_TP
 	prev_year, prev_month = (year - 1, 12) if month == 1 else (year, month - 1)
 	start = date(prev_year, prev_month, cutoff["start_day_prev_month"])
