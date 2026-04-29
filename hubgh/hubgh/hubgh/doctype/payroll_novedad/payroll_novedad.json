@@ -1,0 +1,285 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:NOV-{run}-{#####}",
+ "creation": "2026-04-29 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "run_section",
+  "run",
+  "source_file",
+  "empleado_section",
+  "empleado",
+  "documento_identidad",
+  "column_break_emp",
+  "contrato",
+  "tipo_jornada_snapshot",
+  "novedad_section",
+  "tipo_novedad",
+  "jornada_aplicable",
+  "column_break_nov",
+  "unidad",
+  "valor",
+  "cantidad",
+  "fechas_section",
+  "fecha_desde",
+  "column_break_fechas",
+  "fecha_hasta",
+  "calc_section",
+  "calc_status",
+  "computed_amount",
+  "column_break_calc",
+  "computed_quantity",
+  "calc_notes",
+  "override_section",
+  "manual_override",
+  "override_reason",
+  "raw_section",
+  "raw_payload"
+ ],
+ "fields": [
+  {
+   "fieldname": "run_section",
+   "fieldtype": "Section Break",
+   "label": "Run"
+  },
+  {
+   "fieldname": "run",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Payroll Run",
+   "options": "Payroll Run",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "source_file",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Archivo origen",
+   "options": "Payroll Run File"
+  },
+  {
+   "fieldname": "empleado_section",
+   "fieldtype": "Section Break",
+   "label": "Empleado"
+  },
+  {
+   "fieldname": "empleado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Empleado",
+   "options": "Ficha Empleado",
+   "search_index": 1
+  },
+  {
+   "fieldname": "documento_identidad",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Documento de identidad",
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_emp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contrato",
+   "fieldtype": "Link",
+   "label": "Contrato",
+   "options": "Contrato"
+  },
+  {
+   "description": "Snapshot inmutable de la jornada del contrato vigente al momento de procesar.",
+   "fieldname": "tipo_jornada_snapshot",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Jornada (snapshot)",
+   "options": "\nTiempo Completo\nTiempo Parcial",
+   "read_only": 1
+  },
+  {
+   "fieldname": "novedad_section",
+   "fieldtype": "Section Break",
+   "label": "Novedad"
+  },
+  {
+   "fieldname": "tipo_novedad",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Tipo de novedad",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "both",
+   "fieldname": "jornada_aplicable",
+   "fieldtype": "Select",
+   "label": "Jornada aplicable",
+   "options": "TC\nTP\nboth"
+  },
+  {
+   "fieldname": "column_break_nov",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "cop",
+   "fieldname": "unidad",
+   "fieldtype": "Select",
+   "label": "Unidad",
+   "options": "horas\ndias\ncop\nunidades",
+   "reqd": 1
+  },
+  {
+   "fieldname": "valor",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Valor"
+  },
+  {
+   "fieldname": "cantidad",
+   "fieldtype": "Float",
+   "label": "Cantidad",
+   "precision": "2"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "fechas_section",
+   "fieldtype": "Section Break",
+   "label": "Fechas"
+  },
+  {
+   "fieldname": "fecha_desde",
+   "fieldtype": "Date",
+   "label": "Fecha desde"
+  },
+  {
+   "fieldname": "column_break_fechas",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fecha_hasta",
+   "fieldtype": "Date",
+   "label": "Fecha hasta"
+  },
+  {
+   "fieldname": "calc_section",
+   "fieldtype": "Section Break",
+   "label": "Cálculo"
+  },
+  {
+   "default": "pending",
+   "fieldname": "calc_status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Estado del cálculo",
+   "options": "pending\ncomputed\nskipped\nerror",
+   "reqd": 1
+  },
+  {
+   "fieldname": "computed_amount",
+   "fieldtype": "Currency",
+   "label": "Importe calculado",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_calc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "computed_quantity",
+   "fieldtype": "Float",
+   "label": "Cantidad calculada",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "calc_notes",
+   "fieldtype": "Small Text",
+   "label": "Notas del cálculo",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "override_section",
+   "fieldtype": "Section Break",
+   "label": "Override manual"
+  },
+  {
+   "default": "0",
+   "fieldname": "manual_override",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Override manual"
+  },
+  {
+   "depends_on": "eval:doc.manual_override",
+   "fieldname": "override_reason",
+   "fieldtype": "Small Text",
+   "label": "Motivo del override"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "raw_section",
+   "fieldtype": "Section Break",
+   "label": "Auditoría"
+  },
+  {
+   "description": "JSON con la fila cruda original del archivo fuente.",
+   "fieldname": "raw_payload",
+   "fieldtype": "Long Text",
+   "label": "Payload crudo",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-29 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Payroll Novedad",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Operativo Nómina",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 0
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

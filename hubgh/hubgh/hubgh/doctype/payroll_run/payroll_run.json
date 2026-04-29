@@ -1,0 +1,167 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:RUN-{period_year}-{period_month}-{#####}",
+ "creation": "2026-04-29 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "period_section",
+  "period_year",
+  "period_month",
+  "column_break_period",
+  "status",
+  "jornada_filter",
+  "tracking_section",
+  "owner_user",
+  "started_at",
+  "column_break_tracking",
+  "closed_at",
+  "summary_section",
+  "summary_json",
+  "export_section",
+  "export_file"
+ ],
+ "fields": [
+  {
+   "fieldname": "period_section",
+   "fieldtype": "Section Break",
+   "label": "Periodo"
+  },
+  {
+   "fieldname": "period_year",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Año",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_month",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Mes",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_period",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Estado",
+   "options": "draft\ningesting\nparsed\nreviewing\nexported\narchived\nfailed",
+   "reqd": 1
+  },
+  {
+   "default": "all",
+   "description": "Filtro por jornada del contrato (oculto en UI hasta que un caso real lo pida).",
+   "fieldname": "jornada_filter",
+   "fieldtype": "Select",
+   "label": "Filtro de jornada",
+   "options": "all\nTC\nTP",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tracking_section",
+   "fieldtype": "Section Break",
+   "label": "Seguimiento"
+  },
+  {
+   "fieldname": "owner_user",
+   "fieldtype": "Link",
+   "label": "Propietario",
+   "options": "User"
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Iniciado en",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_tracking",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "closed_at",
+   "fieldtype": "Datetime",
+   "label": "Cerrado en",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "summary_section",
+   "fieldtype": "Section Break",
+   "label": "Resumen"
+  },
+  {
+   "description": "Snapshot JSON con conteos agregados (#empleados, #novedades, totales por tipo y jornada).",
+   "fieldname": "summary_json",
+   "fieldtype": "Long Text",
+   "label": "Resumen (JSON)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "export_section",
+   "fieldtype": "Section Break",
+   "label": "Exportación"
+  },
+  {
+   "fieldname": "export_file",
+   "fieldtype": "Attach",
+   "label": "Archivo de prenómina",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-29 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Payroll Run",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Operativo Nómina",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 0
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

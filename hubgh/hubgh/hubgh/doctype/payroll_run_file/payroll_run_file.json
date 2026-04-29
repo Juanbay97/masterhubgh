@@ -1,0 +1,170 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:RUNFILE-{run}-{#####}",
+ "creation": "2026-04-29 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "run_section",
+  "run",
+  "file_section",
+  "file_url",
+  "file_name",
+  "column_break_file",
+  "file_size",
+  "sha256",
+  "detection_section",
+  "detected_source",
+  "detected_period_year",
+  "column_break_detection",
+  "detected_period_month",
+  "parse_section",
+  "parse_status",
+  "parsed_at",
+  "parse_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "run_section",
+   "fieldtype": "Section Break",
+   "label": "Run"
+  },
+  {
+   "fieldname": "run",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Payroll Run",
+   "options": "Payroll Run",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "file_section",
+   "fieldtype": "Section Break",
+   "label": "Archivo"
+  },
+  {
+   "fieldname": "file_url",
+   "fieldtype": "Attach",
+   "label": "Archivo subido",
+   "reqd": 1
+  },
+  {
+   "fieldname": "file_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre"
+  },
+  {
+   "fieldname": "column_break_file",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "file_size",
+   "fieldtype": "Int",
+   "label": "Tamaño (bytes)"
+  },
+  {
+   "fieldname": "sha256",
+   "fieldtype": "Data",
+   "label": "Hash SHA-256",
+   "length": 64
+  },
+  {
+   "fieldname": "detection_section",
+   "fieldtype": "Section Break",
+   "label": "Detección"
+  },
+  {
+   "default": "unknown",
+   "fieldname": "detected_source",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Fuente detectada",
+   "options": "clonk\npayflow\nfincomercio\nfongiga\nlibranza_davivienda\nlibranza_compensar\nlibranza_comfenalco\nmanual_internal\nunknown",
+   "reqd": 1
+  },
+  {
+   "fieldname": "detected_period_year",
+   "fieldtype": "Int",
+   "label": "Año detectado"
+  },
+  {
+   "fieldname": "column_break_detection",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "detected_period_month",
+   "fieldtype": "Int",
+   "label": "Mes detectado"
+  },
+  {
+   "fieldname": "parse_section",
+   "fieldtype": "Section Break",
+   "label": "Parseo"
+  },
+  {
+   "default": "pending",
+   "fieldname": "parse_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Estado de parse",
+   "options": "pending\nparsing\nok\nerror",
+   "reqd": 1
+  },
+  {
+   "fieldname": "parsed_at",
+   "fieldtype": "Datetime",
+   "label": "Parseado en",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "description": "Errores y warnings del parseo (JSON).",
+   "fieldname": "parse_log",
+   "fieldtype": "Long Text",
+   "label": "Log de parse"
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-29 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Payroll Run File",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Operativo Nómina",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
