@@ -1,0 +1,71 @@
+{
+ "actions": [],
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "transition_name",
+  "from_state",
+  "to_state",
+  "actor",
+  "timestamp",
+  "comment"
+ ],
+ "fields": [
+  {
+   "fieldname": "transition_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Transición",
+   "reqd": 1
+  },
+  {
+   "fieldname": "from_state",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Estado Anterior",
+   "reqd": 0
+  },
+  {
+   "fieldname": "to_state",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Estado Nuevo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "actor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Actor",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Fecha/Hora",
+   "reqd": 1
+  },
+  {
+   "fieldname": "comment",
+   "fieldtype": "Small Text",
+   "label": "Comentario",
+   "reqd": 0
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-04-23 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Disciplinary Transition Log",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

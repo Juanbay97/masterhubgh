@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"rl-operacion\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Operaci\u00f3n RRLL</span>\",\"col\":12}},{\"id\":\"F-qHzC1p8J\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gesti\u00f3n de afiliaciones\",\"col\":4}},{\"id\":\"nSHREzANlu\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contrataci\u00f3n y formalizaci\u00f3n\",\"col\":4}},{\"id\":\"rptsiesaRL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Reportes SIESA\",\"col\":4}},{\"id\":\"E3yqJ5dDxR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Carpeta documental del empleado\",\"col\":4}},{\"id\":\"rl-registros\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Registros y maestros</span>\",\"col\":12}},{\"id\":\"VeQMBfiOHN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Registro de afiliaciones\",\"col\":4}},{\"id\":\"ix8d4drned\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contratos\",\"col\":4}},{\"id\":\"dcRL1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Datos de contrataci\u00f3n\",\"col\":4}},{\"id\":\"ghnovRRLL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Novedades laborales\",\"col\":4}},{\"id\":\"LarA0EPs-o\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Tipos de documento\",\"col\":4}},{\"id\":\"lQWPPTPV5m\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Candidatos\",\"col\":4}}]",
+ "content": "[{\"id\":\"rl-operacion\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Operaci\u00f3n RRLL</span>\",\"col\":12}},{\"id\":\"rl-discRL1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Bandeja Casos Disciplinarios\",\"col\":4}},{\"id\":\"F-qHzC1p8J\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gesti\u00f3n de afiliaciones\",\"col\":4}},{\"id\":\"nSHREzANlu\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contrataci\u00f3n y formalizaci\u00f3n\",\"col\":4}},{\"id\":\"rptsiesaRL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Reportes SIESA\",\"col\":4}},{\"id\":\"E3yqJ5dDxR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Carpeta documental del empleado\",\"col\":4}},{\"id\":\"rl-registros\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Registros y maestros</span>\",\"col\":12}},{\"id\":\"VeQMBfiOHN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Registro de afiliaciones\",\"col\":4}},{\"id\":\"ix8d4drned\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contratos\",\"col\":4}},{\"id\":\"dcRL1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Datos de contrataci\u00f3n\",\"col\":4}},{\"id\":\"ghnovRRLL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Novedades laborales\",\"col\":4}},{\"id\":\"LarA0EPs-o\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Tipos de documento\",\"col\":4}},{\"id\":\"lQWPPTPV5m\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Candidatos\",\"col\":4}}]",
  "creation": "2026-02-09 00:00:00",
  "custom_blocks": [],
  "docstatus": 0,
@@ -32,6 +32,13 @@
  ],
  "sequence_id": 12.0,
  "shortcuts": [
+  {
+   "color": "Red",
+   "doc_view": "",
+   "label": "Bandeja Casos Disciplinarios",
+   "link_to": "bandeja_casos_disciplinarios",
+   "type": "Page"
+  },
   {
    "color": "Blue",
    "doc_view": "",

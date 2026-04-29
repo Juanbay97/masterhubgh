@@ -1,0 +1,29 @@
+[
+ {
+  "doctype": "RIT Articulo",
+  "name": "42",
+  "numero": 42,
+  "capitulo": "De los Deberes del Trabajador",
+  "literal_clave": "3, 4, 5, 6, 8, 12",
+  "texto_completo": "ARTÍCULO 42 — DEBERES DEL TRABAJADOR. Son deberes especiales de los trabajadores:\n\n3. Empezar y terminar su jornada de trabajo puntualmente, no ausentarse del trabajo durante la misma sin permiso previo del jefe o empleador, ni utilizar el tiempo de trabajo en actividades distintas de las pactadas.\n\n4. Ejecutar el trabajo con la intensidad, el cuidado y el esmero apropiados a las obligaciones y en la forma, tiempo y lugar acordados.\n\n5. Dar aviso oportuno al empleador o a su representante de las causas que le impidan presentarse al trabajo.\n\n6. Observar rigurosamente las medidas y precauciones que le indique el empleador para evitar accidentes, enfermedades o actos ilícitos.\n\n8. Guardar rigurosamente la moral en las relaciones con sus superiores y compañeros, y así mismo respetar las órdenes e instrucciones de los superiores jerárquicos en las materias de trabajo.\n\n12. No presentarse al trabajo en estado de embriaguez o bajo la influencia de narcóticos o de drogas enervantes, y no introducir a los sitios de trabajo bebidas alcohólicas o drogas enervantes.",
+  "activo": 1
+ },
+ {
+  "doctype": "RIT Articulo",
+  "name": "45",
+  "numero": 45,
+  "capitulo": "Obligaciones Especiales del Trabajador",
+  "literal_clave": "1, 4, 14, 15, 55",
+  "texto_completo": "ARTÍCULO 45 — OBLIGACIONES ESPECIALES DEL TRABAJADOR. Son obligaciones especiales del trabajador:\n\n1. Presentarse al trabajo con puntualidad, observar buen comportamiento y cumplir con las instrucciones del empleador y sus representantes.\n\n4. Cumplir y respetar los reglamentos del Establecimiento, las instrucciones que por escrito o de palabra le impartan las personas señaladas como superiores jerárquicos.\n\n14. Utilizar correctamente los uniformes y elementos de protección personal (EPP) asignados por la empresa para el desempeño de sus funciones, y reportar de inmediato cualquier daño o pérdida de los mismos.\n\n15. Manejar con responsabilidad los valores, fondos de caja, inventario de materias primas y herramientas de trabajo que le sean confiados, rindiéndolos al término de cada turno o al serle solicitado por parte del empleador o su representante.\n\n55. Guardar estricta confidencialidad sobre los datos personales de los clientes y sobre la información comercial, operativa y financiera de la empresa a la que tenga acceso con ocasión de sus funciones.",
+  "activo": 1
+ },
+ {
+  "doctype": "RIT Articulo",
+  "name": "47",
+  "numero": 47,
+  "capitulo": "Procedimiento Disciplinario y Sanciones",
+  "literal_clave": "1, 2, 3",
+  "texto_completo": "ARTÍCULO 47 — PROCEDIMIENTO DISCIPLINARIO Y SANCIONES. La empresa seguirá, para la imposición de las sanciones disciplinarias, el siguiente procedimiento:\n\n1. Formulación de cargos por escrito: el empleador o su representante notificará al trabajador la falta que se le imputa, con indicación de las normas del reglamento, el contrato de trabajo o la ley que presuntamente ha infringido, así como las consecuencias que puede acarrear la conducta investigada.\n\n2. Descargos: el trabajador tendrá un plazo no inferior a cinco (5) días hábiles contados a partir de la notificación de cargos para rendir sus descargos, presentar pruebas o hacer uso del derecho de contradicción.\n\n3. Decisión: agotado el procedimiento anterior, la empresa comunicará por escrito la decisión adoptada, con indicación de los motivos que la sustentan y de las sanciones que se impongan, si hubiere lugar a ellas. En todo caso, antes de que se profiera la decisión definitiva, se escuchará en descargos al trabajador y si éste es sindicado, se le brindará la oportunidad de ser asistido por un representante del sindicato o por un compañero de trabajo.",
+  "activo": 1
+ }
+]

@@ -7,25 +7,51 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "origen",
+  "solicitante",
   "empleado",
   "fecha_incidente",
   "tipo_falta",
   "descripcion",
+  "hechos_detallados",
+  "ciudad_emision",
+  "empresa",
   "estado",
+  "fecha_inicio_proceso",
+  "conclusion_publica",
   "decision_final",
   "fecha_cierre",
   "resumen_cierre",
   "fecha_inicio_suspension",
-  "fecha_fin_suspension"
+  "fecha_fin_suspension",
+  "articulos_rit",
+  "transition_log"
  ],
  "fields": [
   {
+   "default": "Apertura RRLL",
+   "fieldname": "origen",
+   "fieldtype": "Select",
+   "label": "Origen",
+   "options": "Apertura RRLL\nSolicitud Jefe PDV",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.origen=='Solicitud Jefe PDV'",
+   "fieldname": "solicitante",
+   "fieldtype": "Link",
+   "label": "Solicitante",
+   "options": "Ficha Empleado",
+   "reqd": 0
+  },
+  {
+   "description": "Campo legado — usar Afectado Disciplinario para multi-afectado",
    "fieldname": "empleado",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Empleado",
+   "label": "Empleado (Legado)",
    "options": "Ficha Empleado",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "fecha_incidente",
@@ -37,26 +63,63 @@
    "fieldname": "tipo_falta",
    "fieldtype": "Select",
    "label": "Tipo Falta",
-   "options": "Leve\nGrave\nGrav\u00edsima"
+   "options": "Leve\nGrave\nGravísima"
   },
   {
    "fieldname": "descripcion",
    "fieldtype": "Text Editor",
-   "label": "Descripci\u00f3n"
+   "label": "Descripción"
   },
   {
-   "default": "Abierto",
+   "fieldname": "hechos_detallados",
+   "fieldtype": "Text Editor",
+   "label": "Hechos Detallados",
+   "reqd": 0
+  },
+  {
+   "default": "Bogotá D.C.",
+   "fieldname": "ciudad_emision",
+   "fieldtype": "Data",
+   "label": "Ciudad de Emisión",
+   "reqd": 0
+  },
+  {
+   "default": "COMIDAS VARPEL S.A.S.",
+   "fieldname": "empresa",
+   "fieldtype": "Data",
+   "label": "Empresa",
+   "reqd": 0
+  },
+  {
+   "default": "En Triage",
    "fieldname": "estado",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Estado",
-   "options": "Abierto\nEn Proceso\nCerrado"
+   "options": "Solicitado\nEn Triage\nDescargos Programados\nCitado\nEn Descargos\nEn Deliberación\nCerrado"
+  },
+  {
+   "default": "",
+   "fieldname": "fecha_inicio_proceso",
+   "fieldtype": "Date",
+   "label": "Fecha Inicio Proceso",
+   "read_only": 1,
+   "reqd": 0
+  },
+  {
+   "default": "En proceso",
+   "fieldname": "conclusion_publica",
+   "fieldtype": "Data",
+   "label": "Conclusión Pública",
+   "read_only": 1,
+   "reqd": 0
   },
   {
    "depends_on": "eval:doc.estado=='Cerrado'",
    "fieldname": "decision_final",
    "fieldtype": "Select",
-   "label": "Decisi\u00f3n Final",
-   "options": "Archivo\nLlamado de atenci\u00f3n\nSuspensi\u00f3n\nTerminaci\u00f3n"
+   "label": "Decisión Final",
+   "options": "Archivo\nLlamado de atención\nSuspensión\nTerminación\nMixto"
   },
   {
    "depends_on": "eval:doc.estado=='Cerrado'",
@@ -71,22 +134,36 @@
    "label": "Resumen de Cierre"
   },
   {
-   "depends_on": "eval:doc.estado=='Cerrado' && doc.decision_final=='Suspensi\u00f3n'",
+   "depends_on": "eval:doc.estado=='Cerrado' && doc.decision_final=='Suspensión'",
    "fieldname": "fecha_inicio_suspension",
    "fieldtype": "Date",
-   "label": "Inicio Suspensi\u00f3n"
+   "label": "Inicio Suspensión"
   },
   {
-   "depends_on": "eval:doc.estado=='Cerrado' && doc.decision_final=='Suspensi\u00f3n'",
+   "depends_on": "eval:doc.estado=='Cerrado' && doc.decision_final=='Suspensión'",
    "fieldname": "fecha_fin_suspension",
    "fieldtype": "Date",
-   "label": "Fin Suspensi\u00f3n"
+   "label": "Fin Suspensión"
+  },
+  {
+   "fieldname": "articulos_rit",
+   "fieldtype": "Table",
+   "label": "Artículos RIT",
+   "options": "Articulo RIT Caso",
+   "reqd": 0
+  },
+  {
+   "fieldname": "transition_log",
+   "fieldtype": "Table",
+   "label": "Historial de Transiciones",
+   "options": "Disciplinary Transition Log",
+   "reqd": 0
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-13 00:00:00",
+ "modified": "2026-04-23 00:00:00",
  "modified_by": "Administrator",
  "module": "Hubgh",
  "name": "Caso Disciplinario",
@@ -162,7 +239,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "Gesti\u00f3n Humana",
+   "role": "Gestión Humana",
    "select": 1,
    "share": 1
   }

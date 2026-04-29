@@ -1,0 +1,133 @@
+{
+ "actions": [],
+ "autoname": "format:COM-{YYYY}-{#####}",
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "afectado",
+  "tipo_comunicado",
+  "fecha_emision",
+  "fundamentos",
+  "articulos_rit_citados",
+  "archivo_comunicado"
+ ],
+ "fields": [
+  {
+   "fieldname": "afectado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Afectado Disciplinario",
+   "options": "Afectado Disciplinario",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "tipo_comunicado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tipo de Comunicado",
+   "options": "Llamado de Atención Directo\nLlamado de Atención\nSuspensión\nTerminación\nRecordatorio de Funciones",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "fecha_emision",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha de Emisión",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fundamentos",
+   "fieldtype": "Text Editor",
+   "label": "Fundamentos",
+   "reqd": 1
+  },
+  {
+   "fieldname": "articulos_rit_citados",
+   "fieldtype": "Table",
+   "label": "Artículos RIT Citados",
+   "options": "Articulo RIT Caso",
+   "reqd": 0
+  },
+  {
+   "fieldname": "archivo_comunicado",
+   "fieldtype": "Attach",
+   "label": "Archivo Comunicado",
+   "read_only": 1,
+   "reqd": 0
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-04-23 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Comunicado Sancion",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Labor Relations",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "Relaciones Laborales Jefe",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "Gerente GH",
+   "select": 1,
+   "write": 0
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

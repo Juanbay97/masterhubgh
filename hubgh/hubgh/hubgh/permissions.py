@@ -19,7 +19,13 @@ from hubgh.hubgh.role_matrix import (
 
 GH_ADMIN_ROLES = GH_ADMIN_CANONICAL_ROLES
 OPS_POINT_ROLES = OPS_POINT_CANONICAL_ROLES
-DISCIPLINARY_MANAGER_ROLES = {"System Manager", "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe", "Gerente GH"}
+
+# REQ-10-04: "Gerente GH" has direct read access to individual docs (design §6)
+# but does NOT receive permission_query_conditions access (cannot list/search the DocType).
+# DISCIPLINARY_MANAGER_ROLES: used by permission_query_conditions — RRLL roles only.
+# DISCIPLINARY_READ_ROLES: used by has_permission for ptype=="read" — includes Gerente GH.
+DISCIPLINARY_MANAGER_ROLES = {"System Manager", "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe"}
+DISCIPLINARY_READ_ROLES = DISCIPLINARY_MANAGER_ROLES | {"Gerente GH"}
 
 
 def _user_has_employee_documental_access(user):
@@ -214,11 +220,76 @@ def get_caso_disciplinario_permission_query(user=None):
 	return "1=0"
 
 
-def caso_disciplinario_has_permission(doc, user=None):
+def caso_disciplinario_has_permission(doc, user=None, ptype="read"):
+	user = user or frappe.session.user
+	if user == "Administrator":
+		return True
+	# REQ-10-04: read access includes Gerente GH; write/manage requires RRLL roles only.
+	if str(ptype or "read").lower() == "read":
+		return user_has_any_role(user, *DISCIPLINARY_READ_ROLES)
+	return user_has_any_role(user, *DISCIPLINARY_MANAGER_ROLES)
+
+
+# ---------------------------------------------------------------------------
+# Disciplinary sub-document permissions (T046-T047)
+# All follow the same rule: only DISCIPLINARY_MANAGER_ROLES can access.
+# ---------------------------------------------------------------------------
+
+
+def _disciplinary_subdoc_permission_query(user=None):
+	"""Shared query for all disciplinary sub-documents."""
+	user = user or frappe.session.user
+	if user == "Administrator" or user_has_any_role(user, *DISCIPLINARY_MANAGER_ROLES):
+		return ""
+	return "1=0"
+
+
+def _disciplinary_subdoc_has_permission(doc, user=None):
+	"""Shared has_permission for all disciplinary sub-documents."""
 	user = user or frappe.session.user
 	if user == "Administrator":
 		return True
 	return user_has_any_role(user, *DISCIPLINARY_MANAGER_ROLES)
+
+
+def get_afectado_disciplinario_permission_query(user=None):
+	return _disciplinary_subdoc_permission_query(user=user)
+
+
+def afectado_disciplinario_has_permission(doc, user=None):
+	return _disciplinary_subdoc_has_permission(doc, user=user)
+
+
+def get_citacion_disciplinaria_permission_query(user=None):
+	return _disciplinary_subdoc_permission_query(user=user)
+
+
+def citacion_disciplinaria_has_permission(doc, user=None):
+	return _disciplinary_subdoc_has_permission(doc, user=user)
+
+
+def get_acta_descargos_permission_query(user=None):
+	return _disciplinary_subdoc_permission_query(user=user)
+
+
+def acta_descargos_has_permission(doc, user=None):
+	return _disciplinary_subdoc_has_permission(doc, user=user)
+
+
+def get_comunicado_sancion_permission_query(user=None):
+	return _disciplinary_subdoc_permission_query(user=user)
+
+
+def comunicado_sancion_has_permission(doc, user=None):
+	return _disciplinary_subdoc_has_permission(doc, user=user)
+
+
+def get_evidencia_disciplinaria_permission_query(user=None):
+	return _disciplinary_subdoc_permission_query(user=user)
+
+
+def evidencia_disciplinaria_has_permission(doc, user=None):
+	return _disciplinary_subdoc_has_permission(doc, user=user)
 
 
 def _get_employee_by_user(user):

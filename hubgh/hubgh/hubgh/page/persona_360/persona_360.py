@@ -13,6 +13,161 @@ from hubgh.hubgh.payroll_persona360 import get_payroll_block
 INCAPACIDAD_TIPOS = {"Incapacidad", "Incapacidad por enfermedad general"}
 SENSITIVE_REDACTION = "Contenido restringido por política de sensibilidad."
 
+# ---------------------------------------------------------------------------
+# Phase 6 — Disciplinary projection constants and helpers
+# ---------------------------------------------------------------------------
+
+CONCLUSION_PUBLICA_MAP = {
+    "Archivo": "Proceso archivado",
+    "Recordatorio de Funciones": "Sin sanción",
+    "Llamado de Atención Directo": "Sanción aplicada",
+    "Llamado de Atención": "Sanción aplicada",
+    "Suspensión": "Sanción aplicada",
+    "Terminación": "Sanción aplicada",
+}
+
+_RRLL_ROLES = {"HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe", "System Manager"}
+
+
+def _map_conclusion_publica(decision_final) -> str:
+    """Maps decision_final to a public-safe label."""
+    if not decision_final:
+        return "En proceso"
+    return CONCLUSION_PUBLICA_MAP.get(str(decision_final).strip(), "En proceso")
+
+
+def _get_disciplinary_projection(
+    casos,
+    afectados,
+    requesting_user: str,
+    employee_id: str,
+    can_view_sensitive: bool = False,
+) -> list[dict]:
+    """
+    Returns a list of disciplinary records projected to the correct sensitivity level:
+      - Full (RRLL): all fields
+      - Sensitive (can_view_sensitive, not RRLL): redacted name + REDACTED descripcion
+      - External (no sensitive): only {fecha_inicio_proceso, estado_caso, conclusion_publica}
+
+    Args:
+        casos: Unused — kept for backward-compat call signature. Pass [] or None.
+        afectados: List of Afectado Disciplinario records (canonical source).
+        requesting_user: The user making the query.
+        employee_id: The employee being viewed.
+        can_view_sensitive: Whether the user has can_view_sensitive permission.
+    """
+    is_rrll = user_has_any_role(requesting_user, *_RRLL_ROLES)
+
+    def _val(obj, key, default=None):
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+
+    result = []
+
+    # Process afectados — canonical source
+    for af in afectados:
+        caso_name = _val(af, "caso") or ""
+        af_estado = _val(af, "estado") or ""
+        af_decision = _val(af, "decision_final_afectado")
+
+        # Get caso data for fecha_incidente
+        caso_doc = None
+        try:
+            caso_doc = frappe.get_doc("Caso Disciplinario", caso_name) if caso_name else None
+        except Exception:
+            caso_doc = None
+
+        fecha = _val(caso_doc, "fecha_incidente") or "" if caso_doc else ""
+        tipo_falta = _val(caso_doc, "tipo_falta") or "" if caso_doc else ""
+        descripcion = _val(caso_doc, "descripcion") or "" if caso_doc else ""
+        hechos = _val(caso_doc, "hechos_narrados") or "" if caso_doc else ""
+        conclusion = _map_conclusion_publica(af_decision)
+
+        if is_rrll:
+            result.append({
+                "name": caso_name,
+                "fecha": fecha,
+                "estado": af_estado,
+                "outcome": af_decision,
+                "resumen_cierre": _val(af, "resumen_cierre_afectado") or "",
+                "tipo_falta": tipo_falta,
+                "descripcion": descripcion,
+                "conclusion_publica": conclusion,
+                "_source": "afectado",
+            })
+        elif can_view_sensitive:
+            import hashlib
+            redacted_id = "CASO-" + hashlib.md5(str(caso_name).encode()).hexdigest()[:8].upper()
+            result.append({
+                "name": redacted_id,
+                "fecha": fecha,
+                "estado": af_estado,
+                "tipo_falta": tipo_falta,
+                "descripcion": "REDACTED",
+                "conclusion_publica": conclusion,
+            })
+        else:
+            result.append({
+                "fecha_inicio_proceso": fecha,
+                "estado_caso": af_estado,
+                "conclusion_publica": conclusion,
+            })
+
+    return result
+
+
+def get_disciplinary_data(employee_id: str, requesting_user: str = None) -> list[dict]:
+    """
+    Public entry point for disciplinary projection in Persona 360.
+
+    Returns projection based on sensitivity level of requesting_user.
+    Implements REQ-10-02: self-query always returns [].
+    Queries Afectado Disciplinario as the canonical source.
+
+    Args:
+        employee_id: Ficha Empleado name being viewed.
+        requesting_user: The user requesting the data (defaults to session user).
+    """
+    requesting_user = requesting_user or (getattr(frappe.session, "user", None) if hasattr(frappe, "session") else None) or "Guest"
+
+    # REQ-10-02: Employee cannot see their own disciplinary data
+    emp_email = frappe.db.get_value("Ficha Empleado", employee_id, "email") or ""
+    if emp_email and emp_email == requesting_user:
+        return []
+    if requesting_user == employee_id:
+        return []
+
+    is_rrll = user_has_any_role(requesting_user, *_RRLL_ROLES)
+
+    # Check can_view_sensitive via evaluate_dimension_permission if available
+    can_view_sensitive = False
+    try:
+        sensitive_policy = evaluate_dimension_permission(
+            "sensitive",
+            user=requesting_user,
+            surface="persona_360",
+            context={"employee_id": employee_id},
+        )
+        can_view_sensitive = bool(sensitive_policy.get("effective_allowed"))
+    except Exception:
+        can_view_sensitive = False
+
+    # Fetch afectados — canonical source
+    afectados = frappe.get_all(
+        "Afectado Disciplinario",
+        filters={"empleado": employee_id},
+        fields=["name", "caso", "empleado", "estado", "decision_final_afectado", "resumen_cierre_afectado"],
+    )
+
+    return _get_disciplinary_projection(
+        casos=[],
+        afectados=afectados,
+        requesting_user=requesting_user,
+        employee_id=employee_id,
+        can_view_sensitive=can_view_sensitive,
+    )
+
 
 def _event_entry(date_value, event_type, title, desc, ref, color, module, state=None, severity=None):
     """Normalized timeline envelope (S3.1) with backward-compatible keys."""
@@ -172,8 +327,7 @@ def _build_contextual_actions(user, employee_id, is_gh, is_jefe, is_emp, can_vie
                 "key": "create_disciplinary",
                 "label": "Registrar Caso Disciplinario",
                 "visible": can_create_disciplinary,
-                "doctype": "Caso Disciplinario",
-                "route": "/app/caso-disciplinario/new",
+                "route": "/app/bandeja_casos_disciplinarios",
                 "prefill": {"empleado": employee_id},
             },
             {

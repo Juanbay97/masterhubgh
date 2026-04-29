@@ -170,6 +170,12 @@ permission_query_conditions = {
 	"Datos Contratacion": "hubgh.hubgh.permissions.get_datos_contratacion_permission_query",
 	"GH Novedad": "hubgh.hubgh.permissions.get_gh_novedad_permission_query",
 	"Caso Disciplinario": "hubgh.hubgh.permissions.get_caso_disciplinario_permission_query",
+	# T046-T047: disciplinary sub-document permission queries (Phase 4)
+	"Afectado Disciplinario": "hubgh.hubgh.permissions.get_afectado_disciplinario_permission_query",
+	"Citacion Disciplinaria": "hubgh.hubgh.permissions.get_citacion_disciplinaria_permission_query",
+	"Acta Descargos": "hubgh.hubgh.permissions.get_acta_descargos_permission_query",
+	"Comunicado Sancion": "hubgh.hubgh.permissions.get_comunicado_sancion_permission_query",
+	"Evidencia Disciplinaria": "hubgh.hubgh.permissions.get_evidencia_disciplinaria_permission_query",
 	"Payroll Import Batch": "hubgh.hubgh.payroll_permissions.get_payroll_import_batch_query",
 	"Payroll Import Line": "hubgh.hubgh.payroll_permissions.get_payroll_import_line_query",
 	"Payroll Liquidation Case": "hubgh.hubgh.payroll_permissions.get_payroll_liquidation_case_query",
@@ -186,6 +192,12 @@ has_permission = {
 	"Datos Contratacion": "hubgh.hubgh.permissions.datos_contratacion_has_permission",
 	"GH Novedad": "hubgh.hubgh.permissions.gh_novedad_has_permission",
 	"Caso Disciplinario": "hubgh.hubgh.permissions.caso_disciplinario_has_permission",
+	# T046-T047: disciplinary sub-document has_permission (Phase 4)
+	"Afectado Disciplinario": "hubgh.hubgh.permissions.afectado_disciplinario_has_permission",
+	"Citacion Disciplinaria": "hubgh.hubgh.permissions.citacion_disciplinaria_has_permission",
+	"Acta Descargos": "hubgh.hubgh.permissions.acta_descargos_has_permission",
+	"Comunicado Sancion": "hubgh.hubgh.permissions.comunicado_sancion_has_permission",
+	"Evidencia Disciplinaria": "hubgh.hubgh.permissions.evidencia_disciplinaria_has_permission",
 	"Payroll Import Batch": "hubgh.hubgh.payroll_permissions.payroll_import_batch_has_permission",
 	"Payroll Import Line": "hubgh.hubgh.payroll_permissions.payroll_import_line_has_permission",
 	"Payroll Liquidation Case": "hubgh.hubgh.payroll_permissions.payroll_liquidation_case_has_permission",
@@ -244,6 +256,19 @@ doc_events = {
 		"after_insert": "hubgh.hubgh.people_ops_event_publishers.publish_from_person_document",
 		"on_update": "hubgh.hubgh.people_ops_event_publishers.publish_from_person_document",
 	},
+	# T042-T043: disciplinary workflow sub-document hooks (Phase 4)
+	"Afectado Disciplinario": {
+		"on_update": "hubgh.hubgh.disciplinary_workflow_service.publish_from_afectado",
+	},
+	"Citacion Disciplinaria": {
+		"on_update": "hubgh.hubgh.disciplinary_workflow_service.publish_from_citacion",
+	},
+	"Acta Descargos": {
+		"on_update": "hubgh.hubgh.disciplinary_workflow_service.publish_from_acta",
+	},
+	"Comunicado Sancion": {
+		"on_update": "hubgh.hubgh.disciplinary_workflow_service.publish_from_comunicado",
+	},
 }
 
 before_request = ["hubgh.www_hooks.check_page_permissions"]
@@ -261,6 +286,9 @@ scheduler_events = {
 		"hubgh.tasks.bienestar_marcar_vencidos_diario",
 		"hubgh.hubgh.people_ops_event_publishers.reconcile_people_ops_events_warn",
 		"hubgh.user_groups.sync_all_user_groups",
+		# T043: disciplinary scheduler tasks (Phase 4)
+		"hubgh.hubgh.disciplinary_workflow_service.scheduler_alertar_citaciones_vencidas",
+		"hubgh.hubgh.disciplinary_workflow_service.scheduler_enviar_resumen_rrll",
 	]
 }
 
