@@ -21,13 +21,23 @@ from frappe import _
 from frappe.utils import now_datetime
 
 from hubgh.hubgh.payroll import catalogs, compute
-from hubgh.hubgh.payroll.adapters import _detect, clonk, manual
+from hubgh.hubgh.payroll.adapters import (
+	_detect,
+	clonk,
+	fincomercio,
+	fongiga,
+	manual,
+	payflow,
+)
 from hubgh.hubgh.payroll.enrichment import build_runtime_context, compute_period_window, enrich
 from hubgh.hubgh.payroll.export import build_single_sheet
 
 
 SOURCE_PARSERS = {
 	"clonk": clonk,
+	"payflow": payflow,
+	"fincomercio": fincomercio,
+	"fongiga": fongiga,
 	"manual_internal": manual,
 }
 
