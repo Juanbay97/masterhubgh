@@ -4,10 +4,6 @@
 """
 Tests for www/agendar_examen.py portal handler.
 
-The portal module (hubgh.hubgh.www.agendar_examen) does NOT exist in Batch 2.
-These tests import it lazily inside each test method — they will fail RED with
-ImportError until Batch 3 (Group E) creates the file. That is the expected state.
-
 REQ refs: REQ-16 (allow_guest), REQ-17 (slot calendar), REQ-18 (booked token),
           REQ-19 (409 concurrency).
 """
@@ -22,7 +18,7 @@ class TestPortalGetAgendar(FrappeTestCase):
 
 	def _get_portal(self):
 		"""Import portal lazily — raises ImportError until Batch 3 (expected RED)."""
-		from hubgh.hubgh.www import agendar_examen
+		from hubgh.www import agendar_examen
 		return agendar_examen
 
 	def test_get_agendar_examen_valid_token_renders_calendar(self):

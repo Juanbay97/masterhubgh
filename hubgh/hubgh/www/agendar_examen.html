@@ -213,7 +213,7 @@
                  "&hora=" + encodeURIComponent(hora);
 
       var csrfToken = (typeof frappe !== "undefined" && frappe.csrf_token) || "";
-      fetch("/api/method/hubgh.hubgh.www.agendar_examen.book_slot", {
+      fetch("/api/method/hubgh.www.agendar_examen.book_slot", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
