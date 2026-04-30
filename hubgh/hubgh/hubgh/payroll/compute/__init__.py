@@ -16,7 +16,13 @@ Todo lo demás cae en `OTRO` y se trata como literal si trae `valor`.
 
 from __future__ import annotations
 
-from hubgh.hubgh.payroll.compute import ausentismos, induccion, literal, recargos
+from hubgh.hubgh.payroll.compute import (
+	ausentismos,
+	dias_remunerados,
+	induccion,
+	literal,
+	recargos,
+)
 
 
 def compute_novedad(novedad, params) -> None:
@@ -37,8 +43,10 @@ def compute_novedad(novedad, params) -> None:
 		amount, qty, notes = recargos.compute(novedad)
 	elif induccion.applies(tipo):
 		amount, qty, notes = induccion.compute(novedad, params)
+	elif dias_remunerados.applies(tipo):
+		amount, qty, notes = dias_remunerados.compute(novedad, params)
 	elif ausentismos.applies(tipo):
-		amount, qty, notes = ausentismos.compute(novedad)
+		amount, qty, notes = ausentismos.compute(novedad, params)
 	elif literal.applies(tipo):
 		amount, qty, notes = literal.compute(novedad)
 	elif tipo == "OTRO" and novedad.valor is not None:

@@ -131,6 +131,66 @@ class AusentismosTests(unittest.TestCase):
 		self.assertIn("tope luto", nov.calc_notes)
 
 
+class TpRulesTests(unittest.TestCase):
+	"""Reglas refinadas para Tiempo Parcial confirmadas con el dueño:
+	descanso TP no se paga; vacaciones / licencias / incapacidades TP
+	se calculan al SMMLV/30 (no al salario del empleado)."""
+
+	def _ctx(self):
+		return _make_ctx()
+
+	def test_tp_descanso_no_paga(self):
+		ctx = self._ctx()
+		nov = _enrich(ctx, "1002", "DESCANSO", cantidad=2.0, unidad="dias")
+		compute.compute_novedad(nov, ctx.params)
+		self.assertEqual(nov.calc_status, "computed")
+		self.assertEqual(nov.computed_amount, 0.0)
+		self.assertIn("descanso no remunerado", nov.calc_notes.lower())
+
+	def test_tp_vacaciones_usa_smmlv(self):
+		ctx = self._ctx()
+		nov = _enrich(ctx, "1002", "VACACIONES", cantidad=3.0, unidad="dias")
+		compute.compute_novedad(nov, ctx.params)
+		smmlv = ctx.params.salario_minimo_mensual
+		expected = round(3 * (smmlv / 30) * 1.0, 2)
+		self.assertAlmostEqual(nov.computed_amount, expected, places=1)
+
+	def test_tp_incapacidad_eg_66pct_smmlv(self):
+		ctx = self._ctx()
+		nov = _enrich(ctx, "1002", "INCAPACIDAD_ENFERMEDAD_GENERAL", cantidad=2.0, unidad="dias")
+		compute.compute_novedad(nov, ctx.params)
+		smmlv = ctx.params.salario_minimo_mensual
+		expected = round(2 * (smmlv / 30) * 0.66, 2)
+		self.assertAlmostEqual(nov.computed_amount, expected, places=1)
+
+	def test_tc_descanso_si_paga_con_salario(self):
+		ctx = self._ctx()
+		nov = _enrich(ctx, "1001", "DESCANSO", cantidad=1.0, unidad="dias")
+		compute.compute_novedad(nov, ctx.params)
+		expected = round(1 * (1_400_000 / 30) * 1.0, 2)
+		self.assertAlmostEqual(nov.computed_amount, expected, places=1)
+
+
+class DiasRemuneradosTests(unittest.TestCase):
+	"""Regla 5.83h jornada completa / 2.92h media jornada para
+	DIA_FAMILIA y DIA_CUMPLEANOS."""
+
+	def test_tc_dia_familia_usa_5_83_horas(self):
+		ctx = _make_ctx()
+		nov = _enrich(ctx, "1001", "DIA_FAMILIA", cantidad=1.0, unidad="dias")
+		compute.compute_novedad(nov, ctx.params)
+		valor_hora_tc = 1_400_000 / 220
+		expected = round(1 * 5.83 * valor_hora_tc, 2)
+		self.assertAlmostEqual(nov.computed_amount, expected, places=1)
+
+	def test_tp_dia_cumpleanos_usa_2_92_horas(self):
+		ctx = _make_ctx()
+		nov = _enrich(ctx, "1002", "DIA_CUMPLEANOS", cantidad=1.0, unidad="dias")
+		compute.compute_novedad(nov, ctx.params)
+		expected = round(1 * 2.92 * 9530, 2)
+		self.assertAlmostEqual(nov.computed_amount, expected, places=1)
+
+
 class InduccionTests(unittest.TestCase):
 	def test_induccion_tc_1_dia(self):
 		ctx = _make_ctx()

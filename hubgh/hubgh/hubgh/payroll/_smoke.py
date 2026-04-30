@@ -90,6 +90,96 @@ def _ensure_seed_employees():
 	return created
 
 
+def run_full(clonk: str = "/tmp/clonk_feb_2026.xlsx",
+             payflow: str = "/tmp/payflow_feb_2026.xlsx",
+             fincomercio: str = "/tmp/fincomercio_feb_2026.xlsx",
+             fongiga: str = "/tmp/fongiga_feb_2026.xlsx") -> dict:
+	"""Audit run con TODOS los archivos del periodo."""
+	out = {}
+	files_to_attach = [(clonk, "clonk"), (payflow, "payflow"),
+	                   (fincomercio, "fincomercio"), (fongiga, "fongiga")]
+	missing = [f for f, _ in files_to_attach if not os.path.exists(f)]
+	if missing:
+		return {"error": f"Faltan archivos: {missing}"}
+
+	try:
+		run_name = service.create_run(2026, 2)
+		print(f"[audit] run_name = {run_name}")
+		for path, label in files_to_attach:
+			with open(path, "rb") as fh:
+				file_doc = frappe.get_doc({
+					"doctype": "File",
+					"file_name": os.path.basename(path),
+					"is_private": 1,
+					"content": fh.read(),
+					"attached_to_doctype": "Payroll Run",
+					"attached_to_name": run_name,
+				}).insert(ignore_permissions=True)
+			rf = service.attach_file(run_name, file_doc.file_url, os.path.basename(path))
+			detected = frappe.db.get_value("Payroll Run File", rf, "detected_source")
+			print(f"[audit] {label}: file={rf} detected={detected}")
+
+		print("[audit] process_run() …")
+		result = service.process_run(run_name)
+		totals = result.get("totals", {})
+		print(f"[audit] totals = {json.dumps(totals, indent=2)}")
+		out["run"] = run_name
+		out["totals"] = totals
+
+		by_status = dict(
+			frappe.db.sql(
+				"SELECT calc_status, COUNT(*) FROM `tabPayroll Novedad` WHERE run=%s GROUP BY calc_status",
+				(run_name,),
+			)
+		)
+		print(f"[audit] by_status = {by_status}")
+		out["by_status"] = by_status
+
+		by_source = dict(
+			frappe.db.sql(
+				"""SELECT f.detected_source, COUNT(n.name)
+				FROM `tabPayroll Novedad` n
+				JOIN `tabPayroll Run File` f ON f.name = n.source_file
+				WHERE n.run = %s GROUP BY f.detected_source""",
+				(run_name,),
+			)
+		)
+		print(f"[audit] novedades_by_source = {by_source}")
+		out["by_source"] = by_source
+
+		# Sumas globales
+		sums = frappe.db.sql(
+			"""SELECT SUM(CASE WHEN computed_amount > 0 THEN computed_amount ELSE 0 END) as devengado,
+				SUM(CASE WHEN computed_amount < 0 THEN computed_amount ELSE 0 END) as descontado,
+				COUNT(DISTINCT empleado) as empleados_con_match,
+				COUNT(DISTINCT documento_identidad) as empleados_total
+			FROM `tabPayroll Novedad` WHERE run=%s""",
+			(run_name,),
+			as_dict=True,
+		)
+		print(f"[audit] sumas = {sums[0] if sums else 'n/a'}")
+		out["sumas"] = sums[0] if sums else None
+
+		print("[audit] export_run() …")
+		try:
+			export_url = service.export_run(run_name)
+			out["export_file"] = export_url
+			print(f"[audit] export_file = {export_url}")
+		except Exception as exp_exc:
+			out["export_error"] = str(exp_exc)
+			print(f"[audit] export_run FAILED: {exp_exc}")
+			traceback.print_exc()
+
+		frappe.db.commit()
+	except Exception as exc:
+		out["error"] = str(exc)
+		print(f"[audit] FAILED: {exc}")
+		traceback.print_exc()
+
+	print(f"[audit] DONE: {json.dumps(out, indent=2, default=str, ensure_ascii=False)}")
+	return out
+
+
 def run(clonk_local_path: str = "/tmp/clonk_feb_2026.xlsx") -> dict:
 	"""Crea un Run, sube el CLONK, procesa y exporta. Reporta cada paso."""
 	if not os.path.exists(clonk_local_path):
