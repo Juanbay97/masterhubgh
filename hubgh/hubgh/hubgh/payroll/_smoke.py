@@ -98,9 +98,9 @@ def run(clonk_local_path: str = "/tmp/clonk_feb_2026.xlsx") -> dict:
 	out: dict = {}
 
 	try:
-		print("[smoke] seed: empleados+contratos de prueba …")
-		seeded = _ensure_seed_employees()
-		print(f"[smoke] seeded = {seeded}")
+		# Best-effort mode: arrancamos sin sembrar empleados para
+		# validar que el pipeline procesa todo lo que viene del archivo.
+		print("[smoke] modo best-effort: NO se siembran empleados.")
 
 		run_name = service.create_run(2026, 2)
 		print(f"[smoke] run_name = {run_name}")

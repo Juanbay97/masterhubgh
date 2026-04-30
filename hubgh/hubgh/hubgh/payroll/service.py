@@ -197,7 +197,11 @@ def export_run(run_name: str) -> str:
 		"Payroll Novedad",
 		filters={
 			"run": run_name,
-			"calc_status": ["in", ["computed", "skipped"]],
+			# `partial` se incluye: trae cantidad real (horas/días) aunque
+			# el importe quede en 0 mientras el empleado se crea. El
+			# operador ve la fila en la prenómina con la cantidad y puede
+			# ajustar manualmente si quiere.
+			"calc_status": ["in", ["computed", "partial", "skipped"]],
 		},
 		fields=[
 			"name", "documento_identidad", "empleado", "contrato",

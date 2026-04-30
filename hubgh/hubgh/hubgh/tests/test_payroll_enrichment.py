@@ -60,23 +60,35 @@ def _hd_novedad(documento: str = "1001", cantidad: float = 100.0) -> NovedadCano
 	)
 
 
-class EnrichmentErrorPaths(unittest.TestCase):
-	def test_employee_not_found(self):
+class EnrichmentBestEffortPaths(unittest.TestCase):
+	"""Best-effort: la novedad SIEMPRE se persiste con lo que se pueda.
+	No emite `error` por falta de empleado/contrato/jornada — esos casos
+	quedan en `pending` con notas claras y el compute decide si llega a
+	`computed`, `partial` o `skipped`.
+	"""
+
+	def test_employee_not_found_returns_pending_with_note(self):
 		ctx = _make_ctx()
 		out = enrich(_hd_novedad("9999"), date(2026, 1, 16), date(2026, 2, 15), ctx)
-		self.assertEqual(out.calc_status, "error")
+		self.assertEqual(out.calc_status, "pending")
+		self.assertIsNone(out.empleado)
+		self.assertIsNone(out.contrato)
+		self.assertEqual(out.tipo_jornada_snapshot, "")
+		self.assertEqual(out.salario_mensual, 0.0)
 		self.assertIn("Empleado no encontrado", out.calc_notes)
 
-	def test_contract_not_found(self):
+	def test_contract_not_found_returns_pending_with_employee_set(self):
 		ctx = _make_ctx(
 			employees={"1001": EmployeeRecord(name="EMP-1", cedula="1001")},
 		)
 		out = enrich(_hd_novedad("1001"), date(2026, 1, 16), date(2026, 2, 15), ctx)
-		self.assertEqual(out.calc_status, "error")
+		self.assertEqual(out.calc_status, "pending")
 		self.assertEqual(out.empleado, "EMP-1")
+		self.assertIsNone(out.contrato)
+		self.assertEqual(out.salario_mensual, 0.0)
 		self.assertIn("Sin contrato activo", out.calc_notes)
 
-	def test_jornada_not_canonicalizable(self):
+	def test_jornada_not_canonicalizable_returns_pending_with_zero_basis(self):
 		ctx = _make_ctx(
 			employees={"1001": EmployeeRecord(name="EMP-1", cedula="1001")},
 			contracts={
@@ -90,8 +102,32 @@ class EnrichmentErrorPaths(unittest.TestCase):
 			},
 		)
 		out = enrich(_hd_novedad("1001"), date(2026, 1, 16), date(2026, 2, 15), ctx)
-		self.assertEqual(out.calc_status, "error")
-		self.assertIn("no canonicaliza", out.calc_notes)
+		self.assertEqual(out.calc_status, "pending")
+		self.assertEqual(out.empleado, "EMP-1")
+		self.assertEqual(out.contrato, "C-1")
+		self.assertEqual(out.tipo_jornada_snapshot, "")
+		# Sin jornada canonicalizable, el valor_hora_base queda en 0.
+		self.assertEqual(out.valor_hora_base, 0.0)
+		self.assertIn("Sin jornada canonicalizable", out.calc_notes)
+
+	def test_clonk_contract_text_resolves_jornada_when_no_db_match(self):
+		"""CLONK trae el contrato como texto en raw_payload; cuando no hay
+		empleado en DB, el enrichment lo usa de fallback para snapshot."""
+		from hubgh.hubgh.payroll.adapters import NovedadCanonica
+		from hubgh.hubgh.payroll.enrichment import enrich
+
+		ctx = _make_ctx()  # Sin empleados sembrados.
+		nov = NovedadCanonica(
+			documento_identidad="9876",
+			tipo_novedad="HD",
+			cantidad=120.0,
+			unidad="horas",
+			raw_payload={"contrato_text": "TC - Administración"},
+		)
+		out = enrich(nov, date(2026, 1, 16), date(2026, 2, 15), ctx)
+		self.assertEqual(out.calc_status, "pending")
+		self.assertEqual(out.tipo_jornada_snapshot, "Tiempo Completo")
+		self.assertEqual(out.salario_mensual, 0.0)
 
 
 class EnrichmentApplicability(unittest.TestCase):

@@ -126,59 +126,73 @@ def enrich(
 	type_spec = catalogs.NOVEDAD_TYPES_BY_ID.get(novedad.tipo_novedad)
 	jornada_aplicable = type_spec.jornada_aplicable if type_spec else catalogs.JORNADA_BOTH
 
-	# 1) Empleado
+	# Modo best-effort: aunque falte empleado, contrato o jornada
+	# canonicalizable, persistimos la novedad con lo que se pueda y
+	# dejamos `calc_status='pending'` con notas claras. El compute
+	# decidirá si puede calcular el importe ('computed') o solo la
+	# cantidad ('partial'). Los `error` se reservan para fallos del
+	# adapter (no llegan acá).
+	notas: list[str] = []
+
+	# 1) Empleado (opcional)
 	emp = ctx.resolve_employee(novedad.documento_identidad)
 	if emp is None:
-		return _build_error(
-			novedad,
-			jornada_aplicable,
-			f"Empleado no encontrado por documento '{novedad.documento_identidad}'.",
+		notas.append(
+			f"Empleado no encontrado por documento '{novedad.documento_identidad}'."
+		)
+		empleado_name = None
+		emp_jornada = ""
+	else:
+		empleado_name = emp.name
+		emp_jornada = emp.tipo_jornada or ""
+
+	# 2) Contrato vigente al periodo (opcional)
+	contrato = ctx.resolve_contract(empleado_name, period_start, period_end) if empleado_name else None
+	if empleado_name and contrato is None:
+		notas.append(
+			f"Sin contrato activo para empleado '{empleado_name}' en el periodo "
+			f"{period_start.isoformat()} a {period_end.isoformat()}."
 		)
 
-	# 2) Contrato vigente al periodo
-	contrato = ctx.resolve_contract(emp.name, period_start, period_end)
-	if contrato is None:
-		return _build_error(
-			novedad,
-			jornada_aplicable,
-			f"Sin contrato activo para empleado '{emp.name}' en el periodo "
-			f"{period_start.isoformat()} a {period_end.isoformat()}.",
-			empleado=emp.name,
-		)
-
-	# 3) Snapshot de jornada (canonicalizada)
-	jornada_snapshot = normalize_tipo_jornada(contrato.tipo_jornada) or normalize_tipo_jornada(
-		emp.tipo_jornada
+	# 3) Snapshot de jornada
+	contrato_jornada_raw = contrato.tipo_jornada if contrato else ""
+	# Para CLONK, la novedad puede traer el contrato_text en raw_payload.
+	clonk_contrato_text = (novedad.raw_payload or {}).get("contrato_text", "")
+	jornada_snapshot = (
+		normalize_tipo_jornada(contrato_jornada_raw)
+		or normalize_tipo_jornada(emp_jornada)
+		or normalize_tipo_jornada(clonk_contrato_text)
 	)
 	if not jornada_snapshot:
-		return _build_error(
-			novedad,
-			jornada_aplicable,
-			f"Jornada del contrato '{contrato.name}' no canonicaliza a TC ni TP "
-			f"(valor crudo: '{contrato.tipo_jornada or emp.tipo_jornada}').",
-			empleado=emp.name,
-			contrato=contrato.name,
+		notas.append(
+			"Sin jornada canonicalizable; los cómputos por hora quedarán en cero hasta "
+			"que se cree el empleado/contrato."
 		)
 
-	# 4) Aplicabilidad
-	if not _is_applicable(jornada_aplicable, jornada_snapshot):
+	# 4) Aplicabilidad — si la jornada está clara y el tipo no aplica, skip.
+	if jornada_snapshot and not _is_applicable(jornada_aplicable, jornada_snapshot):
 		return _build_skipped(
 			novedad,
 			jornada_aplicable,
 			jornada_snapshot,
-			emp.name,
-			contrato.name,
+			empleado_name or "",
+			contrato.name if contrato else "",
 			f"Tipo '{novedad.tipo_novedad}' aplica a '{jornada_aplicable}' "
-			f"y el contrato es '{jornada_snapshot}'.",
+			f"y la jornada es '{jornada_snapshot}'.",
 		)
 
-	# 5) Valor hora base (sólo relevante para tipos en horas)
-	valor_hora = _compute_valor_hora_base(contrato, jornada_snapshot, ctx.params)
+	# 5) Valor hora base (depende del contrato; sin contrato queda 0)
+	valor_hora = (
+		_compute_valor_hora_base(contrato, jornada_snapshot, ctx.params)
+		if contrato and jornada_snapshot
+		else 0.0
+	)
+	salario = float(contrato.salario) if contrato and contrato.salario else 0.0
 
 	return EnrichedNovedad(
 		documento_identidad=novedad.documento_identidad,
-		empleado=emp.name,
-		contrato=contrato.name,
+		empleado=empleado_name,
+		contrato=contrato.name if contrato else None,
 		tipo_jornada_snapshot=jornada_snapshot,
 		tipo_novedad=novedad.tipo_novedad,
 		jornada_aplicable=jornada_aplicable,
@@ -188,9 +202,9 @@ def enrich(
 		fecha_desde=novedad.fecha_desde,
 		fecha_hasta=novedad.fecha_hasta,
 		calc_status="pending",
-		calc_notes="",
+		calc_notes=" ".join(notas),
 		valor_hora_base=valor_hora,
-		salario_mensual=float(contrato.salario or 0.0),
+		salario_mensual=salario,
 		raw_payload=dict(novedad.raw_payload),
 	)
 

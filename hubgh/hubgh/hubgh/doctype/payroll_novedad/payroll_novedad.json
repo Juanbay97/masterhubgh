@@ -185,7 +185,7 @@
    "fieldtype": "Select",
    "in_standard_filter": 1,
    "label": "Estado del cálculo",
-   "options": "pending\ncomputed\nskipped\nerror",
+   "options": "pending\ncomputed\npartial\nskipped\nerror",
    "reqd": 1
   },
   {
