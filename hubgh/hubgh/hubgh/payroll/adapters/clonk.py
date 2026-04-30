@@ -121,38 +121,82 @@ def parse(workbook) -> Iterator[NovedadCanonica]:
 	"""Itera novedades canónicas leyendo Resumen + Novedades.
 
 	Antes de iterar Novedades construye un índice por documento desde
-	Resumen para enriquecer cada fila con jornada / cargo / sucursal —
-	la hoja Novedades trae solo Nombre, Cédula y Sede, así que sin este
-	pase quedaba sin contexto y caía en `partial` por falta de salario.
+	Resumen + Detalle (para `dias_trabajados`). El índice se inyecta
+	en `_parse_resumen` y `_parse_novedades` para enriquecer cada
+	NovedadCanonica con jornada / cargo / sucursal / dias_trabajados.
 	"""
 	emp_index = _build_employee_index(workbook)
+	# Lo cuelgo del workbook para que `_parse_resumen` lo lea sin cambiar
+	# su firma (workaround: openpyxl Workbook acepta atributos).
+	workbook._pwsp_emp_index = emp_index  # noqa: SLF001
 	yield from _parse_resumen(workbook)
 	yield from _parse_novedades(workbook, emp_index)
 
 
 def _build_employee_index(workbook) -> dict[str, dict]:
-	"""Mapa documento → {contrato_text, cargo, sucursal} desde Resumen."""
-	if "Resumen" not in workbook.sheetnames:
-		return {}
-	ws = workbook["Resumen"]
-	rows = ws.iter_rows(min_row=1, values_only=True)
-	header = next(rows, None)
-	if not header:
-		return {}
-	col = {str(h).strip(): i for i, h in enumerate(header) if h is not None}
-	doc_idx = col.get("Documento")
-	if doc_idx is None:
-		return {}
+	"""Mapa documento → {contrato_text, cargo, sucursal, dias_trabajados}.
+
+	Los primeros tres salen de Resumen. `dias_trabajados` se cuenta del
+	Detalle de Tiempos: días con horas > 0 (HD/HN/HFD/HFN/HE*) en alguna
+	columna H*. Se usa para prorratear el auxilio de transporte sobre 24
+	días/mes.
+	"""
 	idx: dict[str, dict] = {}
-	for row in rows:
-		documento = _str_id(row[doc_idx] if doc_idx < len(row) else None)
-		if not documento or documento in idx:
-			continue
-		idx[documento] = {
-			"contrato_text": str(row[col["Contrato"]]).strip() if "Contrato" in col and row[col["Contrato"]] else "",
-			"cargo": row[col["Cargo"]] if "Cargo" in col else None,
-			"sucursal": row[col["Sucursal"]] if "Sucursal" in col else None,
-		}
+	if "Resumen" in workbook.sheetnames:
+		ws = workbook["Resumen"]
+		rows = ws.iter_rows(min_row=1, values_only=True)
+		header = next(rows, None)
+		if header:
+			col = {str(h).strip(): i for i, h in enumerate(header) if h is not None}
+			doc_idx = col.get("Documento")
+			if doc_idx is not None:
+				for row in rows:
+					documento = _str_id(row[doc_idx] if doc_idx < len(row) else None)
+					if not documento or documento in idx:
+						continue
+					idx[documento] = {
+						"contrato_text": str(row[col["Contrato"]]).strip() if "Contrato" in col and row[col["Contrato"]] else "",
+						"cargo": row[col["Cargo"]] if "Cargo" in col else None,
+						"sucursal": row[col["Sucursal"]] if "Sucursal" in col else None,
+						"dias_trabajados": 0.0,
+					}
+
+	# Contar dias_trabajados desde Detalle de Tiempos.
+	if "Detalle de Tiempos" in workbook.sheetnames:
+		ws = workbook["Detalle de Tiempos"]
+		rows = ws.iter_rows(min_row=1, values_only=True)
+		header = next(rows, None)
+		if header:
+			col = {str(h).strip(): i for i, h in enumerate(header) if h is not None}
+			doc_idx = col.get("Documento")
+			fecha_idx = col.get("Fecha")
+			h_cols = [col[h] for h in RESUMEN_HOUR_COLUMNS if h in col]
+			if doc_idx is not None and fecha_idx is not None and h_cols:
+				dias_set: dict[str, set] = {}
+				for row in rows:
+					documento = _str_id(row[doc_idx] if doc_idx < len(row) else None)
+					if not documento:
+						continue
+					fecha = row[fecha_idx] if fecha_idx < len(row) else None
+					if not fecha or fecha == "-":
+						continue
+					# Día con al menos 1h en cualquier columna H*.
+					tiene_horas = False
+					for c in h_cols:
+						val = row[c] if c < len(row) else None
+						try:
+							if float(val or 0) > 0:
+								tiene_horas = True
+								break
+						except (TypeError, ValueError):
+							continue
+					if not tiene_horas:
+						continue
+					dias_set.setdefault(documento, set()).add(str(fecha))
+				for documento, fechas in dias_set.items():
+					if documento not in idx:
+						idx[documento] = {"contrato_text": "", "cargo": None, "sucursal": None, "dias_trabajados": 0.0}
+					idx[documento]["dias_trabajados"] = float(len(fechas))
 	return idx
 
 
@@ -177,11 +221,13 @@ def _parse_resumen(workbook) -> Iterator[NovedadCanonica]:
 		contrato_text = (
 			str(row[contrato_idx]).strip() if contrato_idx is not None and row[contrato_idx] else ""
 		)
+		emp_meta = (workbook._pwsp_emp_index or {}).get(documento, {}) if hasattr(workbook, "_pwsp_emp_index") else {}
 		raw_emp = {
 			"empleado_nombre": row[col["Empleado"]] if "Empleado" in col else None,
 			"contrato_text": contrato_text,
 			"cargo": row[col["Cargo"]] if "Cargo" in col else None,
 			"sucursal": row[col["Sucursal"]] if "Sucursal" in col else None,
+			"dias_trabajados": emp_meta.get("dias_trabajados", 0.0),
 			"sheet": "Resumen",
 		}
 		for hour_key, idx in hour_idx.items():
@@ -246,12 +292,11 @@ def _parse_novedades(workbook, emp_index: dict[str, dict] | None = None) -> Iter
 		raw_emp = {
 			"empleado_nombre": row[nombre_idx] if nombre_idx is not None else None,
 			"sede": row[sede_idx] if sede_idx is not None else None,
-			# Heredados del Resumen para que el enrichment pueda resolver
-			# jornada y salario por cargo aunque la hoja Novedades no los
-			# traiga propios.
+			# Heredados del Resumen / Detalle para enrichment + auxilio.
 			"contrato_text": emp_meta.get("contrato_text", ""),
 			"cargo": emp_meta.get("cargo"),
 			"sucursal": emp_meta.get("sucursal"),
+			"dias_trabajados": emp_meta.get("dias_trabajados", 0.0),
 			"sheet": "Novedades",
 		}
 		for col_idx, concept_label in concept_columns:

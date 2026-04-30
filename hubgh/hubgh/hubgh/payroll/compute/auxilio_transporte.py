@@ -1,13 +1,21 @@
-"""Auxilio de transporte automático.
+"""Auxilio de transporte automático (no es novedad — se aplica de oficio).
 
-NO es una novedad: el sistema lo aplica de oficio en el export.
+Reglas vigentes (confirmadas por el dueño 2026-04-30):
 
-Regla legal Colombia: el empleado recibe auxilio de transporte si su
-salario base es ≤ 2 SMMLV y trabajó al menos un día en el periodo. El
-valor del auxilio y el SMMLV viven en `Payroll Parametros Globales`.
+- Aplica a TC **y TP**, siempre que el ingreso mensual estimado sea
+  ≤ 2 SMMLV. Para TC el ingreso = `salario_mensual`. Para TP, que cobra
+  por hora literal, el ingreso lo evalúa el caller pasando
+  `ingresos_periodo` (suma del devengado del periodo).
+
+- Prorrateo: 24 días al mes = 100% (6 días/semana × 4 semanas). El
+  empleado recibe `auxilio × min(dias_trabajados / 24, 1)`. Si no se
+  pasa `dias_trabajados`, asumimos 24 (full).
 """
 
 from __future__ import annotations
+
+
+PERIODO_DIAS_AUXILIO = 24  # 6 días/semana × 4 semanas (regla confirmada)
 
 
 def _tope(params) -> float:
@@ -15,39 +23,48 @@ def _tope(params) -> float:
 	return 2.0 * smmlv if smmlv > 0 else 0.0
 
 
-def is_eligible(salario_mensual: float, params) -> bool:
+def is_eligible(salario_mensual: float, params, ingresos_periodo: float = 0.0) -> bool:
+	"""Elegible si los ingresos del mes son ≤ 2 SMMLV.
+
+	Para TC: usa `salario_mensual`.
+	Para TP (salario_mensual=0): usa `ingresos_periodo`.
+	"""
 	tope = _tope(params)
+	if tope <= 0:
+		return False
 	salario = float(salario_mensual or 0)
-	return tope > 0 and 0 < salario <= tope
-
-
-# Periodo nominal asumido para prorrateo: 30 días.
-PERIODO_DIAS = 30
+	if salario > 0:
+		return 0 < salario <= tope
+	# TP / sin salario fijo: evaluar por devengado del periodo.
+	devengado = float(ingresos_periodo or 0)
+	return 0 < devengado <= tope
 
 
 def compute_for_period(
 	salario_mensual: float,
 	params,
+	dias_trabajados: float | None = None,
 	dias_no_remunerados: float = 0.0,
+	ingresos_periodo: float = 0.0,
 ) -> float:
 	"""Devuelve el monto de auxilio aplicable en el periodo.
 
-	Si el empleado tuvo días no remunerados (licencias no remuneradas,
-	suspensión, ausencias injustificadas) se prorratea linealmente:
-
-		auxilio_real = auxilio_pleno × (PERIODO_DIAS - dias_no_rem) / PERIODO_DIAS
-
-	`dias_no_remunerados` se acumula en el export desde las novedades
-	con `unidad="dias"` y tipos no remunerados; ver
-	`single_sheet._aggregate`.
+	`dias_trabajados`: si se pasa, se usa para prorratear directamente.
+	`dias_no_remunerados`: si no se pasa `dias_trabajados`, se infiere
+	`PERIODO_DIAS_AUXILIO - dias_no_remunerados`.
+	`ingresos_periodo`: total devengado del periodo (importa para TP).
 	"""
-	if not is_eligible(salario_mensual, params):
+	if not is_eligible(salario_mensual, params, ingresos_periodo=ingresos_periodo):
 		return 0.0
 	pleno = float(params.auxilio_transporte or 0.0)
-	dias_no = max(0.0, float(dias_no_remunerados or 0.0))
-	if dias_no >= PERIODO_DIAS:
+	if pleno <= 0:
 		return 0.0
-	if dias_no <= 0:
-		return round(pleno, 2)
-	factor = (PERIODO_DIAS - dias_no) / PERIODO_DIAS
+
+	if dias_trabajados is not None:
+		dias_eff = max(0.0, float(dias_trabajados))
+	else:
+		dias_eff = max(0.0, PERIODO_DIAS_AUXILIO - float(dias_no_remunerados or 0))
+
+	# Cap al 100%.
+	factor = min(dias_eff / PERIODO_DIAS_AUXILIO, 1.0) if PERIODO_DIAS_AUXILIO > 0 else 0.0
 	return round(pleno * factor, 2)

@@ -140,6 +140,23 @@ INCAPACIDADES = (
 )
 
 
+def _auxilio_for(rec: dict, params) -> float:
+	"""Calcula el auxilio del empleado consolidando dias_trabajados
+	(prorrateo sobre 24 días), salario y devengado del periodo (TP).
+	"""
+	dias_trab = float(rec.get("id_dias_trabajados") or 0)
+	dias_no_rem = sum(rec["d_qty"].get(t, 0.0) for t in NO_REMUNERADOS_DIAS)
+	if dias_trab <= 0:
+		dias_trab = max(0.0, 24 - dias_no_rem)
+	return auxilio_transporte.compute_for_period(
+		rec.get("id_salario", 0.0),
+		params,
+		dias_trabajados=dias_trab,
+		dias_no_remunerados=dias_no_rem,
+		ingresos_periodo=rec["total_devengado"],
+	)
+
+
 def build_single_sheet(
 	novedades: Iterable,
 	params,
@@ -245,6 +262,11 @@ def _aggregate(novedades: Iterable, employees_meta: dict[str, dict]) -> dict[str
 		_fill("id_sucursal", payload.get("sucursal"), payload.get("sede"))
 		if not rec.get("id_salario") and nov.salario_mensual:
 			rec["id_salario"] = float(nov.salario_mensual)
+		# dias_trabajados: tomar el máximo (todas las novedades del
+		# empleado deberían reportar el mismo desde CLONK).
+		dt = float(payload.get("dias_trabajados") or 0)
+		if dt > rec.get("id_dias_trabajados", 0.0):
+			rec["id_dias_trabajados"] = dt
 		rec["id_set"] = True
 		# Cantidades por tipo
 		tipo = nov.tipo_novedad
@@ -282,6 +304,7 @@ def _empty_emp_record() -> dict:
 		"id_cedula": "", "id_nombres": "", "id_apellidos": "",
 		"id_jornada": "", "id_cargo": "", "id_sucursal": "",
 		"id_salario": 0.0,
+		"id_dias_trabajados": 0.0,
 		"h_qty": defaultdict(float), "h_amt": defaultdict(float),
 		"d_qty": defaultdict(float), "d_amt": defaultdict(float),
 		"amt": defaultdict(float),
@@ -294,10 +317,7 @@ def _resolve_value(rec: dict, source: str, params):
 	if source.startswith("id_"):
 		return rec.get(source, "")
 	if source == "auxilio_t":
-		dias_no_rem = sum(rec["d_qty"].get(t, 0.0) for t in NO_REMUNERADOS_DIAS)
-		return auxilio_transporte.compute_for_period(
-			rec.get("id_salario", 0.0), params, dias_no_remunerados=dias_no_rem
-		)
+		return _auxilio_for(rec, params)
 	if source.startswith("h_qty:"):
 		return rec["h_qty"].get(source.split(":", 1)[1], 0.0)
 	if source.startswith("h_amt:"):
@@ -313,17 +333,9 @@ def _resolve_value(rec: dict, source: str, params):
 	if source == "d_amt_incapacidades":
 		return sum(rec["d_amt"].get(t, 0.0) for t in INCAPACIDADES)
 	if source == "total_devengado":
-		dias_no_rem = sum(rec["d_qty"].get(t, 0.0) for t in NO_REMUNERADOS_DIAS)
-		auxilio = auxilio_transporte.compute_for_period(
-			rec.get("id_salario", 0.0), params, dias_no_remunerados=dias_no_rem
-		)
-		return rec["total_devengado"] + auxilio
+		return rec["total_devengado"] + _auxilio_for(rec, params)
 	if source == "total_descontado":
 		return rec["total_descontado"]
 	if source == "neto":
-		dias_no_rem = sum(rec["d_qty"].get(t, 0.0) for t in NO_REMUNERADOS_DIAS)
-		auxilio = auxilio_transporte.compute_for_period(
-			rec.get("id_salario", 0.0), params, dias_no_remunerados=dias_no_rem
-		)
-		return rec["total_devengado"] + auxilio + rec["total_descontado"]
+		return rec["total_devengado"] + _auxilio_for(rec, params) + rec["total_descontado"]
 	return ""
