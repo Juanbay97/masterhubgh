@@ -189,12 +189,20 @@ def export_run(run_name: str) -> str:
 		frappe.throw(_("El Run debe estar parseado/en revisión para exportar (estado actual: {0})").format(run.status))
 
 	ctx = build_runtime_context()
+	# Excluir las novedades en estado `error` y `pending` del export — sólo
+	# llegan al Excel las que el pipeline pudo enriquecer/computar (computed
+	# o skipped). Las en error siguen visibles en Payroll Novedad para que
+	# el operador las pueda revisar.
 	novedades_docs = frappe.get_all(
 		"Payroll Novedad",
-		filters={"run": run_name},
+		filters={
+			"run": run_name,
+			"calc_status": ["in", ["computed", "skipped"]],
+		},
 		fields=[
 			"name", "documento_identidad", "empleado", "contrato",
-			"tipo_jornada_snapshot", "tipo_novedad", "jornada_aplicable",
+			"tipo_jornada_snapshot", "salario_mensual_snapshot",
+			"tipo_novedad", "jornada_aplicable",
 			"unidad", "valor", "cantidad", "fecha_desde", "fecha_hasta",
 			"calc_status", "computed_amount", "computed_quantity",
 			"raw_payload",
@@ -392,6 +400,7 @@ def _persist_novedad(run_name: str, source_file_name: str, enriched) -> None:
 			"documento_identidad": enriched.documento_identidad,
 			"contrato": enriched.contrato,
 			"tipo_jornada_snapshot": enriched.tipo_jornada_snapshot,
+			"salario_mensual_snapshot": enriched.salario_mensual,
 			"tipo_novedad": enriched.tipo_novedad,
 			"jornada_aplicable": enriched.jornada_aplicable,
 			"unidad": enriched.unidad,
@@ -447,7 +456,7 @@ class _NovedadView:
 		self.calc_status = doc_dict.get("calc_status") or ""
 		self.computed_amount = doc_dict.get("computed_amount") or 0.0
 		self.computed_quantity = doc_dict.get("computed_quantity") or 0.0
-		self.salario_mensual = 0.0  # no se persiste; el export usa total_devengado
+		self.salario_mensual = float(doc_dict.get("salario_mensual_snapshot") or 0.0)
 		try:
 			self.raw_payload = json.loads(doc_dict.get("raw_payload") or "{}")
 		except Exception:

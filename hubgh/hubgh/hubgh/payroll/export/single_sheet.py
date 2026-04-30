@@ -276,7 +276,10 @@ def _resolve_value(rec: dict, source: str, params):
 	if source.startswith("id_"):
 		return rec.get(source, "")
 	if source == "auxilio_t":
-		return auxilio_transporte.compute_for_period(rec.get("id_salario", 0.0), params)
+		dias_no_rem = sum(rec["d_qty"].get(t, 0.0) for t in NO_REMUNERADOS_DIAS)
+		return auxilio_transporte.compute_for_period(
+			rec.get("id_salario", 0.0), params, dias_no_remunerados=dias_no_rem
+		)
 	if source.startswith("h_qty:"):
 		return rec["h_qty"].get(source.split(":", 1)[1], 0.0)
 	if source.startswith("h_amt:"):
@@ -292,11 +295,17 @@ def _resolve_value(rec: dict, source: str, params):
 	if source == "d_amt_incapacidades":
 		return sum(rec["d_amt"].get(t, 0.0) for t in INCAPACIDADES)
 	if source == "total_devengado":
-		auxilio = auxilio_transporte.compute_for_period(rec.get("id_salario", 0.0), params)
+		dias_no_rem = sum(rec["d_qty"].get(t, 0.0) for t in NO_REMUNERADOS_DIAS)
+		auxilio = auxilio_transporte.compute_for_period(
+			rec.get("id_salario", 0.0), params, dias_no_remunerados=dias_no_rem
+		)
 		return rec["total_devengado"] + auxilio
 	if source == "total_descontado":
 		return rec["total_descontado"]
 	if source == "neto":
-		auxilio = auxilio_transporte.compute_for_period(rec.get("id_salario", 0.0), params)
+		dias_no_rem = sum(rec["d_qty"].get(t, 0.0) for t in NO_REMUNERADOS_DIAS)
+		auxilio = auxilio_transporte.compute_for_period(
+			rec.get("id_salario", 0.0), params, dias_no_remunerados=dias_no_rem
+		)
 		return rec["total_devengado"] + auxilio + rec["total_descontado"]
 	return ""

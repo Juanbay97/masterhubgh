@@ -20,6 +20,22 @@ VALID_TRANSITIONS: dict[str, set[str]] = {
 
 
 class PayrollRun(Document):
+	def autoname(self) -> None:
+		"""Genera nombres tipo `RUN-2026-02-001` con mes paddeado."""
+		try:
+			year = int(self.period_year or 0)
+			month = int(self.period_month or 0)
+		except (TypeError, ValueError):
+			year, month = 0, 0
+		prefix = f"RUN-{year}-{month:02d}-"
+		seq = frappe.db.sql(
+			"SELECT MAX(CAST(SUBSTRING_INDEX(name, '-', -1) AS UNSIGNED)) "
+			"FROM `tabPayroll Run` WHERE name LIKE %s",
+			(prefix + "%",),
+		)
+		next_n = (seq[0][0] or 0) + 1
+		self.name = f"{prefix}{next_n:03d}"
+
 	def before_insert(self) -> None:
 		if not self.owner_user:
 			self.owner_user = frappe.session.user

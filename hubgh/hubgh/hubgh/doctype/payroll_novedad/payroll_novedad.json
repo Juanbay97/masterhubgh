@@ -15,6 +15,7 @@
   "column_break_emp",
   "contrato",
   "tipo_jornada_snapshot",
+  "salario_mensual_snapshot",
   "novedad_section",
   "tipo_novedad",
   "jornada_aplicable",
@@ -99,6 +100,13 @@
    "in_standard_filter": 1,
    "label": "Jornada (snapshot)",
    "options": "\nTiempo Completo\nTiempo Parcial",
+   "read_only": 1
+  },
+  {
+   "description": "Snapshot del salario mensual del contrato al momento del cómputo. Lo usa el export para auxilio de transporte y prestaciones.",
+   "fieldname": "salario_mensual_snapshot",
+   "fieldtype": "Currency",
+   "label": "Salario mensual (snapshot)",
    "read_only": 1
   },
   {
