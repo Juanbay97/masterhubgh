@@ -454,6 +454,131 @@ def get_run_consolidated(run_name: str, jornada: str = "", search: str = "") -> 
 
 
 @frappe.whitelist()
+def get_employee_detail(run_name: str, documento: str) -> dict:
+	"""Detalle por empleado para el modal de revisión.
+
+	Devuelve `{empleado, totales, novedades}` con TODAS las novedades del
+	empleado en el run, ordenadas por unidad y tipo, cada una con sus
+	fechas, cantidad, importe, calc_status, notas y un resumen del raw
+	payload original (para auditoría visible en el modal).
+	"""
+	if not frappe.db.exists("Payroll Run", run_name):
+		frappe.throw(_("Payroll Run no existe: {0}").format(run_name))
+	if not documento:
+		frappe.throw(_("Documento no especificado."))
+
+	rows = frappe.db.sql(
+		"""
+		SELECT n.name, n.tipo_novedad, n.unidad, n.cantidad, n.valor,
+			n.computed_quantity, n.computed_amount, n.calc_status,
+			n.calc_notes, n.fecha_desde, n.fecha_hasta,
+			n.tipo_jornada_snapshot, n.salario_mensual_snapshot,
+			n.empleado, n.contrato, n.documento_identidad,
+			n.raw_payload, f.detected_source, f.file_name
+		FROM `tabPayroll Novedad` n
+		LEFT JOIN `tabPayroll Run File` f ON f.name = n.source_file
+		WHERE n.run = %s AND n.documento_identidad = %s
+		ORDER BY FIELD(n.unidad, 'horas', 'dias', 'cop', 'unidades'),
+			n.tipo_novedad, n.fecha_desde
+		""",
+		(run_name, documento),
+		as_dict=True,
+	)
+	if not rows:
+		frappe.throw(_("Sin novedades para documento '{0}' en este Run.").format(documento))
+
+	# Identidad: first-non-empty desde raw_payload.
+	empleado_meta = {
+		"cedula": documento,
+		"nombre": "",
+		"jornada": "",
+		"cargo": "",
+		"sucursal": "",
+		"salario": 0.0,
+		"empleado_link": rows[0].get("empleado") or None,
+		"contrato_link": rows[0].get("contrato") or None,
+	}
+	for r in rows:
+		try:
+			payload = json.loads(r.get("raw_payload") or "{}")
+		except Exception:
+			payload = {}
+		if not empleado_meta["nombre"]:
+			empleado_meta["nombre"] = payload.get("empleado_nombre") or ""
+		if not empleado_meta["jornada"] and r.get("tipo_jornada_snapshot"):
+			empleado_meta["jornada"] = r["tipo_jornada_snapshot"]
+		if not empleado_meta["cargo"] and payload.get("cargo"):
+			empleado_meta["cargo"] = payload["cargo"]
+		if not empleado_meta["sucursal"]:
+			empleado_meta["sucursal"] = payload.get("sucursal") or payload.get("sede") or ""
+		if not empleado_meta["salario"] and r.get("salario_mensual_snapshot"):
+			empleado_meta["salario"] = float(r["salario_mensual_snapshot"])
+
+	# Totales.
+	from hubgh.hubgh.payroll.compute import auxilio_transporte
+	from hubgh.hubgh.payroll.compute.literal import DESCUENTO_TYPES
+	from hubgh.hubgh.payroll.enrichment import build_runtime_context
+
+	total_dev = 0.0
+	total_desc = 0.0
+	dias_no_rem = 0.0
+	for r in rows:
+		amt = float(r.get("computed_amount") or 0)
+		t = r.get("tipo_novedad") or ""
+		u = r.get("unidad")
+		if t in DESCUENTO_TYPES or t == "AUSENCIA_INJUSTIFICADA":
+			total_desc += amt
+		else:
+			total_dev += amt
+		if t in {"LICENCIA_NO_REMUNERADA", "SUSPENSION_CONTRATO", "AUSENCIA_INJUSTIFICADA"}:
+			dias_no_rem += float(r.get("computed_quantity") or r.get("cantidad") or 0)
+
+	ctx = build_runtime_context()
+	aux_t = auxilio_transporte.compute_for_period(
+		empleado_meta["salario"], ctx.params, dias_no_remunerados=dias_no_rem
+	)
+
+	novedades_clean = []
+	for r in rows:
+		try:
+			payload = json.loads(r.get("raw_payload") or "{}")
+		except Exception:
+			payload = {}
+		novedades_clean.append({
+			"name": r.get("name"),
+			"tipo_novedad": r.get("tipo_novedad"),
+			"unidad": r.get("unidad"),
+			"cantidad": r.get("cantidad"),
+			"valor": r.get("valor"),
+			"computed_quantity": r.get("computed_quantity"),
+			"computed_amount": r.get("computed_amount"),
+			"calc_status": r.get("calc_status"),
+			"calc_notes": r.get("calc_notes"),
+			"fecha_desde": r.get("fecha_desde"),
+			"fecha_hasta": r.get("fecha_hasta"),
+			"source": r.get("detected_source"),
+			"source_file": r.get("file_name"),
+			"raw_summary": payload.get("concepto_clonk")
+				or payload.get("concepto_fincomercio")
+				or payload.get("concepto_fongiga")
+				or payload.get("campo")
+				or "",
+		})
+
+	return {
+		"empleado": empleado_meta,
+		"totales": {
+			"total_devengado": round(total_dev, 2),
+			"total_descontado": round(total_desc, 2),
+			"auxilio_transporte": aux_t,
+			"neto": round(total_dev + aux_t + total_desc, 2),
+			"novedad_count": len(rows),
+		},
+		"novedades": novedades_clean,
+	}
+
+
+@frappe.whitelist()
 def list_novedades(run_name: str, limit: int = 500, jornada: str = "", tipo: str = "") -> list[dict]:
 	"""Lista paginada de novedades para la tabla de revisión."""
 	filters: dict = {"run": run_name}

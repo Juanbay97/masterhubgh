@@ -131,3 +131,56 @@
 
 .pwsp-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .pwsp-filters .form-control { max-width: 260px; }
+
+/* ── Filas clickables ──────────────────────────────────────────── */
+.pwsp-row-clickable { cursor: pointer; transition: background .12s; }
+.pwsp-row-clickable:hover { background: #eff6ff !important; }
+.pwsp-row-clickable .pwsp-link { color: #1d4ed8; }
+.pwsp-row-clickable:hover .pwsp-link { text-decoration: underline; }
+
+/* ── Modal de detalle ──────────────────────────────────────────── */
+.pwsp-detail-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 18px;
+	flex-wrap: wrap;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #e2e8f0;
+	margin-bottom: 12px;
+}
+.pwsp-detail-head h4 { margin: 0 0 6px; font-size: 1rem; color: #0f172a; }
+.pwsp-detail-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.pwsp-detail-totals {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(110px, 1fr));
+	gap: 10px;
+	min-width: 480px;
+}
+.pwsp-detail-totals > div {
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 6px 10px;
+	text-align: right;
+}
+.pwsp-detail-totals .label {
+	display: block;
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	color: #64748b;
+	font-weight: 600;
+}
+.pwsp-detail-totals .value { font-size: 14px; font-weight: 700; color: #0f172a; }
+.pwsp-detail-totals .pwsp-neto strong { font-size: 16px; }
+.pwsp-detail-table-wrap { max-height: 480px; overflow: auto; }
+.pwsp-detail-table-wrap table { font-size: 12px; }
+.pwsp-detail-table-wrap thead th {
+	background: #f8fafc;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	padding: 8px 10px;
+	border-bottom: 1px solid #e2e8f0;
+}

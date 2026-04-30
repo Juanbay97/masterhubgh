@@ -118,9 +118,42 @@ def detect_period(workbook) -> tuple[int, int] | None:
 # ──────────────────────────────────────────────────────────────────────
 
 def parse(workbook) -> Iterator[NovedadCanonica]:
-	"""Itera novedades canónicas leyendo Resumen + Novedades."""
+	"""Itera novedades canónicas leyendo Resumen + Novedades.
+
+	Antes de iterar Novedades construye un índice por documento desde
+	Resumen para enriquecer cada fila con jornada / cargo / sucursal —
+	la hoja Novedades trae solo Nombre, Cédula y Sede, así que sin este
+	pase quedaba sin contexto y caía en `partial` por falta de salario.
+	"""
+	emp_index = _build_employee_index(workbook)
 	yield from _parse_resumen(workbook)
-	yield from _parse_novedades(workbook)
+	yield from _parse_novedades(workbook, emp_index)
+
+
+def _build_employee_index(workbook) -> dict[str, dict]:
+	"""Mapa documento → {contrato_text, cargo, sucursal} desde Resumen."""
+	if "Resumen" not in workbook.sheetnames:
+		return {}
+	ws = workbook["Resumen"]
+	rows = ws.iter_rows(min_row=1, values_only=True)
+	header = next(rows, None)
+	if not header:
+		return {}
+	col = {str(h).strip(): i for i, h in enumerate(header) if h is not None}
+	doc_idx = col.get("Documento")
+	if doc_idx is None:
+		return {}
+	idx: dict[str, dict] = {}
+	for row in rows:
+		documento = _str_id(row[doc_idx] if doc_idx < len(row) else None)
+		if not documento or documento in idx:
+			continue
+		idx[documento] = {
+			"contrato_text": str(row[col["Contrato"]]).strip() if "Contrato" in col and row[col["Contrato"]] else "",
+			"cargo": row[col["Cargo"]] if "Cargo" in col else None,
+			"sucursal": row[col["Sucursal"]] if "Sucursal" in col else None,
+		}
+	return idx
 
 
 def _parse_resumen(workbook) -> Iterator[NovedadCanonica]:
@@ -170,10 +203,11 @@ def _parse_resumen(workbook) -> Iterator[NovedadCanonica]:
 			)
 
 
-def _parse_novedades(workbook) -> Iterator[NovedadCanonica]:
+def _parse_novedades(workbook, emp_index: dict[str, dict] | None = None) -> Iterator[NovedadCanonica]:
 	if "Novedades" not in workbook.sheetnames:
 		return
 	ws = workbook["Novedades"]
+	emp_index = emp_index or {}
 	rows = ws.iter_rows(min_row=1, values_only=True)
 	header = next(rows, None)
 	if not header:
@@ -208,9 +242,16 @@ def _parse_novedades(workbook) -> Iterator[NovedadCanonica]:
 		documento = _str_id(row[doc_idx])
 		if not documento:
 			continue
+		emp_meta = emp_index.get(documento, {}) or {}
 		raw_emp = {
 			"empleado_nombre": row[nombre_idx] if nombre_idx is not None else None,
 			"sede": row[sede_idx] if sede_idx is not None else None,
+			# Heredados del Resumen para que el enrichment pueda resolver
+			# jornada y salario por cargo aunque la hoja Novedades no los
+			# traiga propios.
+			"contrato_text": emp_meta.get("contrato_text", ""),
+			"cargo": emp_meta.get("cargo"),
+			"sucursal": emp_meta.get("sucursal"),
 			"sheet": "Novedades",
 		}
 		for col_idx, concept_label in concept_columns:

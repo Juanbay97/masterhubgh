@@ -362,6 +362,35 @@ def _build_skipped(
 # Frappe-bound builder (runtime context)
 # ──────────────────────────────────────────────────────────────────────
 
+_CARGO_SUFFIX_RE = __import__("re").compile(
+	r"\s*[-–—]\s*(i|ii|iii|iv|v|vi|vii|viii|ix|x|1|2|3|4|5|6|7|8|9|10)\s*$",
+	__import__("re").IGNORECASE,
+)
+
+
+def canonicalize_cargo(text: str | None) -> str:
+	"""Normaliza un nombre de cargo del archivo.
+
+	Quita: tildes, mayúsculas, sufijos ` - I`, ` - II`, ` - 1`, ` - 2`, etc.
+	Mantiene el resto del texto ya con espacios colapsados. La idea es que
+	`AUXILIAR DE PRODUCCION`, `AUXILIAR DE PRODUCCION - I` y
+	`AUXILIAR DE PRODUCCIÓN  -  III` queden todos en `auxiliar de produccion`
+	y empaten al mismo Cargo canónico.
+	"""
+	import unicodedata
+
+	if not text:
+		return ""
+	t = str(text).strip()
+	# Quitar romanos / numeritos al final.
+	t = _CARGO_SUFFIX_RE.sub("", t).strip()
+	# Tildes off + lowercase + colapsar espacios.
+	t = unicodedata.normalize("NFKD", t)
+	t = "".join(c for c in t if not unicodedata.combining(c))
+	t = " ".join(t.lower().split())
+	return t
+
+
 def build_runtime_context() -> EnrichmentContext:
 	"""Construye un `EnrichmentContext` que consulta a Frappe y al
 	DocType Single de parámetros globales.
@@ -373,24 +402,58 @@ def build_runtime_context() -> EnrichmentContext:
 	# valor único.
 	_cargo_cache: dict[str, CargoSalary | None] = {}
 
+	# Mapa canónico construido al primer lookup: { canonical_nombre: row }.
+	_canonical_index: dict[str, dict] | None = None
+
+	def _build_canonical_index() -> dict[str, dict]:
+		all_cargos = frappe.get_all(
+			"Cargo",
+			filters={"activo": 1},
+			fields=["name", "nombre", "salario_base_tc", "horas_trabajadas_mes"],
+			limit_page_length=0,
+		)
+		idx: dict[str, dict] = {}
+		for row in all_cargos:
+			# Si dos cargos canonicalizan igual, gana el primero con
+			# salario_base_tc > 0; sino el primero a secas.
+			canon = canonicalize_cargo(row.get("nombre")) or canonicalize_cargo(row.get("name"))
+			if not canon:
+				continue
+			existing = idx.get(canon)
+			if existing is None or (
+				not (existing.get("salario_base_tc") or 0) and (row.get("salario_base_tc") or 0)
+			):
+				idx[canon] = row
+		return idx
+
 	def _resolve_cargo(cargo_label: str) -> CargoSalary | None:
+		nonlocal _canonical_index
 		if not cargo_label:
 			return None
 		key = cargo_label.strip()
 		if key in _cargo_cache:
 			return _cargo_cache[key]
-		# Buscar por name (autoname=codigo) o por nombre.
+
+		# 1) Match exacto por name o nombre (rápido, sin construir índice).
 		row = frappe.db.get_value(
 			"Cargo",
-			{"name": key},
+			{"name": key, "activo": 1},
 			["name", "salario_base_tc", "horas_trabajadas_mes"],
 			as_dict=True,
 		) or frappe.db.get_value(
 			"Cargo",
-			{"nombre": key},
+			{"nombre": key, "activo": 1},
 			["name", "salario_base_tc", "horas_trabajadas_mes"],
 			as_dict=True,
 		)
+
+		# 2) Match canónico (strip de "- I/II/III", tildes, lowercase).
+		if not row:
+			if _canonical_index is None:
+				_canonical_index = _build_canonical_index()
+			canon = canonicalize_cargo(key)
+			row = _canonical_index.get(canon)
+
 		if not row:
 			_cargo_cache[key] = None
 			return None

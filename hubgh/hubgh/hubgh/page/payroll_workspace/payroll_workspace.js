@@ -225,6 +225,110 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 		await refresh();
 	};
 
+	const onEmployeeClick = async (documento) => {
+		try {
+			const r = await apiCall("get_employee_detail", {
+				run_name: state.current,
+				documento: documento,
+			});
+			const data = r && r.message;
+			if (!data) return;
+			_openDetailDialog(data);
+		} catch (e) {
+			showError(`No pude cargar el detalle: ${(e && e.message) || e}`);
+		}
+	};
+
+	const _openDetailDialog = (data) => {
+		const emp = data.empleado || {};
+		const totales = data.totales || {};
+		const novedades = data.novedades || [];
+
+		const headerHtml = `
+			<div class="pwsp-detail-head">
+				<div>
+					<h4>${esc(emp.nombre || "—")}</h4>
+					<div class="pwsp-detail-meta">
+						<span class="hubgh-meta-pill">CC ${esc(emp.cedula)}</span>
+						${emp.jornada ? `<span class="hubgh-meta-pill">${esc(emp.jornada)}</span>` : ""}
+						${emp.cargo ? `<span class="hubgh-meta-pill">${esc(emp.cargo)}</span>` : ""}
+						${emp.sucursal ? `<span class="hubgh-meta-pill">${esc(emp.sucursal)}</span>` : ""}
+					</div>
+				</div>
+				<div class="pwsp-detail-totals">
+					<div><span class="label">Devengado</span><span class="value status-computed">${esc(
+						fmtMoney(totales.total_devengado)
+					)}</span></div>
+					<div><span class="label">Descuentos</span><span class="value status-error">${esc(
+						fmtMoney(totales.total_descontado)
+					)}</span></div>
+					<div><span class="label">Aux. Transporte</span><span class="value">${esc(
+						fmtMoney(totales.auxilio_transporte)
+					)}</span></div>
+					<div><span class="label">Neto</span><span class="value pwsp-neto"><strong>${esc(
+						fmtMoney(totales.neto)
+					)}</strong></span></div>
+				</div>
+			</div>
+		`;
+
+		const novedadesRows = novedades
+			.map((n) => {
+				const fecha = n.fecha_desde
+					? n.fecha_hasta && n.fecha_hasta !== n.fecha_desde
+						? `${n.fecha_desde} → ${n.fecha_hasta}`
+						: n.fecha_desde
+					: "—";
+				const qty =
+					n.unidad === "horas"
+						? `${fmtNum(n.computed_quantity || n.cantidad, 2)} h`
+						: n.unidad === "dias"
+						? `${fmtNum(n.computed_quantity || n.cantidad, 2)} d`
+						: "—";
+				const importe = fmtMoney(n.computed_amount);
+				return `
+					<tr>
+						<td><strong>${esc(n.tipo_novedad)}</strong></td>
+						<td>${esc(qty)}</td>
+						<td class="num">${esc(importe)}</td>
+						<td>${esc(fecha)}</td>
+						<td><span class="pwsp-state-pill ${esc(n.calc_status)} compact">${esc(n.calc_status)}</span></td>
+						<td><span class="hubgh-cell-sub">${esc(n.source || "")}${
+					n.raw_summary ? " · " + esc(n.raw_summary) : ""
+				}</span></td>
+					</tr>
+				`;
+			})
+			.join("");
+
+		const tableHtml = `
+			<div class="pwsp-detail-table-wrap">
+				<table class="pwsp-novedades">
+					<thead><tr>
+						<th>Tipo</th>
+						<th>Cantidad</th>
+						<th class="num">Importe</th>
+						<th>Periodo / fecha</th>
+						<th>Estado</th>
+						<th>Origen</th>
+					</tr></thead>
+					<tbody>${novedadesRows}</tbody>
+				</table>
+				<p class="hubgh-section-copy">${esc(novedades.length)} novedad(es) registradas para este empleado en el run.</p>
+			</div>
+		`;
+
+		const dlg = new frappe.ui.Dialog({
+			title: `Detalle · ${emp.nombre || emp.cedula}`,
+			size: "extra-large",
+			fields: [
+				{ fieldtype: "HTML", fieldname: "head", options: headerHtml },
+				{ fieldtype: "HTML", fieldname: "table", options: tableHtml },
+			],
+		});
+		dlg.show();
+	};
+
 	const onExportRun = async () => {
 		if (!state.current) return;
 		const r = await apiCall("export_run", { run_name: state.current });
@@ -533,11 +637,11 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 				? `<span class="pwsp-state-pill partial compact" title="Algunas novedades quedaron sin importe (falta empleado/contrato/cargo en DB)">parcial</span>`
 				: "";
 			const breakdown = _summarizeEmployee(e);
-			$tbody.append(`
-				<tr>
+			const $tr = $(`
+				<tr class="pwsp-row-clickable" data-doc="${esc(e.cedula)}">
 					<td>
 						<div class="hubgh-cell-stack">
-							<span class="hubgh-cell-main">${esc(e.nombre || "—")}</span>
+							<span class="pwsp-link hubgh-cell-main">${esc(e.nombre || "—")}</span>
 							${partialBadge ? `<span class="hubgh-cell-sub">${partialBadge}</span>` : ""}
 						</div>
 					</td>
@@ -553,6 +657,8 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 					<td><span class="hubgh-cell-sub">${esc(breakdown)}</span></td>
 				</tr>
 			`);
+			$tr.on("click", () => onEmployeeClick(e.cedula));
+			$tbody.append($tr);
 		});
 	};
 
