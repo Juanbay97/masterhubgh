@@ -2252,6 +2252,58 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 			with self.assertRaisesRegex(RuntimeError, "docs-blocked"):
 				contratacion_service.submit_contract("CONT-001")
 
+	def test_reject_candidate_from_rrll_sets_state_and_motivo(self):
+		set_value_calls = []
+
+		def fake_set_value(doctype, name, payload, *args, **kwargs):
+			set_value_calls.append((doctype, name, payload))
+
+		def fake_get_value(doctype, name, fieldname=None, *args, **kwargs):
+			if doctype == "Candidato" and fieldname == "estado_proceso":
+				return "Listo para contratar"
+			if doctype == "Candidato" and fieldname == "user":
+				return "candidate@example.com"
+			return None
+
+		with patch("hubgh.hubgh.contratacion_service.validate_rrll_authority"), patch(
+			"hubgh.hubgh.contratacion_service.frappe.db.get_value", side_effect=fake_get_value
+		), patch(
+			"hubgh.hubgh.contratacion_service.frappe.db.set_value", side_effect=fake_set_value
+		), patch(
+			"hubgh.hubgh.contratacion_service.frappe.db.exists", return_value=True
+		):
+			result = contratacion_service.reject_candidate("CAND-001", "No firmó contrato")
+
+		self.assertEqual(result, {"ok": True, "status": "Rechazado"})
+		candidato_calls = [c for c in set_value_calls if c[0] == "Candidato"]
+		self.assertEqual(len(candidato_calls), 1)
+		self.assertEqual(candidato_calls[0][1], "CAND-001")
+		self.assertEqual(candidato_calls[0][2]["estado_proceso"], "Rechazado")
+		self.assertEqual(candidato_calls[0][2]["motivo_rechazo"], "No firmó contrato")
+		user_calls = [c for c in set_value_calls if c[0] == "User"]
+		self.assertEqual(user_calls, [("User", "candidate@example.com", "enabled")])
+
+	def test_reject_candidate_requires_motivo(self):
+		with patch("hubgh.hubgh.contratacion_service.validate_rrll_authority"), patch(
+			"hubgh.hubgh.contratacion_service.frappe.throw", side_effect=RuntimeError("motivo-required")
+		):
+			with self.assertRaisesRegex(RuntimeError, "motivo-required"):
+				contratacion_service.reject_candidate("CAND-001", "   ")
+
+	def test_reject_candidate_blocks_when_state_not_in_bandeja(self):
+		def fake_get_value(doctype, name, fieldname=None, *args, **kwargs):
+			if doctype == "Candidato" and fieldname == "estado_proceso":
+				return "En documentación"
+			return None
+
+		with patch("hubgh.hubgh.contratacion_service.validate_rrll_authority"), patch(
+			"hubgh.hubgh.contratacion_service.frappe.db.get_value", side_effect=fake_get_value
+		), patch(
+			"hubgh.hubgh.contratacion_service.frappe.throw", side_effect=RuntimeError("state-blocked")
+		):
+			with self.assertRaisesRegex(RuntimeError, "state-blocked"):
+				contratacion_service.reject_candidate("CAND-001", "Cualquier motivo")
+
 	def test_documentary_folder_prefers_freshest_candidate_or_employee_metadata(self):
 		emp = SimpleNamespace(name="EMP-001", nombres="Ana", apellidos="Paz", cedula="1001", pdv="PDV-1")
 		required = [SimpleNamespace(name="Cedula", document_name="Cedula", has_expiry=1, sort_order=1)]

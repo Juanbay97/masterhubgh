@@ -10,7 +10,9 @@ from hubgh.hubgh.document_service import get_person_document_rows
 from hubgh.hubgh.candidate_states import (
 	STATE_AFILIACION,
 	STATE_LISTO_CONTRATAR,
+	STATE_RECHAZADO,
 	candidate_status_filter_values,
+	is_candidate_status,
 )
 from hubgh.hubgh.people_ops_handoffs import validate_handoff_contract
 from hubgh.hubgh.payroll_employee_compat import normalize_tipo_jornada
@@ -1215,6 +1217,35 @@ def submit_contract(contract, signed_file_url=None):
 		"empleado": doc.empleado,
 		"handoff_contract": handoff_contract,
 	}
+
+
+@frappe.whitelist()
+def reject_candidate(candidate, motivo_rechazo):
+	validate_rrll_authority()
+	motivo = (motivo_rechazo or "").strip()
+	if not motivo:
+		frappe.throw("El motivo de rechazo es obligatorio.")
+
+	current_state = frappe.db.get_value("Candidato", candidate, "estado_proceso")
+	if not is_candidate_status(current_state, STATE_LISTO_CONTRATAR, STATE_AFILIACION):
+		frappe.throw(
+			"Solo se pueden rechazar candidatos en estado 'Listo para contratar' o 'En afiliación'."
+		)
+
+	frappe.db.set_value(
+		"Candidato",
+		candidate,
+		{
+			"estado_proceso": STATE_RECHAZADO,
+			"motivo_rechazo": motivo,
+		},
+	)
+
+	user = frappe.db.get_value("Candidato", candidate, "user")
+	if user and frappe.db.exists("User", user):
+		frappe.db.set_value("User", user, "enabled", 0)
+
+	return {"ok": True, "status": STATE_RECHAZADO}
 
 
 def _build_selection_to_rrll_handoff(contract_doc):
