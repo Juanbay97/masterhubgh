@@ -1,14 +1,17 @@
 /**
  * Workspace de Novedades — page controller.
  *
- * Pantalla única guiada para el operador de nómina:
- *   1. Selector / creador de Payroll Run.
- *   2. Drop zone multi-archivo (con botón fallback) y lista de Run Files.
- *   3. Tabla de revisión filtrable por jornada y tipo.
- *   4. Botón "Generar prenómina" → descarga el Excel single-sheet.
+ * Sigue el patrón del resto de bandejas (`bandeja_contratacion`,
+ * `bandeja_afiliaciones`, …) reusando las clases compartidas de
+ * `public/js/bandejas_ui_base.js` para que rime con la plataforma:
+ *   - hubgh-board-shell / hubgh-board-hero / hubgh-board-kickers / hubgh-meta-pill
+ *   - hubgh-card / hubgh-table-shell / hubgh-empty
+ *   - btn-dark para acciones primarias, btn-default para secundarias.
  *
- * Llama a los endpoints whitelisted de
- *   `hubgh.hubgh.payroll.service`.
+ * Endpoints whitelisted en `hubgh.hubgh.payroll.service`:
+ *   list_runs · get_run_summary · list_novedades ·
+ *   create_run · attach_file · process_run · export_run ·
+ *   update_detected_source · delete_run_file
  */
 
 frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
@@ -18,9 +21,10 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 		single_column: true,
 	});
 
-	const $body = $(page.body);
-	$body.empty();
-	const $shell = $('<div class="pwsp-shell"></div>').appendTo($body);
+	(window.hubghBandejasUI || { injectBaseStyles() {} }).injectBaseStyles();
+
+	const $body = $(page.body).empty();
+	const $shell = $('<div class="hubgh-board-shell"></div>').appendTo($body);
 
 	const SOURCE_LABELS = {
 		clonk: "CLONK",
@@ -31,7 +35,7 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 		libranza_compensar: "Libranza Compensar",
 		libranza_comfenalco: "Libranza Comfenalco",
 		manual_internal: "Manual",
-		unknown: "(sin detectar)",
+		unknown: "Sin detectar",
 	};
 
 	const STATUS_LABELS = {
@@ -46,26 +50,30 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 
 	const state = {
 		runs: [],
-		current: null,        // run name
-		summary: null,         // payload de get_run_summary
+		current: null,
+		summary: null,
 		novedades: [],
 		filter: { jornada: "", tipo: "" },
 		loading: false,
 	};
 
 	// ────────────────────────────────────────────────────────────────
-	// Util
+	// Helpers
 	// ────────────────────────────────────────────────────────────────
 
-	const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
+	const esc = (window.hubghBandejasUI && window.hubghBandejasUI.esc) ||
+		((v) => frappe.utils.escape_html(v == null ? "" : String(v)));
 	const fmtMoney = (v) =>
-		typeof v === "number"
-			? v.toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 2 })
-			: "-";
-	const fmtNum = (v, dec = 2) => (typeof v === "number" ? v.toFixed(dec) : "-");
+		typeof v === "number" && v !== 0
+			? v.toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 })
+			: "—";
+	const fmtNum = (v, dec = 2) =>
+		typeof v === "number" && v !== 0 ? v.toFixed(dec) : "—";
+	const fmtPeriod = (y, m) => (y && m ? `${y}-${String(m).padStart(2, "0")}` : "—");
 
-	const showError = (msg) => frappe.msgprint({ title: "Error", message: msg, indicator: "red" });
 	const showInfo = (msg) => frappe.show_alert({ message: msg, indicator: "blue" }, 4);
+	const showSuccess = (msg) => frappe.show_alert({ message: msg, indicator: "green" }, 4);
+	const showError = (msg) => frappe.msgprint({ title: "Error", message: msg, indicator: "red" });
 
 	const apiCall = (method, args) =>
 		frappe.call({ method: `hubgh.hubgh.payroll.service.${method}`, args, freeze: false });
@@ -78,12 +86,10 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 		apiCall("list_runs", { limit: 30 }).then((r) => {
 			state.runs = (r && r.message) || [];
 		});
-
 	const loadSummary = (run) =>
 		apiCall("get_run_summary", { run_name: run }).then((r) => {
 			state.summary = (r && r.message) || null;
 		});
-
 	const loadNovedades = (run) =>
 		apiCall("list_novedades", {
 			run_name: run,
@@ -115,18 +121,16 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 
 	const onCreateRun = () => {
 		const now = new Date();
-		const defYear = now.getFullYear();
-		const defMonth = now.getMonth() + 1;
 		const dlg = new frappe.ui.Dialog({
-			title: "Nuevo Payroll Run",
+			title: "Nuevo Run de nómina",
 			fields: [
-				{ fieldtype: "Int", fieldname: "year", label: "Año", default: defYear, reqd: 1 },
+				{ fieldtype: "Int", fieldname: "year", label: "Año", default: now.getFullYear(), reqd: 1 },
 				{
 					fieldtype: "Select",
 					fieldname: "month",
 					label: "Mes",
-					options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"].join("\n"),
-					default: String(defMonth),
+					options: ["1","2","3","4","5","6","7","8","9","10","11","12"].join("\n"),
+					default: String(now.getMonth() + 1),
 					reqd: 1,
 				},
 			],
@@ -137,7 +141,7 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 				const name = r && r.message;
 				if (!name) return;
 				state.current = name;
-				showInfo(`Run ${name} creado.`);
+				showSuccess(`Run ${name} creado.`);
 				await refresh();
 			},
 		});
@@ -168,7 +172,6 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 				done += 1;
 				showInfo(`Subido ${done}/${total}: ${file.name}`);
 			} catch (e) {
-				console.error(e);
 				showError(`Falló subida de ${file.name}: ${(e && e.message) || e}`);
 			}
 		}
@@ -191,40 +194,34 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 				contentType: false,
 				headers: { "X-Frappe-CSRF-Token": frappe.csrf_token },
 				success: (resp) => {
-					if (resp && resp.message && resp.message.file_url) {
-						resolve(resp.message.file_url);
-					} else {
-						reject(new Error("upload_file no devolvió file_url"));
-					}
+					if (resp && resp.message && resp.message.file_url) resolve(resp.message.file_url);
+					else reject(new Error("upload_file sin file_url"));
 				},
 				error: (xhr) => reject(new Error(xhr.responseText || "upload_file falló")),
 			});
 		});
 
-	const onDeleteFile = async (fileName) => {
-		const ok = await new Promise((res) =>
+	const onDeleteFile = (fileName) =>
+		new Promise((res) =>
 			frappe.confirm("¿Quitar este archivo del Run?", () => res(true), () => res(false))
-		);
-		if (!ok) return;
-		await apiCall("delete_run_file", { run_file_name: fileName });
-		await refresh();
-	};
-
-	const onChangeSource = async (fileName, newSource) => {
-		await apiCall("update_detected_source", {
-			run_file_name: fileName,
-			detected_source: newSource,
+		).then(async (ok) => {
+			if (!ok) return;
+			await apiCall("delete_run_file", { run_file_name: fileName });
+			showInfo("Archivo eliminado.");
+			await refresh();
 		});
-		showInfo(`Fuente actualizada a ${SOURCE_LABELS[newSource] || newSource}.`);
-	};
+
+	const onChangeSource = (fileName, newSource) =>
+		apiCall("update_detected_source", { run_file_name: fileName, detected_source: newSource })
+			.then(() => showInfo(`Fuente actualizada a ${SOURCE_LABELS[newSource] || newSource}.`));
 
 	const onProcessRun = async () => {
 		if (!state.current) return;
 		const r = await apiCall("process_run", { run_name: state.current });
 		const totals = (r && r.message && r.message.totals) || {};
-		showInfo(
-			`Procesado: ${totals.files || 0} archivos · ${totals.novedades || 0} novedades · ` +
-				`${totals.errors || 0} errores · ${totals.skipped || 0} skipped.`
+		showSuccess(
+			`Procesado: ${totals.files || 0} archivo(s) · ${totals.novedades || 0} novedades · ` +
+				`${totals.errors || 0} error · ${totals.skipped || 0} skip.`
 		);
 		await refresh();
 	};
@@ -233,9 +230,7 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 		if (!state.current) return;
 		const r = await apiCall("export_run", { run_name: state.current });
 		const fileUrl = r && r.message;
-		if (fileUrl) {
-			window.open(fileUrl, "_blank");
-		}
+		if (fileUrl) window.open(fileUrl, "_blank");
 		await refresh();
 	};
 
@@ -253,84 +248,114 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 			renderReviewCard();
 			renderExportCard();
 		} else if (!state.runs.length) {
-			$shell.append(`<div class="pwsp-card pwsp-empty">Aún no hay Runs. Creá el primero arriba.</div>`);
+			$shell.append(`
+				<div class="hubgh-empty">
+					<span class="hubgh-empty-title">Aún no hay Runs.</span>
+					<p class="hubgh-empty-copy">Creá el primero con el botón "+ Nuevo Run" arriba.</p>
+				</div>
+			`);
 		} else {
-			$shell.append(`<div class="pwsp-card pwsp-empty">Seleccioná un Run para empezar.</div>`);
+			$shell.append(`
+				<div class="hubgh-empty">
+					<span class="hubgh-empty-title">Seleccioná un Run.</span>
+					<p class="hubgh-empty-copy">Elegí uno del listado o creá uno nuevo para empezar.</p>
+				</div>
+			`);
 		}
 	};
 
 	const renderHero = () => {
 		const run = state.summary && state.summary.run;
-		const period = run ? `${run.period_year}-${String(run.period_month).padStart(2, "0")}` : "—";
-		const status = run ? run.status : "—";
+		const period = run ? fmtPeriod(run.period_year, run.period_month) : "";
+		const status = run ? run.status : "";
+
+		const meta = [];
+		if (status) {
+			meta.push(
+				`<span class="pwsp-state-pill ${esc(status)}">${esc(STATUS_LABELS[status] || status)}</span>`
+			);
+		}
+		if (period) meta.push(`<span class="hubgh-meta-pill">Periodo ${esc(period)}</span>`);
+		if (run) meta.push(`<span class="hubgh-meta-pill">${esc(run.name)}</span>`);
+
 		$shell.append(`
-			<div class="pwsp-hero">
-				<div class="pwsp-hero-row">
+			<div class="hubgh-board-hero">
+				<div class="hubgh-board-hero-head">
 					<div>
-						<h2>Workspace de Novedades</h2>
-						<p>Subí archivos del periodo y descargá la prenómina single-sheet.</p>
+						<div class="hubgh-board-kickers">
+							<span class="hubgh-board-kicker">Nómina</span>
+							<span class="hubgh-board-kicker">Run + Adapters</span>
+						</div>
+						<h3 class="hubgh-board-title">Workspace de Novedades</h3>
+						<p class="hubgh-board-copy">
+							Subí los archivos del periodo (CLONK, Payflow, Fincomercio, FONGIGA o libranzas).
+							El sistema detecta la fuente, parsea, calcula y entrega la prenómina single-sheet.
+						</p>
 					</div>
-					<div class="pwsp-hero-meta">
-						<span class="pwsp-badge ${esc(status)}">${esc(STATUS_LABELS[status] || status)}</span>
-						<span class="pwsp-badge">Periodo: ${esc(period)}</span>
-						${run ? `<span class="pwsp-badge">${esc(run.name)}</span>` : ""}
-					</div>
+					<div class="hubgh-board-meta">${meta.join("") || ""}</div>
 				</div>
 			</div>
 		`);
 	};
 
 	const renderRunPicker = () => {
-		const $card = $('<div class="pwsp-card"></div>').appendTo($shell);
-		$card.append(`<h3>Run de nómina</h3>`);
-		const $row = $(`<div class="pwsp-actions"></div>`).appendTo($card);
-		const $sel = $(`<select class="form-control" style="max-width: 360px"></select>`).appendTo($row);
+		const $card = $('<div class="hubgh-card"></div>').appendTo($shell);
+		$card.append(`
+			<div class="hubgh-section-head">
+				<div>
+					<h4 class="hubgh-section-title">Run de nómina</h4>
+					<p class="hubgh-section-copy">Elegí el Run sobre el que estás trabajando o creá uno nuevo.</p>
+				</div>
+			</div>
+		`);
+		const $row = $('<div class="hubgh-board-toolbar"></div>').appendTo($card);
+		const $sel = $('<select class="form-control filter-search"></select>').appendTo($row);
 		$sel.append(`<option value="">— elegí un Run —</option>`);
 		state.runs.forEach((r) => {
+			const lbl = `${r.name} · ${fmtPeriod(r.period_year, r.period_month)} · ${
+				STATUS_LABELS[r.status] || r.status
+			}`;
 			$sel.append(
 				`<option value="${esc(r.name)}" ${
 					r.name === state.current ? "selected" : ""
-				}>${esc(r.name)} · ${esc(r.period_year)}-${String(r.period_month).padStart(2, "0")} · ${esc(
-					STATUS_LABELS[r.status] || r.status
-				)}</option>`
+				}>${esc(lbl)}</option>`
 			);
 		});
 		$sel.on("change", (e) => onSelectRun($(e.currentTarget).val()));
 
-		$row.append('<button class="btn btn-primary btn-sm">+ Nuevo Run</button>')
-			.find("button:last")
-			.on("click", onCreateRun);
-		$row.append('<button class="btn btn-default btn-sm">Refrescar</button>')
-			.find("button:last")
-			.on("click", refresh);
+		$row.append('<button class="btn btn-sm btn-dark">+ Nuevo Run</button>')
+			.find("button:last").on("click", onCreateRun);
+		$row.append('<button class="btn btn-sm btn-default">Refrescar</button>')
+			.find("button:last").on("click", refresh);
 	};
 
 	const renderUploadCard = () => {
-		const $card = $('<div class="pwsp-card"></div>').appendTo($shell);
-		$card.append(`<h3>1. Cargar archivos del periodo</h3>`);
-		$card.append(
-			`<p class="muted">Arrastrá archivos CLONK, Payflow, Fincomercio, FONGIGA o libranzas. ` +
-				`También podés tocar el botón para elegirlos del disco.</p>`
-		);
+		const $card = $('<div class="hubgh-card"></div>').appendTo($shell);
+		$card.append(`
+			<div class="hubgh-section-head">
+				<div>
+					<h4 class="hubgh-section-title">Cargar archivos del periodo</h4>
+					<p class="hubgh-section-copy">
+						Drag-and-drop o click para abrir el selector. Formatos: .xlsx · .xls · .csv. Multi-archivo.
+					</p>
+				</div>
+			</div>
+		`);
 
 		const $drop = $(`
 			<label class="pwsp-dropzone" tabindex="0">
-				<div><strong>Soltá archivos aquí</strong></div>
-				<div class="muted">o tocá para abrir el selector — multi-archivo soportado</div>
+				<strong>Soltá archivos aquí</strong>
+				<span class="muted">o tocá para abrir el selector</span>
 				<input type="file" multiple accept=".xlsx,.xls,.csv">
 			</label>
 		`).appendTo($card);
-
 		const $input = $drop.find("input");
 		$input.on("change", (e) => {
 			const files = Array.from(e.currentTarget.files || []);
 			if (files.length) onUploadFiles(files);
 			e.currentTarget.value = "";
 		});
-		$drop.on("dragover", (e) => {
-			e.preventDefault();
-			$drop.addClass("is-active");
-		});
+		$drop.on("dragover", (e) => { e.preventDefault(); $drop.addClass("is-active"); });
 		$drop.on("dragleave drop", () => $drop.removeClass("is-active"));
 		$drop.on("drop", (e) => {
 			e.preventDefault();
@@ -338,12 +363,17 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 			if (files.length) onUploadFiles(files);
 		});
 
-		// Tabla de archivos del Run
 		const files = (state.summary && state.summary.files) || [];
 		if (!files.length) {
-			$card.append(`<div class="pwsp-empty">Sin archivos cargados todavía.</div>`);
+			$card.append(`
+				<div class="hubgh-empty">
+					<span class="hubgh-empty-title">Sin archivos cargados.</span>
+					<p class="hubgh-empty-copy">Arrastrá uno o más archivos del periodo arriba.</p>
+				</div>
+			`);
 			return;
 		}
+		const $shellTbl = $('<div class="hubgh-table-shell hubgh-table-wrap"></div>').appendTo($card);
 		const $table = $(`
 			<table class="pwsp-files">
 				<thead><tr>
@@ -355,7 +385,7 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 				</tr></thead>
 				<tbody></tbody>
 			</table>
-		`).appendTo($card);
+		`).appendTo($shellTbl);
 		const $tbody = $table.find("tbody");
 		const validSources = (state.summary && state.summary.valid_sources) || Object.keys(SOURCE_LABELS);
 		files.forEach((f) => {
@@ -367,22 +397,23 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 						)}</option>`
 				)
 				.join("");
-			const period =
-				f.detected_period_year && f.detected_period_month
-					? `${f.detected_period_year}-${String(f.detected_period_month).padStart(2, "0")}`
-					: "—";
+			const period = fmtPeriod(f.detected_period_year, f.detected_period_month);
 			const $tr = $(`
 				<tr>
-					<td><a href="${esc(f.file_url)}" target="_blank">${esc(f.file_name || f.file_url)}</a></td>
+					<td>
+						<div class="hubgh-cell-stack">
+							<a class="hubgh-cell-main" href="${esc(f.file_url)}" target="_blank">${esc(
+								f.file_name || f.file_url
+							)}</a>
+						</div>
+					</td>
 					<td><select class="form-control input-sm" data-src="${esc(f.name)}">${sourceOptions}</select></td>
 					<td>${esc(period)}</td>
 					<td><span class="pill ${esc(f.parse_status)}">${esc(f.parse_status)}</span></td>
-					<td><button class="btn btn-link text-danger" data-del="${esc(f.name)}">Quitar</button></td>
+					<td><button class="btn btn-link btn-xs text-danger" data-del="${esc(f.name)}">Quitar</button></td>
 				</tr>
 			`).appendTo($tbody);
-			$tr.find("select").on("change", (e) =>
-				onChangeSource(f.name, $(e.currentTarget).val())
-			);
+			$tr.find("select").on("change", (e) => onChangeSource(f.name, $(e.currentTarget).val()));
 			$tr.find("button[data-del]").on("click", () => onDeleteFile(f.name));
 		});
 	};
@@ -390,41 +421,58 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 	const renderProcessCard = () => {
 		const run = state.summary.run;
 		if (!["draft", "ingesting", "parsed", "reviewing", "failed"].includes(run.status)) return;
-		const $card = $('<div class="pwsp-card"></div>').appendTo($shell);
-		$card.append(`<h3>2. Procesar archivos</h3>`);
-		$card.append(
-			`<p class="muted">Corre la detección de fuente, parseo, enrichment de empleados y ` +
-				`cálculo de cada novedad. Es idempotente: podés re-correrlo después de corregir fuentes.</p>`
-		);
-		const $btn = $(`<button class="btn btn-primary">Procesar Run</button>`).appendTo($card);
-		$btn.on("click", onProcessRun);
+		const $card = $('<div class="hubgh-card"></div>').appendTo($shell);
+		$card.append(`
+			<div class="hubgh-section-head">
+				<div>
+					<h4 class="hubgh-section-title">Procesar archivos</h4>
+					<p class="hubgh-section-copy">
+						Detecta la fuente, parsea las novedades, resuelve empleado/contrato/jornada y calcula cada línea.
+						Idempotente: podés re-correr después de corregir fuentes.
+					</p>
+				</div>
+			</div>
+		`);
+		const $row = $('<div class="hubgh-board-toolbar"></div>').appendTo($card);
+		$row.append('<button class="btn btn-sm btn-dark">Procesar Run</button>').find("button").on("click", onProcessRun);
 	};
 
 	const renderReviewCard = () => {
 		const counts = state.summary.counts || {};
 		if (!counts.novedades) return;
-		const $card = $('<div class="pwsp-card"></div>').appendTo($shell);
-		$card.append(`<h3>3. Revisar novedades</h3>`);
+		const $card = $('<div class="hubgh-card"></div>').appendTo($shell);
+		$card.append(`
+			<div class="hubgh-section-head">
+				<div>
+					<h4 class="hubgh-section-title">Revisar novedades</h4>
+					<p class="hubgh-section-copy">Filtrá por jornada o tipo de novedad antes de exportar.</p>
+				</div>
+			</div>
+		`);
 
-		// KPIs
 		const byStatus = counts.by_status || {};
-		const $kpis = $(`<div class="pwsp-totals"></div>`).appendTo($card);
-		$kpis.append(`<div class="pwsp-kpi"><div class="label">Total</div><div class="value">${counts.novedades}</div></div>`);
+		const $kpis = $('<div class="pwsp-kpis"></div>').appendTo($card);
+		$kpis.append(
+			`<div class="pwsp-kpi"><div class="label">Total</div><div class="value">${counts.novedades}</div></div>`
+		);
 		Object.entries(byStatus).forEach(([k, v]) => {
-			$kpis.append(
-				`<div class="pwsp-kpi"><div class="label">${esc(k)}</div><div class="value">${esc(v)}</div></div>`
-			);
+			$kpis.append(`
+				<div class="pwsp-kpi is-${esc(k)}">
+					<div class="label">${esc(STATUS_LABELS[k] || k)}</div>
+					<div class="value">${esc(v)}</div>
+				</div>
+			`);
 		});
 
-		// Filtros
 		const $filters = $(`
-			<div class="pwsp-actions" style="margin: 8px 0">
-				<select class="form-control input-sm" id="pwsp-f-jornada" style="max-width: 200px">
+			<div class="pwsp-filters">
+				<select class="form-control input-sm" id="pwsp-f-jornada">
 					<option value="">Todas las jornadas</option>
 					<option value="Tiempo Completo">Tiempo Completo</option>
 					<option value="Tiempo Parcial">Tiempo Parcial</option>
 				</select>
-				<input type="text" class="form-control input-sm" id="pwsp-f-tipo" placeholder="Filtrar por tipo (ej. HD, INCAPACIDAD_*)" style="max-width: 320px">
+				<input type="text" class="form-control input-sm" id="pwsp-f-tipo"
+					placeholder="Filtrar por tipo (ej. HD, INCAPACIDAD_*)">
 				<button class="btn btn-sm btn-default" id="pwsp-f-apply">Aplicar</button>
 			</div>
 		`).appendTo($card);
@@ -436,11 +484,16 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 			loadNovedades(state.current).then(render);
 		});
 
-		// Tabla
 		if (!state.novedades.length) {
-			$card.append(`<div class="pwsp-empty">No hay novedades con esos filtros.</div>`);
+			$card.append(`
+				<div class="hubgh-empty">
+					<span class="hubgh-empty-title">Sin novedades con esos filtros.</span>
+					<p class="hubgh-empty-copy">Probá otros valores o limpiá los filtros.</p>
+				</div>
+			`);
 			return;
 		}
+		const $shellTbl = $('<div class="hubgh-table-shell hubgh-table-wrap"></div>').appendTo($card);
 		const $tbl = $(`
 			<table class="pwsp-novedades">
 				<thead><tr>
@@ -455,42 +508,51 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 				</tr></thead>
 				<tbody></tbody>
 			</table>
-		`).appendTo($card);
+		`).appendTo($shellTbl);
 		const $tbody = $tbl.find("tbody");
 		state.novedades.forEach((n) => {
 			$tbody.append(`
 				<tr>
-					<td>${esc(n.empleado_label || n.empleado || "—")}</td>
-					<td>${esc(n.documento_identidad)}</td>
+					<td><div class="hubgh-cell-stack"><span class="hubgh-cell-main">${esc(
+						n.empleado_label || n.empleado || "—"
+					)}</span></div></td>
+					<td><span class="hubgh-cell-sub">${esc(n.documento_identidad)}</span></td>
 					<td>${esc(n.tipo_jornada_snapshot || "—")}</td>
 					<td>${esc(n.tipo_novedad)}</td>
 					<td class="num">${esc(fmtNum(n.computed_quantity || n.cantidad, 2))}</td>
 					<td class="num">${esc(fmtMoney(n.computed_amount))}</td>
-					<td class="status-${esc(n.calc_status)}">${esc(n.calc_status)}</td>
-					<td>${esc(n.calc_notes)}</td>
+					<td class="status-${esc(n.calc_status)}">${esc(STATUS_LABELS[n.calc_status] || n.calc_status)}</td>
+					<td><span class="hubgh-cell-sub">${esc(n.calc_notes || "")}</span></td>
 				</tr>
 			`);
 		});
 		if (state.novedades.length === 500) {
-			$card.append(`<div class="muted">Mostrando primeras 500 filas. Filtrá para acotar.</div>`);
+			$card.append(
+				`<p class="hubgh-section-copy">Mostrando primeras 500 filas — filtrá para acotar.</p>`
+			);
 		}
 	};
 
 	const renderExportCard = () => {
 		const run = state.summary.run;
 		if (!["parsed", "reviewing", "exported"].includes(run.status)) return;
-		const $card = $('<div class="pwsp-card"></div>').appendTo($shell);
-		$card.append(`<h3>4. Generar prenómina</h3>`);
-		$card.append(
-			`<p class="muted">Excel single-sheet, una fila por empleado, columnas por categoría agregada.</p>`
-		);
-		const $row = $(`<div class="pwsp-actions"></div>`).appendTo($card);
-		$row.append('<button class="btn btn-success">Generar prenómina</button>')
-			.find("button:last")
-			.on("click", onExportRun);
+		const $card = $('<div class="hubgh-card"></div>').appendTo($shell);
+		$card.append(`
+			<div class="hubgh-section-head">
+				<div>
+					<h4 class="hubgh-section-title">Generar prenómina</h4>
+					<p class="hubgh-section-copy">
+						Excel single-sheet, una fila por empleado, columnas por categoría agregada.
+					</p>
+				</div>
+			</div>
+		`);
+		const $row = $('<div class="hubgh-board-toolbar"></div>').appendTo($card);
+		$row.append('<button class="btn btn-sm btn-dark">Generar prenómina</button>')
+			.find("button").on("click", onExportRun);
 		if (run.export_file) {
 			$row.append(
-				`<a class="btn btn-link" href="${esc(run.export_file)}" target="_blank">Última prenómina</a>`
+				`<a class="btn btn-sm btn-default" href="${esc(run.export_file)}" target="_blank">Última prenómina</a>`
 			);
 		}
 	};

@@ -268,8 +268,10 @@ def get_run_summary(run_name: str) -> dict:
 		summary = json.loads(run.summary_json or "{}")
 	except Exception:
 		summary = {}
+	run_dict = run.as_dict(no_default_fields=True)
+	run_dict["name"] = run.name  # as_dict(no_default_fields=True) lo excluye en algunas versiones
 	return {
-		"run": run.as_dict(no_default_fields=True),
+		"run": run_dict,
 		"files": files,
 		"counts": {
 			"novedades": novedades_count,
