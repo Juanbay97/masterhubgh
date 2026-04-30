@@ -305,6 +305,155 @@ def get_run_summary(run_name: str) -> dict:
 
 
 @frappe.whitelist()
+def get_run_consolidated(run_name: str, jornada: str = "", search: str = "") -> dict:
+	"""Vista consolidada por empleado para revisión previa al export.
+
+	Devuelve `{employees: [...], totals: {...}}` donde cada employee es:
+	  {
+	    cedula, nombre, jornada, cargo, sucursal, salario,
+	    horas: {HD: {qty, amt}, HN: {qty, amt}, ...},
+	    dias: {DESCANSO: qty, VACACIONES: qty, ...},
+	    descuentos: {LIBRANZA_FINCOMERCIO: amt, ...},
+	    auxilio_transporte, total_devengado, total_descontado, neto,
+	    novedad_count, has_partial,
+	  }
+
+	Es la misma agregación que el export, pero JSON-friendly y filtrable.
+	"""
+	if not frappe.db.exists("Payroll Run", run_name):
+		frappe.throw(_("Payroll Run no existe: {0}").format(run_name))
+
+	from hubgh.hubgh.payroll.compute import auxilio_transporte
+	from hubgh.hubgh.payroll.compute.literal import DESCUENTO_TYPES
+
+	# Una sola query con join al empleado para los nombres limpios.
+	rows = frappe.db.sql(
+		"""
+		SELECT n.documento_identidad, n.empleado, n.tipo_jornada_snapshot,
+			n.salario_mensual_snapshot, n.tipo_novedad, n.unidad,
+			n.computed_amount, n.computed_quantity, n.cantidad,
+			n.calc_status, n.raw_payload
+		FROM `tabPayroll Novedad` n
+		WHERE n.run = %s
+			AND n.calc_status IN ('computed', 'partial', 'skipped')
+		""",
+		(run_name,),
+		as_dict=True,
+	)
+
+	by_emp: dict[str, dict] = {}
+	for r in rows:
+		key = r.get("empleado") or r.get("documento_identidad") or "SIN_DOC"
+		try:
+			payload = json.loads(r.get("raw_payload") or "{}")
+		except Exception:
+			payload = {}
+		bucket = by_emp.setdefault(
+			key,
+			{
+				"cedula": r.get("documento_identidad") or "",
+				"nombre": "",
+				"jornada": "",
+				"cargo": "",
+				"sucursal": "",
+				"salario": 0.0,
+				"horas": {},
+				"dias": {},
+				"descuentos": {},
+				"otros_pagos": {},
+				"total_devengado": 0.0,
+				"total_descontado": 0.0,
+				"novedad_count": 0,
+				"has_partial": False,
+			},
+		)
+		# First-non-empty para identificación.
+		if not bucket["nombre"] and payload.get("empleado_nombre"):
+			bucket["nombre"] = payload["empleado_nombre"]
+		if not bucket["jornada"] and r.get("tipo_jornada_snapshot"):
+			bucket["jornada"] = r["tipo_jornada_snapshot"]
+		if not bucket["cargo"] and payload.get("cargo"):
+			bucket["cargo"] = payload["cargo"]
+		if not bucket["sucursal"]:
+			bucket["sucursal"] = payload.get("sucursal") or payload.get("sede") or ""
+		if not bucket["salario"] and r.get("salario_mensual_snapshot"):
+			bucket["salario"] = float(r["salario_mensual_snapshot"])
+
+		tipo = r.get("tipo_novedad") or "OTRO"
+		amount = float(r.get("computed_amount") or 0)
+		qty = float(r.get("computed_quantity") or r.get("cantidad") or 0)
+		bucket["novedad_count"] += 1
+		if r.get("calc_status") == "partial":
+			bucket["has_partial"] = True
+
+		if r.get("unidad") == "horas":
+			h = bucket["horas"].setdefault(tipo, {"qty": 0.0, "amt": 0.0})
+			h["qty"] += qty
+			h["amt"] += amount
+			bucket["total_devengado"] += amount
+		elif r.get("unidad") == "dias":
+			bucket["dias"][tipo] = bucket["dias"].get(tipo, 0.0) + qty
+			# Los importes de días suman a devengado salvo descuento por ausencia.
+			if tipo == "AUSENCIA_INJUSTIFICADA":
+				bucket["total_descontado"] += amount
+			else:
+				bucket["total_devengado"] += amount
+		else:  # cop / unidades
+			if tipo in DESCUENTO_TYPES:
+				bucket["descuentos"][tipo] = bucket["descuentos"].get(tipo, 0.0) + amount
+				bucket["total_descontado"] += amount
+			else:
+				bucket["otros_pagos"][tipo] = bucket["otros_pagos"].get(tipo, 0.0) + amount
+				bucket["total_devengado"] += amount
+
+	# Auxilio transporte + neto. params globales una sola vez.
+	from hubgh.hubgh.payroll.enrichment import build_runtime_context
+
+	ctx = build_runtime_context()
+	NO_REM = ("LICENCIA_NO_REMUNERADA", "SUSPENSION_CONTRATO", "AUSENCIA_INJUSTIFICADA")
+	for emp in by_emp.values():
+		dias_no_rem = sum(emp["dias"].get(t, 0.0) for t in NO_REM)
+		emp["auxilio_transporte"] = auxilio_transporte.compute_for_period(
+			emp["salario"], ctx.params, dias_no_remunerados=dias_no_rem
+		)
+		emp["neto"] = round(
+			emp["total_devengado"] + emp["auxilio_transporte"] + emp["total_descontado"], 2
+		)
+		emp["total_devengado"] = round(emp["total_devengado"], 2)
+		emp["total_descontado"] = round(emp["total_descontado"], 2)
+
+	# Filtros opcionales.
+	def _matches(emp: dict) -> bool:
+		if jornada in {"Tiempo Completo", "Tiempo Parcial"} and emp["jornada"] != jornada:
+			return False
+		if search:
+			needle = search.lower()
+			hay = (
+				needle in (emp["nombre"] or "").lower()
+				or needle in (emp["cedula"] or "").lower()
+				or needle in (emp["cargo"] or "").lower()
+				or needle in (emp["sucursal"] or "").lower()
+			)
+			if not hay:
+				return False
+		return True
+
+	employees = sorted(
+		(e for e in by_emp.values() if _matches(e)),
+		key=lambda e: (e["sucursal"], e["nombre"], e["cedula"]),
+	)
+	totals = {
+		"empleados": len(employees),
+		"total_devengado": round(sum(e["total_devengado"] for e in employees), 2),
+		"total_descontado": round(sum(e["total_descontado"] for e in employees), 2),
+		"total_neto": round(sum(e["neto"] for e in employees), 2),
+		"total_aux_transporte": round(sum(e["auxilio_transporte"] for e in employees), 2),
+		"empleados_partial": sum(1 for e in employees if e["has_partial"]),
+	}
+	return {"employees": employees, "totals": totals}
+
+
+@frappe.whitelist()
 def list_novedades(run_name: str, limit: int = 500, jornada: str = "", tipo: str = "") -> list[dict]:
 	"""Lista paginada de novedades para la tabla de revisión."""
 	filters: dict = {"run": run_name}

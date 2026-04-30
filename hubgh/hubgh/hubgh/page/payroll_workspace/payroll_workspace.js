@@ -52,8 +52,8 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 		runs: [],
 		current: null,
 		summary: null,
-		novedades: [],
-		filter: { jornada: "", tipo: "" },
+		consolidated: null,  // { employees: [...], totals: {...} }
+		filter: { jornada: "", search: "" },
 		loading: false,
 	};
 
@@ -90,14 +90,13 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 		apiCall("get_run_summary", { run_name: run }).then((r) => {
 			state.summary = (r && r.message) || null;
 		});
-	const loadNovedades = (run) =>
-		apiCall("list_novedades", {
+	const loadConsolidated = (run) =>
+		apiCall("get_run_consolidated", {
 			run_name: run,
-			limit: 500,
 			jornada: state.filter.jornada,
-			tipo: state.filter.tipo,
+			search: state.filter.search,
 		}).then((r) => {
-			state.novedades = (r && r.message) || [];
+			state.consolidated = (r && r.message) || null;
 		});
 
 	const refresh = async () => {
@@ -107,7 +106,7 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 			await loadRuns();
 			if (state.current) {
 				await loadSummary(state.current);
-				await loadNovedades(state.current);
+				await loadConsolidated(state.current);
 			}
 		} finally {
 			state.loading = false;
@@ -150,7 +149,7 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 
 	const onSelectRun = (name) => {
 		state.current = name;
-		state.filter = { jornada: "", tipo: "" };
+		state.filter = { jornada: "", search: "" };
 		refresh();
 	};
 
@@ -438,31 +437,46 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 	};
 
 	const renderReviewCard = () => {
-		const counts = state.summary.counts || {};
-		if (!counts.novedades) return;
+		const consolidated = state.consolidated;
+		if (!consolidated || !consolidated.employees) return;
+		const employees = consolidated.employees;
+		const totals = consolidated.totals || {};
+
 		const $card = $('<div class="hubgh-card"></div>').appendTo($shell);
 		$card.append(`
 			<div class="hubgh-section-head">
 				<div>
-					<h4 class="hubgh-section-title">Revisar novedades</h4>
-					<p class="hubgh-section-copy">Filtrá por jornada o tipo de novedad antes de exportar.</p>
+					<h4 class="hubgh-section-title">Revisar consolidado por empleado</h4>
+					<p class="hubgh-section-copy">
+						Una fila por empleado con el resumen de todas sus novedades del periodo.
+						Filtrá por jornada o por nombre / cédula / cargo / sucursal antes de exportar.
+					</p>
 				</div>
 			</div>
 		`);
 
-		const byStatus = counts.by_status || {};
+		// KPIs consolidados.
 		const $kpis = $('<div class="pwsp-kpis"></div>').appendTo($card);
-		$kpis.append(
-			`<div class="pwsp-kpi"><div class="label">Total</div><div class="value">${counts.novedades}</div></div>`
-		);
-		Object.entries(byStatus).forEach(([k, v]) => {
+		$kpis.append(`
+			<div class="pwsp-kpi"><div class="label">Empleados</div>
+				<div class="value">${esc(totals.empleados || 0)}</div></div>
+			<div class="pwsp-kpi is-computed"><div class="label">Devengado</div>
+				<div class="value">${esc(fmtMoney(totals.total_devengado))}</div></div>
+			<div class="pwsp-kpi is-error"><div class="label">Descuentos</div>
+				<div class="value">${esc(fmtMoney(totals.total_descontado))}</div></div>
+			<div class="pwsp-kpi"><div class="label">Aux. Transporte</div>
+				<div class="value">${esc(fmtMoney(totals.total_aux_transporte))}</div></div>
+			<div class="pwsp-kpi"><div class="label">Neto</div>
+				<div class="value">${esc(fmtMoney(totals.total_neto))}</div></div>
+		`);
+		if (totals.empleados_partial) {
 			$kpis.append(`
-				<div class="pwsp-kpi is-${esc(k)}">
-					<div class="label">${esc(STATUS_LABELS[k] || k)}</div>
-					<div class="value">${esc(v)}</div>
+				<div class="pwsp-kpi is-skipped">
+					<div class="label">Con datos parciales</div>
+					<div class="value">${esc(totals.empleados_partial)}</div>
 				</div>
 			`);
-		});
+		}
 
 		const $filters = $(`
 			<div class="pwsp-filters">
@@ -471,66 +485,92 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 					<option value="Tiempo Completo">Tiempo Completo</option>
 					<option value="Tiempo Parcial">Tiempo Parcial</option>
 				</select>
-				<input type="text" class="form-control input-sm" id="pwsp-f-tipo"
-					placeholder="Filtrar por tipo (ej. HD, INCAPACIDAD_*)">
+				<input type="text" class="form-control input-sm" id="pwsp-f-search"
+					placeholder="Buscar por nombre, cédula, cargo o sucursal">
 				<button class="btn btn-sm btn-default" id="pwsp-f-apply">Aplicar</button>
 			</div>
 		`).appendTo($card);
 		$filters.find("#pwsp-f-jornada").val(state.filter.jornada);
-		$filters.find("#pwsp-f-tipo").val(state.filter.tipo);
+		$filters.find("#pwsp-f-search").val(state.filter.search);
 		$filters.find("#pwsp-f-apply").on("click", () => {
 			state.filter.jornada = $("#pwsp-f-jornada").val() || "";
-			state.filter.tipo = ($("#pwsp-f-tipo").val() || "").trim();
-			loadNovedades(state.current).then(render);
+			state.filter.search = ($("#pwsp-f-search").val() || "").trim();
+			loadConsolidated(state.current).then(render);
 		});
 
-		if (!state.novedades.length) {
+		if (!employees.length) {
 			$card.append(`
 				<div class="hubgh-empty">
-					<span class="hubgh-empty-title">Sin novedades con esos filtros.</span>
+					<span class="hubgh-empty-title">Sin empleados con esos filtros.</span>
 					<p class="hubgh-empty-copy">Probá otros valores o limpiá los filtros.</p>
 				</div>
 			`);
 			return;
 		}
+
 		const $shellTbl = $('<div class="hubgh-table-shell hubgh-table-wrap"></div>').appendTo($card);
 		const $tbl = $(`
 			<table class="pwsp-novedades">
 				<thead><tr>
 					<th>Empleado</th>
-					<th>Doc</th>
+					<th>Cédula</th>
 					<th>Jornada</th>
-					<th>Tipo</th>
-					<th class="num">Cant.</th>
-					<th class="num">Importe</th>
-					<th>Estado</th>
-					<th>Notas</th>
+					<th>Cargo</th>
+					<th>Sucursal</th>
+					<th class="num">Salario</th>
+					<th class="num">Devengado</th>
+					<th class="num">Descuentos</th>
+					<th class="num">Aux.&nbsp;Trans.</th>
+					<th class="num">Neto</th>
+					<th>Detalle</th>
 				</tr></thead>
 				<tbody></tbody>
 			</table>
 		`).appendTo($shellTbl);
 		const $tbody = $tbl.find("tbody");
-		state.novedades.forEach((n) => {
+		employees.forEach((e) => {
+			const partialBadge = e.has_partial
+				? `<span class="pwsp-state-pill partial compact" title="Algunas novedades quedaron sin importe (falta empleado/contrato/cargo en DB)">parcial</span>`
+				: "";
+			const breakdown = _summarizeEmployee(e);
 			$tbody.append(`
 				<tr>
-					<td><div class="hubgh-cell-stack"><span class="hubgh-cell-main">${esc(
-						n.empleado_label || n.empleado || "—"
-					)}</span></div></td>
-					<td><span class="hubgh-cell-sub">${esc(n.documento_identidad)}</span></td>
-					<td>${esc(n.tipo_jornada_snapshot || "—")}</td>
-					<td>${esc(n.tipo_novedad)}</td>
-					<td class="num">${esc(fmtNum(n.computed_quantity || n.cantidad, 2))}</td>
-					<td class="num">${esc(fmtMoney(n.computed_amount))}</td>
-					<td class="status-${esc(n.calc_status)}">${esc(STATUS_LABELS[n.calc_status] || n.calc_status)}</td>
-					<td><span class="hubgh-cell-sub">${esc(n.calc_notes || "")}</span></td>
+					<td>
+						<div class="hubgh-cell-stack">
+							<span class="hubgh-cell-main">${esc(e.nombre || "—")}</span>
+							${partialBadge ? `<span class="hubgh-cell-sub">${partialBadge}</span>` : ""}
+						</div>
+					</td>
+					<td><span class="hubgh-cell-sub">${esc(e.cedula)}</span></td>
+					<td>${esc(e.jornada || "—")}</td>
+					<td><span class="hubgh-cell-sub">${esc(e.cargo || "—")}</span></td>
+					<td><span class="hubgh-cell-sub">${esc(e.sucursal || "—")}</span></td>
+					<td class="num">${esc(fmtMoney(e.salario))}</td>
+					<td class="num status-computed">${esc(fmtMoney(e.total_devengado))}</td>
+					<td class="num status-error">${esc(fmtMoney(e.total_descontado))}</td>
+					<td class="num">${esc(fmtMoney(e.auxilio_transporte))}</td>
+					<td class="num"><strong>${esc(fmtMoney(e.neto))}</strong></td>
+					<td><span class="hubgh-cell-sub">${esc(breakdown)}</span></td>
 				</tr>
 			`);
 		});
-		if (state.novedades.length === 500) {
-			$card.append(
-				`<p class="hubgh-section-copy">Mostrando primeras 500 filas — filtrá para acotar.</p>`
-			);
-		}
+	};
+
+	const _summarizeEmployee = (e) => {
+		const parts = [];
+		const horas = Object.entries(e.horas || {})
+			.filter(([_, v]) => v.qty > 0)
+			.map(([k, v]) => `${k} ${v.qty.toFixed(1)}h`)
+			.join(" · ");
+		if (horas) parts.push(horas);
+		const dias = Object.entries(e.dias || {})
+			.filter(([_, q]) => q > 0)
+			.map(([k, q]) => `${k.replaceAll("_", " ").toLowerCase()} ${q}d`)
+			.join(" · ");
+		if (dias) parts.push(dias);
+		const desc = Object.keys(e.descuentos || {}).length;
+		if (desc) parts.push(`${desc} descuento(s)`);
+		return parts.join(" · ") || "—";
 	};
 
 	const renderExportCard = () => {

@@ -10,7 +10,10 @@
   "nombre",
   "codigo",
   "descripcion",
-  "activo"
+  "activo",
+  "payroll_section",
+  "salario_base_tc",
+  "horas_trabajadas_mes"
  ],
  "fields": [
   {
@@ -38,6 +41,27 @@
    "fieldname": "activo",
    "fieldtype": "Check",
    "label": "Activo"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "payroll_section",
+   "fieldtype": "Section Break",
+   "label": "Nómina"
+  },
+  {
+   "description": "Salario mensual base para empleados Tiempo Completo en este cargo. Tiempo Parcial usa el valor hora fijo global, no este campo.",
+   "fieldname": "salario_base_tc",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Salario base (TC)"
+  },
+  {
+   "default": "220",
+   "description": "Horas mensuales pactadas. Se usa como divisor para calcular el valor hora TC: salario_base_tc / horas_trabajadas_mes.",
+   "fieldname": "horas_trabajadas_mes",
+   "fieldtype": "Float",
+   "label": "Horas trabajadas / mes",
+   "precision": "2"
   }
  ],
  "grid_page_length": 50,

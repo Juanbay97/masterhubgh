@@ -48,6 +48,8 @@
 .pwsp-state-pill.exported  { background: #dcfce7; color: #166534; }
 .pwsp-state-pill.archived  { background: #e2e8f0; color: #334155; }
 .pwsp-state-pill.failed    { background: #fee2e2; color: #991b1b; }
+.pwsp-state-pill.partial   { background: #fef3c7; color: #92400e; }
+.pwsp-state-pill.compact   { padding: 1px 7px; font-size: 9px; letter-spacing: .03em; }
 
 /* ── Tabla de archivos del Run ─────────────────────────────────── */
 .pwsp-files { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }

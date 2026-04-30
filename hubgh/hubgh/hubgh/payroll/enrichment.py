@@ -66,16 +66,30 @@ class GlobalParams:
 
 
 @dataclass
+class CargoSalary:
+	"""Datos de nómina asociados a un Cargo del catálogo."""
+
+	name: str
+	salario_base_tc: float = 0.0
+	horas_trabajadas_mes: float = 0.0
+
+
+@dataclass
 class EnrichmentContext:
 	"""Resolvers inyectables y parámetros globales.
 
 	Los resolvers reciben el periodo (ya calculado por el caller) para
 	que puedan elegir el contrato vigente al cierre y devolver None si
 	el empleado o el contrato no existen.
+
+	`resolve_cargo` es el fallback cuando el archivo trae cargo pero el
+	empleado / contrato no están en DB. Permite resolver el salario
+	desde el catálogo `Cargo` (campo salario_base_tc).
 	"""
 
 	resolve_employee: Callable[[str], EmployeeRecord | None]
 	resolve_contract: Callable[[str, date, date], ContractRecord | None]
+	resolve_cargo: Callable[[str], CargoSalary | None] = field(default=lambda _: None)
 	params: GlobalParams = field(default_factory=GlobalParams)
 
 
@@ -181,13 +195,37 @@ def enrich(
 			f"y la jornada es '{jornada_snapshot}'.",
 		)
 
-	# 5) Valor hora base (depende del contrato; sin contrato queda 0)
-	valor_hora = (
-		_compute_valor_hora_base(contrato, jornada_snapshot, ctx.params)
-		if contrato and jornada_snapshot
-		else 0.0
-	)
-	salario = float(contrato.salario) if contrato and contrato.salario else 0.0
+	# 5) Resolver salario y valor hora base. Prioridad:
+	#    a) Contrato en DB (TC: salario / horas_trabajadas_mes; TP: hora_tp_fija).
+	#    b) Catálogo Cargo (cuando el archivo trae cargo pero no hay contrato):
+	#       resuelve salario_base_tc / horas_trabajadas_mes del Cargo.
+	#    c) Sin nada → 0 (queda en `partial`).
+	cargo_label = (novedad.raw_payload or {}).get("cargo") or ""
+	cargo_record: CargoSalary | None = None
+	if not contrato and cargo_label:
+		try:
+			cargo_record = ctx.resolve_cargo(cargo_label)
+		except Exception:
+			cargo_record = None
+
+	if contrato and jornada_snapshot:
+		valor_hora = _compute_valor_hora_base(contrato, jornada_snapshot, ctx.params)
+		salario = float(contrato.salario or 0.0)
+	elif jornada_snapshot == TIPO_JORNADA_PART_TIME:
+		# TP: hora fija parametrizada, sin importar contrato/cargo.
+		valor_hora = float(ctx.params.hora_tp_fija or 0.0)
+		salario = 0.0  # TP no tiene salario mensual fijo.
+	elif cargo_record and cargo_record.salario_base_tc > 0 and jornada_snapshot == TIPO_JORNADA_FULL_TIME:
+		# TC: usar el catálogo Cargo como fallback al contrato.
+		salario = float(cargo_record.salario_base_tc)
+		divisor = float(cargo_record.horas_trabajadas_mes or 0)
+		if divisor <= 0:
+			divisor = float(ctx.params.divisor_hora_tc or 240.0)
+		valor_hora = salario / divisor if divisor > 0 else 0.0
+		notas.append(f"Salario resuelto desde Cargo '{cargo_label}' (sin contrato en DB).")
+	else:
+		valor_hora = 0.0
+		salario = 0.0
 
 	return EnrichedNovedad(
 		documento_identidad=novedad.documento_identidad,
@@ -330,6 +368,40 @@ def build_runtime_context() -> EnrichmentContext:
 	"""
 	import frappe
 
+	# Resolver de cargo cacheado para el run completo: el archivo trae el
+	# mismo string de cargo cientos de veces; resolverlo una sola vez por
+	# valor único.
+	_cargo_cache: dict[str, CargoSalary | None] = {}
+
+	def _resolve_cargo(cargo_label: str) -> CargoSalary | None:
+		if not cargo_label:
+			return None
+		key = cargo_label.strip()
+		if key in _cargo_cache:
+			return _cargo_cache[key]
+		# Buscar por name (autoname=codigo) o por nombre.
+		row = frappe.db.get_value(
+			"Cargo",
+			{"name": key},
+			["name", "salario_base_tc", "horas_trabajadas_mes"],
+			as_dict=True,
+		) or frappe.db.get_value(
+			"Cargo",
+			{"nombre": key},
+			["name", "salario_base_tc", "horas_trabajadas_mes"],
+			as_dict=True,
+		)
+		if not row:
+			_cargo_cache[key] = None
+			return None
+		result = CargoSalary(
+			name=row["name"],
+			salario_base_tc=float(row.get("salario_base_tc") or 0),
+			horas_trabajadas_mes=float(row.get("horas_trabajadas_mes") or 0),
+		)
+		_cargo_cache[key] = result
+		return result
+
 	def _resolve_employee(documento: str) -> EmployeeRecord | None:
 		documento = (documento or "").strip()
 		if not documento:
@@ -407,5 +479,6 @@ def build_runtime_context() -> EnrichmentContext:
 	return EnrichmentContext(
 		resolve_employee=_resolve_employee,
 		resolve_contract=_resolve_contract,
+		resolve_cargo=_resolve_cargo,
 		params=params,
 	)
