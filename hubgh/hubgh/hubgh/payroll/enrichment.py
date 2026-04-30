@@ -154,19 +154,19 @@ def enrich(
 			f"{period_start.isoformat()} a {period_end.isoformat()}."
 		)
 
-	# 3) Snapshot de jornada
-	contrato_jornada_raw = contrato.tipo_jornada if contrato else ""
-	# Para CLONK, la novedad puede traer el contrato_text en raw_payload.
+	# 3) Snapshot de jornada — el archivo es la fuente de verdad. Lo que
+	# la DB diga sólo aplica cuando el archivo no trae nada interpretable.
 	clonk_contrato_text = (novedad.raw_payload or {}).get("contrato_text", "")
+	contrato_jornada_raw = contrato.tipo_jornada if contrato else ""
 	jornada_snapshot = (
-		normalize_tipo_jornada(contrato_jornada_raw)
+		normalize_tipo_jornada(clonk_contrato_text)
+		or normalize_tipo_jornada(contrato_jornada_raw)
 		or normalize_tipo_jornada(emp_jornada)
-		or normalize_tipo_jornada(clonk_contrato_text)
 	)
 	if not jornada_snapshot:
 		notas.append(
-			"Sin jornada canonicalizable; los cómputos por hora quedarán en cero hasta "
-			"que se cree el empleado/contrato."
+			"Sin jornada canonicalizable en el archivo ni en la DB; los cómputos "
+			"por hora quedarán en cero."
 		)
 
 	# 4) Aplicabilidad — si la jornada está clara y el tipo no aplica, skip.

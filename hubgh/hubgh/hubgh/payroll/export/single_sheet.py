@@ -58,6 +58,8 @@ COLUMN_SPEC: list[tuple[str, str, str]] = [
 	("Nombres", "id_nombres", "first"),
 	("Apellidos", "id_apellidos", "first"),
 	("Jornada", "id_jornada", "first"),
+	("Cargo", "id_cargo", "first"),
+	("Sucursal", "id_sucursal", "first"),
 	("Salario", "id_salario", "first"),
 	# Horas (cantidad)
 	("HD h", "h_qty:HD", "sum"),
@@ -220,15 +222,30 @@ def _aggregate(novedades: Iterable, employees_meta: dict[str, dict]) -> dict[str
 	for nov in novedades:
 		key = nov.empleado or nov.documento_identidad or "SIN_EMPLEADO"
 		rec = by_emp[key]
-		# Identidad (first)
-		if not rec["id_set"]:
-			meta = employees_meta.get(key, {})
-			rec["id_cedula"] = meta.get("cedula") or nov.documento_identidad or ""
-			rec["id_nombres"] = meta.get("nombres") or nov.raw_payload.get("empleado_nombre") or ""
-			rec["id_apellidos"] = meta.get("apellidos") or ""
-			rec["id_jornada"] = nov.tipo_jornada_snapshot or ""
-			rec["id_salario"] = float(nov.salario_mensual or 0.0)
-			rec["id_set"] = True
+		# Identidad — first-non-empty: cada novedad del empleado puede
+		# completar campos que la primera no traía (ej. HD trae cargo,
+		# DESCANSO no; el aggregate las recibe en orden indefinido del
+		# get_all).
+		meta = employees_meta.get(key, {})
+		payload = nov.raw_payload or {}
+
+		def _fill(field, *candidates):
+			if rec.get(field):
+				return
+			for c in candidates:
+				if c:
+					rec[field] = c
+					return
+
+		_fill("id_cedula", meta.get("cedula"), nov.documento_identidad)
+		_fill("id_nombres", meta.get("nombres"), payload.get("empleado_nombre"))
+		_fill("id_apellidos", meta.get("apellidos"))
+		_fill("id_jornada", nov.tipo_jornada_snapshot)
+		_fill("id_cargo", payload.get("cargo"))
+		_fill("id_sucursal", payload.get("sucursal"), payload.get("sede"))
+		if not rec.get("id_salario") and nov.salario_mensual:
+			rec["id_salario"] = float(nov.salario_mensual)
+		rec["id_set"] = True
 		# Cantidades por tipo
 		tipo = nov.tipo_novedad
 		amount = float(nov.computed_amount or 0.0)
@@ -263,7 +280,8 @@ def _empty_emp_record() -> dict:
 	return {
 		"id_set": False,
 		"id_cedula": "", "id_nombres": "", "id_apellidos": "",
-		"id_jornada": "", "id_salario": 0.0,
+		"id_jornada": "", "id_cargo": "", "id_sucursal": "",
+		"id_salario": 0.0,
 		"h_qty": defaultdict(float), "h_amt": defaultdict(float),
 		"d_qty": defaultdict(float), "d_amt": defaultdict(float),
 		"amt": defaultdict(float),
