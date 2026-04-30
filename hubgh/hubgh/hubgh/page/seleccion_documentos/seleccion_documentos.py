@@ -425,10 +425,13 @@ def send_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso
 
 
 @frappe.whitelist()
-def send_to_medical_exam(candidate, cargo=None):
+def send_to_medical_exam(candidate, cargo=None, modo="manual"):
 	_validate_selection_access(candidate)
 	if not _can_manage_candidates():
 		frappe.throw("No autorizado")
+	modo = (modo or "manual").strip().lower()
+	if modo not in ("manual", "autogestionado"):
+		frappe.throw("Modo de agendamiento inválido. Debe ser 'manual' o 'autogestionado'.")
 	if cargo:
 		frappe.db.set_value("Candidato", candidate, "cargo", cargo)
 	cand_cargo = cargo or frappe.db.get_value("Candidato", candidate, "cargo")
@@ -441,12 +444,23 @@ def send_to_medical_exam(candidate, cargo=None):
 			"estado_proceso": STATE_EXAMEN_MEDICO,
 			"fecha_envio_examen_medico": nowdate(),
 			"concepto_medico": "Pendiente",
+			"modo_agendamiento_examen": "Autogestionado" if modo == "autogestionado" else "Manual",
 		},
 	)
-	if frappe.conf.get("hubgh_agendamiento_autogestionado_enabled"):
+	if modo == "autogestionado":
+		if not frappe.conf.get("hubgh_agendamiento_autogestionado_enabled"):
+			frappe.throw(
+				"El agendamiento autogestionado está deshabilitado en este entorno. "
+				"Active 'hubgh_agendamiento_autogestionado_enabled' o use modo manual."
+			)
 		from hubgh.hubgh.examen_medico.cita_service import create_cita_and_send_link
 		create_cita_and_send_link(candidate, cand_cargo)
-	return {"ok": True, "status": STATE_EXAMEN_MEDICO}
+	return {"ok": True, "status": STATE_EXAMEN_MEDICO, "modo": modo}
+
+
+@frappe.whitelist()
+def get_agendamiento_autogestionado_enabled():
+	return bool(frappe.conf.get("hubgh_agendamiento_autogestionado_enabled"))
 
 
 @frappe.whitelist()

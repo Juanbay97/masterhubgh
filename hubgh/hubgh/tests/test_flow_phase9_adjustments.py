@@ -2304,6 +2304,101 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 			with self.assertRaisesRegex(RuntimeError, "state-blocked"):
 				contratacion_service.reject_candidate("CAND-001", "Cualquier motivo")
 
+	def _patch_send_to_medical_exam(self, *, cargo="CAR-1", flag_enabled=False):
+		set_value_calls = []
+
+		def fake_set_value(doctype, name, payload, *args, **kwargs):
+			set_value_calls.append((doctype, name, payload))
+
+		def fake_get_value(doctype, name, fieldname=None, *args, **kwargs):
+			if doctype == "Candidato" and fieldname == "cargo":
+				return cargo
+			return None
+
+		patches = [
+			patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._validate_selection_access"),
+			patch(
+				"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._can_manage_candidates",
+				return_value=True,
+			),
+			patch(
+				"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.db.get_value",
+				side_effect=fake_get_value,
+			),
+			patch(
+				"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.db.set_value",
+				side_effect=fake_set_value,
+			),
+			patch(
+				"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.nowdate",
+				return_value="2026-04-30",
+			),
+			patch(
+				"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.conf.get",
+				return_value=1 if flag_enabled else 0,
+			),
+		]
+		return set_value_calls, patches
+
+	def test_send_to_medical_exam_manual_does_not_dispatch_cita(self):
+		set_value_calls, patches = self._patch_send_to_medical_exam()
+		create_cita = patch("hubgh.hubgh.examen_medico.cita_service.create_cita_and_send_link")
+		mock_cita = create_cita.start()
+		try:
+			for p in patches:
+				p.start()
+			try:
+				result = seleccion_documentos.send_to_medical_exam("CAND-001", modo="manual")
+			finally:
+				for p in patches:
+					p.stop()
+		finally:
+			create_cita.stop()
+
+		self.assertEqual(result["modo"], "manual")
+		mock_cita.assert_not_called()
+		candidato_payload = next(c[2] for c in set_value_calls if c[0] == "Candidato" and isinstance(c[2], dict))
+		self.assertEqual(candidato_payload["modo_agendamiento_examen"], "Manual")
+
+	def test_send_to_medical_exam_autogestionado_dispatches_when_flag_on(self):
+		set_value_calls, patches = self._patch_send_to_medical_exam(flag_enabled=True)
+		create_cita = patch("hubgh.hubgh.examen_medico.cita_service.create_cita_and_send_link")
+		mock_cita = create_cita.start()
+		try:
+			for p in patches:
+				p.start()
+			try:
+				result = seleccion_documentos.send_to_medical_exam("CAND-001", modo="autogestionado")
+			finally:
+				for p in patches:
+					p.stop()
+		finally:
+			create_cita.stop()
+
+		self.assertEqual(result["modo"], "autogestionado")
+		mock_cita.assert_called_once_with("CAND-001", "CAR-1")
+		candidato_payload = next(c[2] for c in set_value_calls if c[0] == "Candidato" and isinstance(c[2], dict))
+		self.assertEqual(candidato_payload["modo_agendamiento_examen"], "Autogestionado")
+
+	def test_send_to_medical_exam_autogestionado_blocks_when_flag_off(self):
+		_set_value_calls, patches = self._patch_send_to_medical_exam(flag_enabled=False)
+		throw_patch = patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.throw",
+			side_effect=RuntimeError("flag-off"),
+		)
+		throw_patch.start()
+		try:
+			for p in patches:
+				p.start()
+			try:
+				with self.assertRaisesRegex(RuntimeError, "flag-off"):
+					seleccion_documentos.send_to_medical_exam("CAND-001", modo="autogestionado")
+			finally:
+				for p in patches:
+					p.stop()
+		finally:
+			throw_patch.stop()
+
 	def test_documentary_folder_prefers_freshest_candidate_or_employee_metadata(self):
 		emp = SimpleNamespace(name="EMP-001", nombres="Ana", apellidos="Paz", cedula="1001", pdv="PDV-1")
 		required = [SimpleNamespace(name="Cedula", document_name="Cedula", has_expiry=1, sort_order=1)]
