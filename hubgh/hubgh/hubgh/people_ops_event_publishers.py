@@ -66,6 +66,18 @@ def publish_people_ops_event(payload):
 	warnings = []
 	errors = []
 
+	persona = payload.get("persona")
+	if persona and not frappe.db.exists("Ficha Empleado", persona):
+		frappe.logger("hubgh.people_ops_backbone").warning(
+			"people_ops_event_skipped_missing_persona",
+			extra={
+				"persona": persona,
+				"source_doctype": payload.get("source_doctype"),
+				"source_name": payload.get("source_name"),
+			},
+		)
+		return None
+
 	if area not in SUPPORTED_AREAS:
 		errors.append(f"unsupported_area:{raw_area or 'empty'}")
 		area = "operacion"
