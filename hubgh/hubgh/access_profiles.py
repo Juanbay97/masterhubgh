@@ -259,66 +259,56 @@ def _ensure_role_profile(profile_name, roles):
 	for role in set(roles or []):
 		_ensure_role(role)
 
-	doc = frappe.get_doc("Role Profile", profile_name) if frappe.db.exists("Role Profile", profile_name) else frappe.get_doc(
-		{"doctype": "Role Profile", "role_profile": profile_name}
-	)
+	is_new = not frappe.db.exists("Role Profile", profile_name)
+	if is_new:
+		doc = frappe.get_doc({"doctype": "Role Profile", "role_profile": profile_name})
+	else:
+		doc = frappe.get_doc("Role Profile", profile_name)
 
 	existing = {row.role for row in (doc.roles or []) if row.role}
 	desired = set(roles or [])
-	if existing == desired and not doc.is_new():
+	if existing == desired and not is_new:
 		return
 
 	doc.set("roles", [])
 	for role in sorted(desired):
 		doc.append("roles", {"role": role})
 
-	if doc.is_new():
-		try:
+	try:
+		if is_new:
 			doc.insert(ignore_permissions=True)
-		except DocumentLockedError:
-			frappe.logger("hubgh.access_profiles").warning(
-				"ensure_role_profile:locked_skip",
-				extra={"profile_name": profile_name},
-			)
-	else:
-		try:
+		else:
 			doc.save(ignore_permissions=True)
-		except DocumentLockedError:
-			frappe.logger("hubgh.access_profiles").warning(
-				"ensure_role_profile:locked_skip",
-				extra={"profile_name": profile_name},
-			)
+	except DocumentLockedError:
+		frappe.logger("hubgh.access_profiles").warning(
+			"ensure_role_profile:locked_skip",
+			extra={"profile_name": profile_name},
+		)
 
 
 def _ensure_module_profile(profile_name, blocked_modules):
-	doc = (
-		frappe.get_doc("Module Profile", profile_name)
-		if frappe.db.exists("Module Profile", profile_name)
-		else frappe.get_doc({"doctype": "Module Profile", "module_profile_name": profile_name})
-	)
+	is_new = not frappe.db.exists("Module Profile", profile_name)
+	if is_new:
+		doc = frappe.get_doc({"doctype": "Module Profile", "module_profile_name": profile_name})
+	else:
+		doc = frappe.get_doc("Module Profile", profile_name)
 
 	existing = {row.module for row in (doc.block_modules or []) if row.module}
 	desired = set(blocked_modules or [])
-	if existing == desired and not doc.is_new():
+	if existing == desired and not is_new:
 		return
 
 	doc.set("block_modules", [])
 	for module in sorted(desired):
 		doc.append("block_modules", {"module": module})
 
-	if doc.is_new():
-		try:
+	try:
+		if is_new:
 			doc.insert(ignore_permissions=True, ignore_mandatory=True)
-		except DocumentLockedError:
-			frappe.logger("hubgh.access_profiles").warning(
-				"ensure_module_profile:locked_skip",
-				extra={"profile_name": profile_name},
-			)
-	else:
-		try:
+		else:
 			doc.save(ignore_permissions=True)
-		except DocumentLockedError:
-			frappe.logger("hubgh.access_profiles").warning(
-				"ensure_module_profile:locked_skip",
-				extra={"profile_name": profile_name},
-			)
+	except DocumentLockedError:
+		frappe.logger("hubgh.access_profiles").warning(
+			"ensure_module_profile:locked_skip",
+			extra={"profile_name": profile_name},
+		)
