@@ -13,6 +13,39 @@ Maneja creación, agendamiento y cierre de citas de examen médico:
 from __future__ import annotations
 
 
+def _normalize_city_key(value: str) -> str:
+	"""Lowercase + strip accents so 'Bogotá' and 'Bogota' match."""
+	import unicodedata
+
+	if not value:
+		return ""
+	text = str(value).strip().lower()
+	return "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch))
+
+
+def _resolve_active_ips_for_ciudad(candidato_ciudad: str) -> str | None:
+	"""Find an active IPS for the candidate's ciudad, tolerating accents and case.
+
+	Candidato.ciudad is currently a plain Select (no accents) while the Ciudad
+	doctype/fixture stores accented names (Bogotá, Medellín). A direct equality
+	lookup misses on tilde-only differences. Normalize and compare.
+	"""
+	import frappe
+
+	if not candidato_ciudad:
+		return None
+	# Fast path: exact match
+	exact = frappe.db.get_value("IPS", {"ciudad": candidato_ciudad, "activa": 1}, "name")
+	if exact:
+		return exact
+	# Tolerant fallback: normalize on both sides
+	target = _normalize_city_key(candidato_ciudad)
+	for row in frappe.get_all("IPS", filters={"activa": 1}, fields=["name", "ciudad"]):
+		if _normalize_city_key(row.ciudad) == target:
+			return row.name
+	return None
+
+
 def create_cita_and_send_link(
 	candidato_name: str,
 	cargo: str | None = None,
@@ -43,13 +76,9 @@ def create_cita_and_send_link(
 	# Resolve cargo
 	cargo_al_enviar = cargo or getattr(candidato, "cargo_postulado", None) or ""
 
-	# Auto-assign IPS by candidato's ciudad
+	# Auto-assign IPS by candidato's ciudad (accent-tolerant)
 	candidato_ciudad = getattr(candidato, "ciudad", None) or ""
-	ips_name = frappe.db.get_value(
-		"IPS",
-		{"ciudad": candidato_ciudad, "activa": 1},
-		"name",
-	)
+	ips_name = _resolve_active_ips_for_ciudad(candidato_ciudad)
 	if not ips_name:
 		frappe.throw(
 			f"No hay IPS activa configurada para la ciudad '{candidato_ciudad}'. "
