@@ -305,11 +305,12 @@ def set_exam_outcome(
 		concepto: Concepto médico para Realizada — "Favorable" o "Desfavorable".
 		motivo: Motivo de aplazamiento (para Aplazada).
 		instrucciones: Instrucciones de reagendamiento (para Aplazada).
-		action: Para "No Asistió" — "rebook" crea nueva cita, "close" sólo cancela.
+		action: Para "No Asistió" — "close" cancela la cita. (El reagendamiento
+		        ya no es automático: si GH quiere reagendar al candidato, vuelve
+		        a usar "Enviar a examen" desde Selección, lo que crea una nueva
+		        cita y envía un nuevo link desde cero.)
 	"""
 	import frappe
-	from hubgh.hubgh.examen_medico.token_manager import create_token
-	from hubgh.hubgh.examen_medico.email_service import send_exam_email
 
 	cita = frappe.get_doc("Cita Examen Medico", cita_name)
 
@@ -326,6 +327,10 @@ def set_exam_outcome(
 			)
 
 	elif estado == "Aplazada":
+		# Marca la cita como Aplazada y registra motivo/instrucciones para que
+		# SST tenga la trazabilidad. NO envía correo automático ni regenera
+		# link — si hay que reagendar, GH lo hace desde Selección con un
+		# nuevo "Enviar a examen".
 		frappe.db.set_value(
 			"Cita Examen Medico",
 			cita_name,
@@ -335,71 +340,9 @@ def set_exam_outcome(
 				"instrucciones_reagendamiento": instrucciones or "",
 			},
 		)
-		# Generate new token for re-scheduling
-		new_token = create_token(cita_name, expiry_days=14)
-
-		# Send email with new link (best-effort)
-		try:
-			candidato = frappe.get_doc("Candidato", cita.candidato)
-			try:
-				site_url = frappe.utils.get_url()
-			except Exception:
-				site_url = ""
-			portal_url = f"{site_url}/agendar_examen?token={new_token}"
-			candidato_email = getattr(candidato, "email", None) or ""
-			send_exam_email(
-				template_name="examen_medico_aplazado",
-				recipients=[candidato_email] if candidato_email else [""],
-				context={
-					"candidato": {"nombre": _candidato_full_name(candidato, fallback=cita.candidato)},
-					"cita": {
-						"motivo_aplazamiento": motivo or "",
-						"instrucciones_reagendamiento": instrucciones or "",
-					},
-					"portal_url": portal_url,
-				},
-			)
-		except Exception:
-			pass
 
 	elif estado == "No Asistió":
-		# Cancel the old cita
+		# Cancela la cita. No reagenda automáticamente.
+		# El parámetro `action` se mantiene en la firma por compatibilidad
+		# pero ya no dispara la creación de una nueva cita.
 		frappe.db.set_value("Cita Examen Medico", cita_name, "estado", "Cancelada")
-
-		if action == "rebook":
-			# Create a new Cita with a new token
-			nueva_cita = frappe.new_doc("Cita Examen Medico")
-			nueva_cita.candidato = cita.candidato
-			nueva_cita.ips = cita.ips
-			nueva_cita.estado = "Pendiente Agendamiento"
-			nueva_cita.cargo_al_enviar = getattr(cita, "cargo_al_enviar", None) or ""
-			nueva_cita.cita_anterior = cita_name
-			try:
-				nueva_cita.insert(ignore_permissions=True)
-			except TypeError:
-				nueva_cita.insert()
-
-			# Generate new token
-			new_token = create_token(nueva_cita.name, expiry_days=14)
-
-			# Send new link email (best-effort)
-			try:
-				candidato = frappe.get_doc("Candidato", cita.candidato)
-				try:
-					site_url = frappe.utils.get_url()
-				except Exception:
-					site_url = ""
-				portal_url = f"{site_url}/agendar_examen?token={new_token}"
-				candidato_email = getattr(candidato, "email", None) or ""
-				if candidato_email:
-					send_exam_email(
-						template_name="examen_medico_link_agendar",
-						recipients=[candidato_email],
-						context={
-							"candidato": {"nombre": _candidato_full_name(candidato, fallback=cita.candidato)},
-							"portal_url": portal_url,
-							"ips": {"nombre": getattr(cita, "ips", "") or ""},
-						},
-					)
-			except Exception:
-				pass

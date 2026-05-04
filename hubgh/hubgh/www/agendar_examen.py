@@ -91,7 +91,10 @@ def get_context(context):
 		except Exception:
 			ips_doc = {}
 
-		start_date = date.today().strftime("%Y-%m-%d")
+		# Empezar desde mañana — hoy no da tiempo operativo para agendar.
+		from datetime import timedelta
+		tomorrow = date.today() + timedelta(days=1)
+		start_date = tomorrow.strftime("%Y-%m-%d")
 		# Calcular ventana de días según fecha_limite_agendamiento (si existe en la cita)
 		days = 30
 		fecha_limite = cita_data.get("fecha_limite_agendamiento")
@@ -99,12 +102,12 @@ def get_context(context):
 			try:
 				from datetime import datetime as _dt
 				lim = fecha_limite if isinstance(fecha_limite, date) else _dt.strptime(str(fecha_limite), "%Y-%m-%d").date()
-				delta = (lim - date.today()).days + 1
-				days = max(1, min(30, delta))
+				delta = (lim - tomorrow).days + 1
+				days = max(0, min(30, delta))
 			except Exception:
 				days = 30
 
-		slots = slot_engine.get_available_slots(ips_doc, start_date, days=days)
+		slots = slot_engine.get_available_slots(ips_doc, start_date, days=days) if days > 0 else []
 
 		# Filtrar slots posteriores a la fecha límite (defensa adicional al ajuste de days)
 		if fecha_limite:
@@ -159,7 +162,16 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 	cita_name = cita_data["name"]
 	ips_name = cita_data.get("ips") or ""
 
-	# Validar fecha límite si existe
+	# Validar fecha — no permitir hoy ni días pasados (hoy no da tiempo
+	# operativo) ni fechas posteriores a la fecha límite.
+	from datetime import date as _d, timedelta as _td
+
+	tomorrow_str = (_d.today() + _td(days=1)).strftime("%Y-%m-%d")
+	if str(fecha) < tomorrow_str:
+		frappe.throw(
+			"La fecha seleccionada no es válida. Elegí un día a partir de mañana.",
+			frappe.ValidationError,
+		)
 	fecha_limite = cita_data.get("fecha_limite_agendamiento")
 	if fecha_limite and str(fecha) > str(fecha_limite):
 		frappe.throw(
