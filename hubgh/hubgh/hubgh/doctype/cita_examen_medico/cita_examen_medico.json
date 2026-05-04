@@ -10,9 +10,11 @@
   "candidato",
   "ips",
   "cargo_al_enviar",
+  "fecha_limite_agendamiento",
   "section_cita",
   "fecha_cita",
   "hora_cita",
+  "sede_seleccionada",
   "estado",
   "section_token",
   "token",
@@ -58,6 +60,12 @@
    "read_only": 1
   },
   {
+   "fieldname": "fecha_limite_agendamiento",
+   "fieldtype": "Date",
+   "label": "Fecha Límite para Agendar",
+   "description": "El candidato no podrá elegir slots posteriores a esta fecha."
+  },
+  {
    "fieldname": "section_cita",
    "fieldtype": "Section Break",
    "label": "Datos de la Cita"
@@ -73,6 +81,13 @@
    "fieldtype": "Time",
    "in_list_view": 1,
    "label": "Hora Cita"
+  },
+  {
+   "fieldname": "sede_seleccionada",
+   "fieldtype": "Data",
+   "label": "Sede Seleccionada",
+   "read_only": 1,
+   "description": "Nombre de la sede que eligió el candidato (si la IPS tiene más de una)."
   },
   {
    "default": "Pendiente Agendamiento",

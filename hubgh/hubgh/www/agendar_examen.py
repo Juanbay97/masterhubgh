@@ -92,17 +92,48 @@ def get_context(context):
 			ips_doc = {}
 
 		start_date = date.today().strftime("%Y-%m-%d")
-		slots = slot_engine.get_available_slots(ips_doc, start_date, days=30)
+		# Calcular ventana de días según fecha_limite_agendamiento (si existe en la cita)
+		days = 30
+		fecha_limite = cita_data.get("fecha_limite_agendamiento")
+		if fecha_limite:
+			try:
+				from datetime import datetime as _dt
+				lim = fecha_limite if isinstance(fecha_limite, date) else _dt.strptime(str(fecha_limite), "%Y-%m-%d").date()
+				delta = (lim - date.today()).days + 1
+				days = max(1, min(30, delta))
+			except Exception:
+				days = 30
+
+		slots = slot_engine.get_available_slots(ips_doc, start_date, days=days)
+
+		# Filtrar slots posteriores a la fecha límite (defensa adicional al ajuste de days)
+		if fecha_limite:
+			try:
+				slots = [s for s in (slots or []) if str(s.get("fecha", "")) <= str(fecha_limite)]
+			except Exception:
+				pass
+
+		# Calcular sedes visibles para la ciudad del candidato
+		from hubgh.hubgh.examen_medico.cita_service import _get_sedes_for_ciudad
+
+		candidato_ciudad = ""
+		try:
+			candidato_ciudad = frappe.db.get_value("Candidato", cita_data.get("candidato"), "ciudad") or ""
+		except Exception:
+			candidato_ciudad = ""
+		sedes_visibles = _get_sedes_for_ciudad(ips_doc, candidato_ciudad) if ips_doc else []
 
 		_ctx_set(context, "mode", "pending")
 		_ctx_set(context, "slots", slots)
 		_ctx_set(context, "cita", dict(cita_data))
 		_ctx_set(context, "ips", ips_doc)
 		_ctx_set(context, "token", token)
+		_ctx_set(context, "sedes", sedes_visibles)
+		_ctx_set(context, "fecha_limite", str(fecha_limite) if fecha_limite else "")
 
 
 @frappe.whitelist(allow_guest=True)
-def book_slot(token: str, fecha: str, hora: str) -> dict:
+def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dict:
 	"""
 	Agenda un slot para la Cita identificada por token.
 
@@ -113,17 +144,56 @@ def book_slot(token: str, fecha: str, hora: str) -> dict:
 		token: Token hex de 32 caracteres del link de agendamiento.
 		fecha: Fecha del slot "YYYY-MM-DD".
 		hora:  Hora del slot "HH:MM" o "HH:MM:SS".
+		sede:  Nombre de la sede elegida (opcional). Si la IPS tiene más de
+		       una sede en la ciudad del candidato, este campo es obligatorio.
 
 	Returns:
-		{"status": "ok", "cita_name": str, "fecha": str, "hora": str}
+		{"status": "ok", "cita_name": str, "fecha": str, "hora": str, "sede": str}
 
 	Raises:
-		frappe.ValidationError: Token inválido/expirado/usado, o cupo lleno.
+		frappe.ValidationError: Token inválido/expirado/usado, cupo lleno,
+		fecha mayor a la fecha límite, o sede faltante cuando hay múltiples.
 	"""
 	# Validar token — lanza ValidationError si inválido
 	cita_data = token_manager.validate_token(token)
 	cita_name = cita_data["name"]
 	ips_name = cita_data.get("ips") or ""
+
+	# Validar fecha límite si existe
+	fecha_limite = cita_data.get("fecha_limite_agendamiento")
+	if fecha_limite and str(fecha) > str(fecha_limite):
+		frappe.throw(
+			f"La fecha seleccionada ({fecha}) es posterior a la fecha límite ({fecha_limite}).",
+			frappe.ValidationError,
+		)
+
+	# Resolver sedes válidas para la ciudad del candidato
+	from hubgh.hubgh.examen_medico.cita_service import _get_sedes_for_ciudad
+
+	ips_doc = frappe.get_doc("IPS", ips_name) if ips_name else None
+	candidato_ciudad = ""
+	try:
+		candidato_ciudad = frappe.db.get_value("Candidato", cita_data.get("candidato"), "ciudad") or ""
+	except Exception:
+		candidato_ciudad = ""
+	sedes_visibles = _get_sedes_for_ciudad(ips_doc.as_dict(), candidato_ciudad) if ips_doc else []
+
+	sede_elegida = (sede or "").strip()
+	if len(sedes_visibles) > 1 and not sede_elegida:
+		frappe.throw(
+			"Debés elegir una sede antes de agendar.",
+			frappe.ValidationError,
+		)
+	if sede_elegida and sedes_visibles:
+		nombres_validos = {s.get("nombre_sede") for s in sedes_visibles}
+		if sede_elegida not in nombres_validos:
+			frappe.throw(
+				f"La sede '{sede_elegida}' no está disponible para tu ciudad.",
+				frappe.ValidationError,
+			)
+	# Si solo hay una sede y no se mandó, autoselect
+	if not sede_elegida and len(sedes_visibles) == 1:
+		sede_elegida = sedes_visibles[0].get("nombre_sede") or ""
 
 	# Contar citas ya agendadas/realizadas para este slot
 	booked = frappe.db.get_value(
@@ -137,7 +207,7 @@ def book_slot(token: str, fecha: str, hora: str) -> dict:
 		"count(name)",
 	) or 0
 
-	cupos_por_slot = cita_data.get("cupos_por_slot") or 3
+	cupos_por_slot = cita_data.get("cupos_por_slot") or 50
 
 	if int(booked) >= int(cupos_por_slot):
 		frappe.throw("Cupo ocupado para el slot seleccionado.", frappe.ValidationError)
@@ -154,6 +224,7 @@ def book_slot(token: str, fecha: str, hora: str) -> dict:
 			"estado": "Agendada",
 			"fecha_cita": fecha,
 			"hora_cita": hora,
+			"sede_seleccionada": sede_elegida or None,
 		},
 	)
 
@@ -163,18 +234,37 @@ def book_slot(token: str, fecha: str, hora: str) -> dict:
 
 	# Enviar emails post-agendamiento (best-effort — no bloquear respuesta HTTP)
 	try:
-		from hubgh.hubgh.examen_medico.email_service import send_exam_email, get_ips_email
+		from hubgh.hubgh.examen_medico.email_service import send_exam_email
 		from hubgh.hubgh.examen_medico.frsn02_generator import generate_frsn02
 
 		cita = frappe.get_doc("Cita Examen Medico", cita_name)
 		candidato = frappe.get_doc("Candidato", cita.candidato)
-		ips_doc = frappe.get_doc("IPS", ips_name) if ips_name else None
 
 		candidato_nombre = " ".join(filter(None, [
 			getattr(candidato, "nombres", None),
 			getattr(candidato, "primer_apellido", None),
 			getattr(candidato, "segundo_apellido", None),
 		])) or cita.candidato
+
+		# Resolver datos de la sede elegida (con fallback al primer match si no fue forzada)
+		sede_resuelta = None
+		for s in (sedes_visibles or []):
+			if sede_elegida and s.get("nombre_sede") == sede_elegida:
+				sede_resuelta = s
+				break
+		if not sede_resuelta and sedes_visibles:
+			sede_resuelta = sedes_visibles[0]
+		if not sede_resuelta:
+			# Sin sedes visibles: armar una sintética con datos de la IPS
+			sede_resuelta = {
+				"nombre_sede": "Sede principal",
+				"direccion": getattr(ips_doc, "direccion", "") if ips_doc else "",
+				"telefono": getattr(ips_doc, "telefono", "") if ips_doc else "",
+				"email": getattr(ips_doc, "email_notificacion", "") if ips_doc else "",
+				"requiere_orden_servicio": int(getattr(ips_doc, "requiere_orden_servicio", 0) or 0) if ips_doc else 0,
+			}
+
+		ips_nombre = getattr(ips_doc, "nombre", ips_name) if ips_doc else ips_name
 
 		# Email 1: confirmación al candidato
 		candidato_email = getattr(candidato, "email", None) or ""
@@ -192,8 +282,10 @@ def book_slot(token: str, fecha: str, hora: str) -> dict:
 						"candidato": {"nombre": candidato_nombre},
 						"cita": {"fecha_cita": fecha, "hora_cita": hora},
 						"ips": {
-							"nombre": ips_doc.nombre or ips_name,
-							"direccion": ips_doc.direccion or "",
+							"nombre": ips_nombre,
+							"direccion": sede_resuelta.get("direccion", ""),
+							"telefono": sede_resuelta.get("telefono", ""),
+							"sede": sede_resuelta.get("nombre_sede", ""),
 						},
 						"portal_url": portal_url,
 					},
@@ -202,58 +294,60 @@ def book_slot(token: str, fecha: str, hora: str) -> dict:
 			except Exception:
 				pass
 
-		# Email 2: notificación a la IPS
-		if ips_doc:
+		# Email 2: notificación a la sede de la IPS
+		sede_email = sede_resuelta.get("email") or ""
+		if sede_email and ips_doc:
 			candidato_ciudad = getattr(candidato, "ciudad", None) or ""
-			ips_email = get_ips_email(ips_doc.as_dict(), candidato_ciudad)
-			if ips_email:
-				cargo_cita = cita.cargo_al_enviar or ""
-				examenes = [
-					{"nombre_examen": row.nombre_examen}
-					for row in (ips_doc.examenes_estandar or [])
-					if (row.cargo or "") == cargo_cita
-				]
-				attachments = []
-				if getattr(ips_doc, "requiere_orden_servicio", 0):
-					try:
-						# Adapt Candidato fields to the generator contract.
-						# Candidato has `nombres`/`primer_apellido`/`segundo_apellido` and
-						# `numero_documento`; the generator expects `nombre` and `cedula`.
-						candidato_for_frsn = {
-							"nombre": candidato_nombre,
-							"cedula": getattr(candidato, "numero_documento", None) or cita.candidato,
-							"cargo": cargo_cita,
-							"ciudad": candidato_ciudad,
-						}
-						xlsx_bytes = generate_frsn02(ips_doc.as_dict(), candidato_for_frsn)
-						if xlsx_bytes:
-							attachments = [{
-								"fname": f"FRSN-02_{candidato.name}.xlsx",
-								"fcontent": xlsx_bytes,
-							}]
-					except Exception:
-						pass
+			cargo_cita = cita.cargo_al_enviar or ""
+			examenes = [
+				{"nombre_examen": row.nombre_examen}
+				for row in (ips_doc.examenes_estandar or [])
+				if (row.cargo or "") == cargo_cita
+			]
+			attachments = []
+			if int(sede_resuelta.get("requiere_orden_servicio", 0) or 0):
 				try:
-					send_exam_email(
-						template_name="examen_medico_ips_notificacion",
-						recipients=[ips_email],
-						context={
-							"candidato": {
-								"nombre": candidato_nombre,
-								"cedula": cita.candidato,
-								"cargo": cargo_cita,
-								"ciudad": candidato_ciudad,
-							},
-							"cita": {"fecha_cita": fecha, "hora_cita": hora},
-							"examenes": examenes,
-						},
-						attachments=attachments,
-					)
-					frappe.db.set_value("Cita Examen Medico", cita_name, "enviado_ips", 1)
+					# Adapt Candidato fields to the generator contract.
+					candidato_for_frsn = {
+						"nombre": candidato_nombre,
+						"cedula": getattr(candidato, "numero_documento", None) or cita.candidato,
+						"cargo": cargo_cita,
+						"ciudad": candidato_ciudad,
+					}
+					xlsx_bytes = generate_frsn02(ips_doc.as_dict(), candidato_for_frsn)
+					if xlsx_bytes:
+						attachments = [{
+							"fname": f"FRSN-02_{candidato.name}.xlsx",
+							"fcontent": xlsx_bytes,
+						}]
 				except Exception:
 					pass
+			try:
+				send_exam_email(
+					template_name="examen_medico_ips_notificacion",
+					recipients=[sede_email],
+					context={
+						"candidato": {
+							"nombre": candidato_nombre,
+							"cedula": cita.candidato,
+							"cargo": cargo_cita,
+							"ciudad": candidato_ciudad,
+						},
+						"cita": {
+							"fecha_cita": fecha,
+							"hora_cita": hora,
+							"sede": sede_resuelta.get("nombre_sede", ""),
+							"sede_direccion": sede_resuelta.get("direccion", ""),
+						},
+						"examenes": examenes,
+					},
+					attachments=attachments,
+				)
+				frappe.db.set_value("Cita Examen Medico", cita_name, "enviado_ips", 1)
+			except Exception:
+				pass
 		frappe.db.commit()
 	except Exception:
 		pass
 
-	return {"status": "ok", "cita_name": cita_name, "fecha": fecha, "hora": hora}
+	return {"status": "ok", "cita_name": cita_name, "fecha": fecha, "hora": hora, "sede": sede_elegida}

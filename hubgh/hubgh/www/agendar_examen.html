@@ -56,13 +56,46 @@
   {% if ips %}
   <div style="background:#f8f9fa;border-radius:6px;padding:1rem;margin-bottom:1.5rem;font-size:.95rem;">
     <strong>IPS:</strong> {{ ips.nombre or "—" }}<br>
+    {% if sedes and sedes|length == 1 %}
+    {% set sede0 = sedes[0] %}
+    <strong>Sede:</strong> {{ sede0.nombre_sede or "—" }}<br>
+    <strong>Dirección:</strong> {{ sede0.direccion or "—" }}<br>
+    {% if sede0.telefono %}
+    <strong>Teléfono:</strong> {{ sede0.telefono }}<br>
+    {% endif %}
+    {% elif not sedes or sedes|length == 0 %}
     <strong>Dirección:</strong> {{ ips.direccion or "—" }}<br>
     {% if ips.telefono %}
     <strong>Teléfono:</strong> {{ ips.telefono }}<br>
     {% endif %}
+    {% endif %}
     {% if ips.contacto_responsable %}
     <strong>Contacto:</strong> {{ ips.contacto_responsable }}
     {% endif %}
+  </div>
+  {% endif %}
+
+  {% if fecha_limite %}
+  <div style="background:#fff3cd;border:1px solid #ffe58f;border-radius:6px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.9rem;color:#664d03;">
+    ⏰ <strong>Tenés tiempo hasta el {{ fecha_limite }}</strong> para elegir tu cita.
+  </div>
+  {% endif %}
+
+  {% if sedes and sedes|length > 1 %}
+  <div style="background:#eef5ff;border:1px solid #b6d4fe;border-radius:8px;padding:1rem;margin-bottom:1.5rem;">
+    <p style="margin:0 0 .75rem;font-weight:600;color:#1d4ed8;">📍 Elegí la sede más cercana:</p>
+    <div style="display:flex;flex-direction:column;gap:.5rem;">
+      {% for sede in sedes %}
+      <label class="sede-label" style="cursor:pointer;display:flex;align-items:flex-start;gap:.5rem;padding:.6rem .8rem;border:1px solid #cfe2ff;border-radius:6px;background:#fff;">
+        <input type="radio" name="sede_seleccionada" value="{{ sede.nombre_sede }}" data-direccion="{{ sede.direccion }}" {% if loop.first %}checked{% endif %}>
+        <div>
+          <strong>{{ sede.nombre_sede }}</strong><br>
+          <span style="font-size:.9rem;color:#444;">{{ sede.direccion }}</span>
+          {% if sede.telefono %}<br><small style="color:#666;">Tel: {{ sede.telefono }}</small>{% endif %}
+        </div>
+      </label>
+      {% endfor %}
+    </div>
   </div>
   {% endif %}
 
@@ -208,9 +241,14 @@
       btnAgendar.disabled = true;
       btnAgendar.textContent = "Agendando…";
 
+      // Sede: si hay selector, tomar el seleccionado; si no, dejar vacío
+      var sedeRadio = document.querySelector('input[name="sede_seleccionada"]:checked');
+      var sede = sedeRadio ? sedeRadio.value : "";
+
       var body = "token=" + encodeURIComponent(token) +
                  "&fecha=" + encodeURIComponent(fecha) +
-                 "&hora=" + encodeURIComponent(hora);
+                 "&hora=" + encodeURIComponent(hora) +
+                 (sede ? "&sede=" + encodeURIComponent(sede) : "");
 
       var csrfToken = (typeof frappe !== "undefined" && frappe.csrf_token) || "";
       fetch("/api/method/hubgh.www.agendar_examen.book_slot", {

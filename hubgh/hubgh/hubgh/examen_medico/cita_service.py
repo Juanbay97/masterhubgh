@@ -42,29 +42,108 @@ def _candidato_full_name(candidato, fallback: str = "") -> str:
 def _resolve_active_ips_for_ciudad(candidato_ciudad: str) -> str | None:
 	"""Find an active IPS for the candidate's ciudad, tolerating accents and case.
 
+	Two lookup paths:
+	  1. The IPS has a `sedes` child table — match if any active sede in that
+	     IPS lives in the candidate's ciudad.
+	  2. Legacy: the IPS itself has `ciudad` set (one IPS = one city).
+
 	Candidato.ciudad is currently a plain Select (no accents) while the Ciudad
-	doctype/fixture stores accented names (Bogotá, Medellín). A direct equality
-	lookup misses on tilde-only differences. Normalize and compare.
+	doctype/fixture stores accented names (Bogotá, Medellín). Both sides are
+	normalized before comparison.
 	"""
 	import frappe
 
 	if not candidato_ciudad:
 		return None
-	# Fast path: exact match
+	target = _normalize_city_key(candidato_ciudad)
+
+	# Path 1: scan IPS Sede rows — return the parent IPS if any active sede
+	# lives in the target ciudad.
+	sede_rows = frappe.get_all(
+		"IPS Sede",
+		filters={"activa": 1},
+		fields=["parent", "ciudad"],
+	)
+	matching_parents = []
+	for row in sede_rows:
+		if _normalize_city_key(row.ciudad) == target:
+			matching_parents.append(row.parent)
+	for parent in matching_parents:
+		if frappe.db.get_value("IPS", parent, "activa"):
+			return parent
+
+	# Path 2 (legacy): IPS.ciudad direct match.
 	exact = frappe.db.get_value("IPS", {"ciudad": candidato_ciudad, "activa": 1}, "name")
 	if exact:
 		return exact
-	# Tolerant fallback: normalize on both sides
-	target = _normalize_city_key(candidato_ciudad)
 	for row in frappe.get_all("IPS", filters={"activa": 1}, fields=["name", "ciudad"]):
 		if _normalize_city_key(row.ciudad) == target:
 			return row.name
 	return None
 
 
+def _get_sedes_for_ciudad(ips_doc, candidato_ciudad: str) -> list[dict]:
+	"""Return active sedes of `ips_doc` whose ciudad matches `candidato_ciudad`
+	(accent/case-tolerant). Each entry is a dict with the sede fields plus the
+	resolved `email` and `requiere_orden_servicio` (with IPS-level fallbacks).
+
+	If the IPS has no sedes child rows at all, returns a single synthetic
+	entry built from the legacy IPS-level fields so existing single-sede IPS
+	keep working.
+	"""
+	target = _normalize_city_key(candidato_ciudad)
+	sedes_raw = ips_doc.get("sedes") or []
+
+	def _row_get(row, key, default=None):
+		return row.get(key, default) if isinstance(row, dict) else getattr(row, key, default)
+
+	ips_email = ips_doc.get("email_notificacion") if isinstance(ips_doc, dict) else getattr(ips_doc, "email_notificacion", None)
+	ips_requiere = (
+		ips_doc.get("requiere_orden_servicio")
+		if isinstance(ips_doc, dict)
+		else getattr(ips_doc, "requiere_orden_servicio", 0)
+	)
+	ips_direccion = ips_doc.get("direccion") if isinstance(ips_doc, dict) else getattr(ips_doc, "direccion", "")
+	ips_telefono = ips_doc.get("telefono") if isinstance(ips_doc, dict) else getattr(ips_doc, "telefono", "")
+	ips_ciudad = ips_doc.get("ciudad") if isinstance(ips_doc, dict) else getattr(ips_doc, "ciudad", "")
+
+	if not sedes_raw:
+		# Legacy: no sedes table. Treat the IPS as a single sede.
+		return [
+			{
+				"nombre_sede": "Sede principal",
+				"ciudad": ips_ciudad or "",
+				"direccion": ips_direccion or "",
+				"telefono": ips_telefono or "",
+				"email": ips_email or "",
+				"requiere_orden_servicio": int(ips_requiere or 0),
+			}
+		]
+
+	out = []
+	for row in sedes_raw:
+		if not int(_row_get(row, "activa", 0) or 0):
+			continue
+		sede_ciudad = _row_get(row, "ciudad", "") or ""
+		if _normalize_city_key(sede_ciudad) != target:
+			continue
+		out.append(
+			{
+				"nombre_sede": _row_get(row, "nombre_sede", "") or "",
+				"ciudad": sede_ciudad,
+				"direccion": _row_get(row, "direccion", "") or "",
+				"telefono": _row_get(row, "telefono", "") or "",
+				"email": (_row_get(row, "email_notificacion", "") or ips_email or ""),
+				"requiere_orden_servicio": int(_row_get(row, "requiere_orden_servicio", 0) or 0),
+			}
+		)
+	return out
+
+
 def create_cita_and_send_link(
 	candidato_name: str,
 	cargo: str | None = None,
+	fecha_limite: str | None = None,
 ) -> str:
 	"""
 	Crea una Cita Examen Medico y envía el link de agendamiento al candidato.
@@ -76,6 +155,9 @@ def create_cita_and_send_link(
 		candidato_name: Nombre del documento Candidato.
 		cargo: Cargo para capturar en cargo_al_enviar. Si no se pasa,
 		       usa candidato.cargo_postulado.
+		fecha_limite: Fecha tope (YYYY-MM-DD) para que el candidato agende.
+		              Si se pasa, se persiste en la cita y el portal filtra
+		              los slots para no ofrecer fechas posteriores.
 
 	Returns:
 		Nombre del documento Cita Examen Medico creado.
@@ -108,6 +190,8 @@ def create_cita_and_send_link(
 	cita.ips = ips_name
 	cita.estado = "Pendiente Agendamiento"
 	cita.cargo_al_enviar = cargo_al_enviar
+	if fecha_limite:
+		cita.fecha_limite_agendamiento = fecha_limite
 	# Use insert() without kwargs — tests may mock insert as a simple callable
 	try:
 		cita.insert(ignore_permissions=True)

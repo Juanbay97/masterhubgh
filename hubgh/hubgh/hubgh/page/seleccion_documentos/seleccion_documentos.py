@@ -425,7 +425,7 @@ def send_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso
 
 
 @frappe.whitelist()
-def send_to_medical_exam(candidate, cargo=None, modo="manual"):
+def send_to_medical_exam(candidate, cargo=None, modo="manual", fecha_limite=None):
 	_validate_selection_access(candidate)
 	if not _can_manage_candidates():
 		frappe.throw("No autorizado")
@@ -453,8 +453,10 @@ def send_to_medical_exam(candidate, cargo=None, modo="manual"):
 				"El agendamiento autogestionado está deshabilitado en este entorno. "
 				"Active 'hubgh_agendamiento_autogestionado_enabled' o use modo manual."
 			)
+		# fecha_limite blanks come through the wire as "" — normalize to None
+		fecha_lim = (str(fecha_limite).strip() if fecha_limite else "") or None
 		from hubgh.hubgh.examen_medico.cita_service import create_cita_and_send_link
-		create_cita_and_send_link(candidate, cand_cargo)
+		create_cita_and_send_link(candidate, cand_cargo, fecha_limite=fecha_lim)
 	return {"ok": True, "status": STATE_EXAMEN_MEDICO, "modo": modo}
 
 

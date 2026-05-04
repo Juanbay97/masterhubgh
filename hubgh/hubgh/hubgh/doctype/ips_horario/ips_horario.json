@@ -43,7 +43,7 @@
    "reqd": 1
   },
   {
-   "default": "3",
+   "default": "50",
    "fieldname": "cupos_por_slot",
    "fieldtype": "Int",
    "in_list_view": 1,

@@ -71,6 +71,8 @@ def validate_token(token: str) -> dict:
 			"fecha_cita",
 			"hora_cita",
 			"cargo_al_enviar",
+			"fecha_limite_agendamiento",
+			"sede_seleccionada",
 		],
 		as_dict=True,
 	)

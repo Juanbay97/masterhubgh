@@ -420,6 +420,9 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 					const modoDescription = autoEnabled
 						? "Manual: cambia el estado y queda en mano de SST. Autogestionado: dispara cita + email tokenizado al candidato."
 						: "Solo manual disponible (autogestionado deshabilitado en este entorno).";
+					// Default fecha límite: hoy + 7 días. El usuario lo puede ajustar (ej. "solo mañana y pasado").
+					const today = frappe.datetime.now_date();
+					const defaultLimite = frappe.datetime.add_days(today, 7);
 					const d = new frappe.ui.Dialog({
 						title: "Enviar a examen médico",
 						fields: [
@@ -432,14 +435,23 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 								reqd: 1,
 								description: modoDescription,
 							},
+							{
+								fieldname: "fecha_limite",
+								label: "Fecha límite para agendar",
+								fieldtype: "Date",
+								default: defaultLimite,
+								depends_on: "eval:doc.modo=='Autogestionado'",
+								description: "El candidato sólo verá slots hasta esta fecha (incluida). Útil para forzar que agende pronto.",
+							},
 						],
 						primary_action_label: "Enviar",
 						primary_action(values) {
 							const modo = (values.modo || "Manual").toLowerCase();
-							frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.send_to_medical_exam", {
-								candidate,
-								modo,
-							}).then(() => {
+							const args = { candidate, modo };
+							if (modo === "autogestionado" && values.fecha_limite) {
+								args.fecha_limite = values.fecha_limite;
+							}
+							frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.send_to_medical_exam", args).then(() => {
 								const msg = modo === "autogestionado"
 									? "Candidato enviado a examen médico (autogestionado: link enviado)"
 									: "Candidato enviado a examen médico (manual)";

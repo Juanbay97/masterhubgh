@@ -16,6 +16,8 @@
   "activa",
   "requiere_orden_servicio",
   "template_orden_servicio",
+  "section_sedes",
+  "sedes",
   "section_horarios",
   "horarios",
   "section_dias_bloqueados",
@@ -81,6 +83,18 @@
    "fieldtype": "Attach",
    "label": "Template Orden de Servicio (FRSN-02)",
    "mandatory_depends_on": "eval:doc.requiere_orden_servicio==1"
+  },
+  {
+   "fieldname": "section_sedes",
+   "fieldtype": "Section Break",
+   "label": "Sedes"
+  },
+  {
+   "fieldname": "sedes",
+   "fieldtype": "Table",
+   "label": "Sedes",
+   "options": "IPS Sede",
+   "description": "Lista de sedes operativas. Si la lista está vacía, se usa la dirección y email principal de la IPS como sede única."
   },
   {
    "fieldname": "section_horarios",
