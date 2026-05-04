@@ -40,7 +40,7 @@ def _make_ips(cargo="Auxiliar", examenes=None):
 	return {
 		"name": "IPS-TEST",
 		"template_orden_servicio": "/private/files/frsn02.xlsx",
-		"celda_tipo_examen_ingreso": "F14",
+		"celda_tipo_examen_ingreso": "H16",
 		"examenes_estandar": examenes or [
 			{"cargo": cargo, "nombre_examen": "Hemograma", "celda_excel": "E18"},
 			{"cargo": cargo, "nombre_examen": "Glicemia", "celda_excel": "E19"},
@@ -106,20 +106,20 @@ class TestFrsn02Generator(FrappeTestCase):
 		return wb
 
 	def test_fills_candidato_cells_nombre_cedula_cargo_ciudad(self):
-		"""REQ-23: Celdas D13/D14/P13/P14 tienen nombre, cédula, cargo, ciudad del candidato."""
+		"""REQ-23: Celdas E13/E14/N13/M14 tienen nombre, cédula, cargo, ciudad del candidato."""
 		wb = self._generate()
 		ws = wb.active
 
-		self.assertEqual(ws["D13"].value, "Ana Gómez", "D13 debe tener el nombre")
-		self.assertEqual(ws["D14"].value, "12345", "D14 debe tener la cédula")
-		self.assertEqual(ws["P13"].value, "Auxiliar", "P13 debe tener el cargo")
-		self.assertEqual(ws["P14"].value, "Cartagena", "P14 debe tener la ciudad")
+		self.assertEqual(ws["E13"].value, "Ana Gómez", "E13 debe tener el nombre")
+		self.assertEqual(ws["E14"].value, "12345", "E14 debe tener la cédula")
+		self.assertEqual(ws["N13"].value, "Auxiliar", "N13 debe tener el cargo")
+		self.assertEqual(ws["M14"].value, "Cartagena", "M14 debe tener la ciudad")
 
 	def test_marks_x_in_tipo_examen_ingreso_cell(self):
-		"""REQ-23: Celda de tipo_examen_ingreso (F14 por defecto) marcada con 'X'."""
+		"""REQ-23: Celda de tipo_examen_ingreso (H16 por defecto) marcada con 'X'."""
 		wb = self._generate()
 		ws = wb.active
-		self.assertEqual(ws["F14"].value, "X", "F14 debe tener 'X' para tipo_examen_ingreso")
+		self.assertEqual(ws["H16"].value, "X", "H16 debe tener 'X' para tipo_examen_ingreso")
 
 	def test_marks_x_per_examen_estandar_por_cargo_row(self):
 		"""REQ-23: Para cada examen del cargo, la celda_excel correspondiente recibe 'X'."""

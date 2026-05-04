@@ -19,25 +19,27 @@ Mapa de celdas canónico (FRSN-02 v01):
 
 from __future__ import annotations
 
-# Default cell map for FRSN-02 template (Zonamedica FRSN-02 v01)
+# Default cell map for FRSN-02 template (Zonamedica FRSN-02 v01).
+# Coordinates verified against the real template at
+# `Correos SST/FRSN-02-ORDEN DE SERVICIO DE EXAMENES MEDICOS OCUPACIONALES - laura 1 (27).xlsx`.
 # Admin can override via IPS fields in future versions.
 DEFAULT_CELL_MAP = {
-	"fecha_solicitud": "D12",
-	"nombre": "D13",
-	"cedula": "D14",
-	"cargo": "P13",
-	"ciudad": "P14",
-	"tipo_ingreso": "H16",
+	"fecha_solicitud": "D10",
+	"nombre": "E13",
+	"cedula": "E14",
+	"cargo": "N13",
+	"ciudad": "M14",
 }
 
-# Default cell for tipo_examen_ingreso mark
-DEFAULT_TIPO_EXAMEN_INGRESO_CELL = "F14"
+# Default cell for the "Ingreso" tipo de examen mark (column H of row 16,
+# next to the "Ingreso" label at G16).
+DEFAULT_TIPO_EXAMEN_INGRESO_CELL = "H16"
 
 
 def generate_frsn02(
 	ips: dict,
 	candidato: dict,
-	fecha_examen: str,
+	fecha_examen: str | None = None,
 ) -> bytes:
 	"""
 	Abre el template xlsx de la IPS, llena celdas del candidato y retorna bytes.
@@ -45,7 +47,8 @@ def generate_frsn02(
 	Args:
 		ips: Documento IPS como dict con template_orden_servicio y examenes_estandar.
 		candidato: Dict con {nombre, cedula, cargo, ciudad}.
-		fecha_examen: Fecha del examen en formato "YYYY-MM-DD".
+		fecha_examen: (Opcional, no usado actualmente) fecha del examen "YYYY-MM-DD".
+		              Se mantiene por compatibilidad con el contrato original.
 
 	Returns:
 		Bytes del archivo xlsx generado (para adjuntar en email).

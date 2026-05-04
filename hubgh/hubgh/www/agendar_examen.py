@@ -216,7 +216,16 @@ def book_slot(token: str, fecha: str, hora: str) -> dict:
 				attachments = []
 				if getattr(ips_doc, "requiere_orden_servicio", 0):
 					try:
-						xlsx_bytes = generate_frsn02(ips_doc.as_dict(), candidato.as_dict())
+						# Adapt Candidato fields to the generator contract.
+						# Candidato has `nombres`/`primer_apellido`/`segundo_apellido` and
+						# `numero_documento`; the generator expects `nombre` and `cedula`.
+						candidato_for_frsn = {
+							"nombre": candidato_nombre,
+							"cedula": getattr(candidato, "numero_documento", None) or cita.candidato,
+							"cargo": cargo_cita,
+							"ciudad": candidato_ciudad,
+						}
+						xlsx_bytes = generate_frsn02(ips_doc.as_dict(), candidato_for_frsn)
 						if xlsx_bytes:
 							attachments = [{
 								"fname": f"FRSN-02_{candidato.name}.xlsx",
