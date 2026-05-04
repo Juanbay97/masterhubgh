@@ -23,6 +23,22 @@ def _normalize_city_key(value: str) -> str:
 	return "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch))
 
 
+def _candidato_full_name(candidato, fallback: str = "") -> str:
+	"""Resolve a candidate's display name from `nombres`/`primer_apellido`/
+	`segundo_apellido`. Falls back to `apellidos` then to the provided fallback
+	(typically the document name, i.e. the cédula)."""
+	nombres = getattr(candidato, "nombres", None) or ""
+	primer = getattr(candidato, "primer_apellido", None) or ""
+	segundo = getattr(candidato, "segundo_apellido", None) or ""
+	parts = [str(p).strip() for p in (nombres, primer, segundo) if p and str(p).strip()]
+	if parts:
+		return " ".join(parts)
+	apellidos = getattr(candidato, "apellidos", None) or ""
+	if str(apellidos).strip():
+		return f"{nombres} {apellidos}".strip() or fallback
+	return fallback
+
+
 def _resolve_active_ips_for_ciudad(candidato_ciudad: str) -> str | None:
 	"""Find an active IPS for the candidate's ciudad, tolerating accents and case.
 
@@ -106,7 +122,7 @@ def create_cita_and_send_link(
 		site_url = frappe.utils.get_url()
 	except Exception:
 		site_url = ""
-	portal_url = f"{site_url}/agendar-examen?token={token}"
+	portal_url = f"{site_url}/agendar_examen?token={token}"
 
 	# Send link email (best-effort — do not fail the whole operation on email error)
 	candidato_email = getattr(candidato, "email", None) or ""
@@ -116,7 +132,7 @@ def create_cita_and_send_link(
 				template_name="examen_medico_link_agendar",
 				recipients=[candidato_email],
 				context={
-					"candidato": {"nombre": getattr(candidato, "nombre", candidato_name)},
+					"candidato": {"nombre": _candidato_full_name(candidato, fallback=candidato_name)},
 					"portal_url": portal_url,
 					"ips": {"nombre": ips_name},
 				},
@@ -245,13 +261,13 @@ def set_exam_outcome(
 				site_url = frappe.utils.get_url()
 			except Exception:
 				site_url = ""
-			portal_url = f"{site_url}/agendar-examen?token={new_token}"
+			portal_url = f"{site_url}/agendar_examen?token={new_token}"
 			candidato_email = getattr(candidato, "email", None) or ""
 			send_exam_email(
 				template_name="examen_medico_aplazado",
 				recipients=[candidato_email] if candidato_email else [""],
 				context={
-					"candidato": {"nombre": getattr(candidato, "nombre", cita.candidato)},
+					"candidato": {"nombre": _candidato_full_name(candidato, fallback=cita.candidato)},
 					"cita": {
 						"motivo_aplazamiento": motivo or "",
 						"instrucciones_reagendamiento": instrucciones or "",
@@ -289,14 +305,14 @@ def set_exam_outcome(
 					site_url = frappe.utils.get_url()
 				except Exception:
 					site_url = ""
-				portal_url = f"{site_url}/agendar-examen?token={new_token}"
+				portal_url = f"{site_url}/agendar_examen?token={new_token}"
 				candidato_email = getattr(candidato, "email", None) or ""
 				if candidato_email:
 					send_exam_email(
 						template_name="examen_medico_link_agendar",
 						recipients=[candidato_email],
 						context={
-							"candidato": {"nombre": getattr(candidato, "nombre", cita.candidato)},
+							"candidato": {"nombre": _candidato_full_name(candidato, fallback=cita.candidato)},
 							"portal_url": portal_url,
 							"ips": {"nombre": getattr(cita, "ips", "") or ""},
 						},
