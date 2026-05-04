@@ -168,6 +168,8 @@ class TestPeopleOpsBackbone(FrappeTestCase):
 		def fake_exists(doctype, filters=None):
 			if doctype == "DocType":
 				return True
+			if doctype == "Ficha Empleado":
+				return filters
 			if doctype == "People Ops Event" and isinstance(filters, dict):
 				return "POE-00001" if inserted_docs else None
 			return None
@@ -218,7 +220,10 @@ class TestPeopleOpsBackbone(FrappeTestCase):
 			captured.update(payload)
 			return _FakeInsertableDoc(name="POE-900")
 
-		with patch("hubgh.hubgh.people_ops_event_publishers.frappe.db.exists", side_effect=lambda doctype, filters=None: doctype == "DocType"), patch(
+		with patch(
+			"hubgh.hubgh.people_ops_event_publishers.frappe.db.exists",
+			side_effect=lambda doctype, filters=None: doctype in ("DocType", "Ficha Empleado"),
+		), patch(
 			"hubgh.hubgh.people_ops_event_publishers.resolve_backbone_mode",
 			return_value="warn",
 		), patch(
@@ -245,7 +250,10 @@ class TestPeopleOpsBackbone(FrappeTestCase):
 		self.assertEqual(captured["sensitivity"], "clinical")
 
 	def test_people_ops_event_enforce_rejects_unsupported_area(self):
-		with patch("hubgh.hubgh.people_ops_event_publishers.resolve_backbone_mode", return_value="enforce"):
+		with patch("hubgh.hubgh.people_ops_event_publishers.resolve_backbone_mode", return_value="enforce"), patch(
+			"hubgh.hubgh.people_ops_event_publishers.frappe.db.exists",
+			side_effect=lambda doctype, filters=None: doctype == "Ficha Empleado",
+		):
 			res = people_ops_event_publishers.publish_people_ops_event(
 				{
 					"persona": "EMP-001",
@@ -257,6 +265,35 @@ class TestPeopleOpsBackbone(FrappeTestCase):
 			)
 
 		self.assertIsNone(res)
+
+	def test_people_ops_event_skipped_when_persona_missing_ficha_empleado(self):
+		warnings = []
+
+		def fake_warning(event, extra=None):
+			warnings.append((event, extra))
+
+		with patch(
+			"hubgh.hubgh.people_ops_event_publishers.frappe.db.exists",
+			side_effect=lambda doctype, filters=None: doctype == "DocType",
+		), patch(
+			"hubgh.hubgh.people_ops_event_publishers.frappe.logger"
+		) as logger_mock:
+			logger_mock.return_value.warning = fake_warning
+			res = people_ops_event_publishers.publish_people_ops_event(
+				{
+					"persona": "9770865232",
+					"area": "rrll",
+					"taxonomy": "rrll.ingreso_formalizado",
+					"source_doctype": "GH Novedad",
+					"source_name": "NOV-orphan",
+				}
+			)
+
+		self.assertIsNone(res)
+		self.assertEqual(len(warnings), 1)
+		event, extra = warnings[0]
+		self.assertEqual(event, "people_ops_event_skipped_missing_persona")
+		self.assertEqual(extra["persona"], "9770865232")
 
 	def test_people_ops_policy_warn_mode_audits_without_blocking(self):
 		with patch("hubgh.hubgh.people_ops_policy.frappe.get_site_config", return_value={"hubgh_people_ops_policy_mode": "warn"}), patch(

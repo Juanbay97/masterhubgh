@@ -57,6 +57,8 @@
    "estado_proceso",
    "concepto_medico",
    "fecha_envio_examen_medico",
+   "modo_agendamiento_examen",
+   "cargo",
    "motivo_rechazo",
    "fecha_tentativa_ingreso",
    "user",
@@ -359,6 +361,20 @@
    "fieldname": "fecha_envio_examen_medico",
    "fieldtype": "Date",
    "label": "Fecha Envío Examen Médico",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "modo_agendamiento_examen",
+   "fieldtype": "Select",
+   "label": "Modo Agendamiento Examen",
+   "options": "\nManual\nAutogestionado",
+   "permlevel": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "cargo",
+   "fieldtype": "Data",
+   "label": "Cargo",
    "permlevel": 1
   },
   {

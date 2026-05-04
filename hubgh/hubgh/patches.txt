@@ -24,3 +24,4 @@ hubgh.patches.sync_seleccion_workspace
 hubgh.patches.backfill_canonical_person_identity_by_document
 hubgh.patches.permissions_batch1_role_alignment
 hubgh.patches.retire_legacy_caso_sst_entrypoints
+hubgh.patches.backfill_candidato_cargo

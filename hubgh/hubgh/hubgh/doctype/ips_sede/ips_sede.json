@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "creation": "2026-05-04 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "nombre_sede",
+  "ciudad",
+  "direccion",
+  "telefono",
+  "email_notificacion",
+  "requiere_orden_servicio",
+  "activa"
+ ],
+ "fields": [
+  {
+   "fieldname": "nombre_sede",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre de la Sede",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ciudad",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Ciudad",
+   "options": "Ciudad",
+   "reqd": 1
+  },
+  {
+   "fieldname": "direccion",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Dirección",
+   "reqd": 1
+  },
+  {
+   "fieldname": "telefono",
+   "fieldtype": "Data",
+   "label": "Teléfono"
+  },
+  {
+   "fieldname": "email_notificacion",
+   "fieldtype": "Data",
+   "label": "Email de Notificación (override)",
+   "options": "Email",
+   "description": "Si se completa, sobrescribe el email_notificacion de la IPS para citas en esta sede."
+  },
+  {
+   "default": "0",
+   "fieldname": "requiere_orden_servicio",
+   "fieldtype": "Check",
+   "label": "Requiere Orden de Servicio (FRSN-02)",
+   "description": "Si está activo, el correo a esta sede incluye el FRSN-02 xlsx adjunto."
+  },
+  {
+   "default": "1",
+   "fieldname": "activa",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Activa"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-04 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "IPS Sede",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

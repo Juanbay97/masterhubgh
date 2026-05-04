@@ -411,10 +411,61 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 
 		$root.find(".action-medical").off("click").on("click", function() {
 			const candidate = $(this).data("c");
-			frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.send_to_medical_exam", { candidate }).then(() => {
-				frappe.show_alert({ indicator: "blue", message: "Candidato enviado a examen médico" });
-				loadBoard();
-			});
+			frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.get_agendamiento_autogestionado_enabled")
+				.then(flag => {
+					const autoEnabled = !!(flag && flag.message);
+					const modoOptions = autoEnabled
+						? "Manual\nAutogestionado"
+						: "Manual";
+					const modoDescription = autoEnabled
+						? "Manual: cambia el estado y queda en mano de SST. Autogestionado: dispara cita + email tokenizado al candidato."
+						: "Solo manual disponible (autogestionado deshabilitado en este entorno).";
+					// Default fecha límite: hoy + 7 días. El usuario lo puede ajustar (ej. "solo mañana y pasado").
+					const today = frappe.datetime.now_date();
+					const defaultLimite = frappe.datetime.add_days(today, 7);
+					const d = new frappe.ui.Dialog({
+						title: "Enviar a examen médico",
+						fields: [
+							{
+								fieldname: "modo",
+								label: "Modo de agendamiento",
+								fieldtype: "Select",
+								options: modoOptions,
+								default: "Manual",
+								reqd: 1,
+								description: modoDescription,
+							},
+							{
+								fieldname: "fecha_limite",
+								label: "Fecha límite para agendar",
+								fieldtype: "Date",
+								default: defaultLimite,
+								depends_on: "eval:doc.modo=='Autogestionado'",
+								description: "El candidato sólo verá slots hasta esta fecha (incluida). Útil para forzar que agende pronto.",
+							},
+						],
+						primary_action_label: "Enviar",
+						primary_action(values) {
+							const modo = (values.modo || "Manual").toLowerCase();
+							const args = { candidate, modo };
+							if (modo === "autogestionado" && values.fecha_limite) {
+								args.fecha_limite = values.fecha_limite;
+							}
+							frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.send_to_medical_exam", args).then(() => {
+								const msg = modo === "autogestionado"
+									? "Candidato enviado a examen médico (autogestionado: link enviado)"
+									: "Candidato enviado a examen médico (manual)";
+								frappe.show_alert({ indicator: "blue", message: msg });
+								d.hide();
+								loadBoard();
+							}).catch(err => {
+								const msg = (err && (err.message || err.exc || err._server_messages)) || "No fue posible enviar a examen médico.";
+								frappe.msgprint(msg);
+							});
+						},
+					});
+					d.show();
+				});
 		});
 
 		$root.find(".action-reject").off("click").on("click", function() {

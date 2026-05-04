@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_days, add_months, cstr, getdate, nowdate
 
@@ -514,6 +515,30 @@ def _build_rrll_handoff_description(novedad_doc, motivo=None):
 	return f"Escalamiento RRLL desde Novedad SST {novedad_doc.name}. {base}"
 
 
+def _validate_rrll_escalation_rules(novedad_doc):
+	"""Throws frappe.ValidationError if novedad does not meet RRLL escalation criteria.
+
+	Both conditions must hold simultaneously:
+	  - origen_incapacidad == "Accidente laboral"
+	  - causa_evento == "Acto inseguro"
+	This helper runs AFTER the role check, BEFORE any GH Novedad creation.
+	"""
+	if getattr(novedad_doc, "origen_incapacidad", None) != "Accidente laboral":
+		frappe.throw(
+			_(
+				"Solo se puede escalar a RRLL cuando el origen de la incapacidad es 'Accidente laboral'. "
+				"El caso actual tiene origen: {0}."
+			).format(novedad_doc.get("origen_incapacidad") or "no definido")
+		)
+	if getattr(novedad_doc, "causa_evento", None) != "Acto inseguro":
+		frappe.throw(
+			_(
+				"Solo se puede escalar a RRLL cuando la causa del evento es 'Acto inseguro'. "
+				"El caso actual tiene causa: {0}."
+			).format(novedad_doc.get("causa_evento") or "no definida")
+		)
+
+
 @frappe.whitelist()
 def create_rrll_handoff(novedad_name, motivo=None):
 	if not novedad_name:
@@ -529,6 +554,9 @@ def create_rrll_handoff(novedad_name, motivo=None):
 	allowed_roles = {"System Manager", "Gestión Humana", "HR SST", "SST", "GH - SST", "GH - RRLL"}
 	if not roles.intersection(allowed_roles) and not frappe.has_permission("Novedad SST", "write", novedad):
 		frappe.throw("No tienes permisos para escalar este caso SST a RRLL")
+
+	# Business-rule gate: both origen_incapacidad and causa_evento must qualify
+	_validate_rrll_escalation_rules(novedad)
 
 	if novedad.ref_doctype == "GH Novedad" and novedad.ref_docname:
 		return {"ok": True, "created": False, "gh_novedad": novedad.ref_docname}

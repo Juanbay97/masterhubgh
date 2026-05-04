@@ -131,6 +131,7 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 				</div>
 				<div class='hubgh-actions'>
 					<button class='btn btn-xs btn-primary btn-create' data-c='${esc(r.name)}'>Crear contrato</button>
+					<button class='btn btn-xs btn-link text-danger btn-reject' data-c='${esc(r.name)}'>Rechazar</button>
 					<button class='btn btn-xs btn-link go-siesa'>Reportes SIESA</button>
 				</div>
 			</div>
@@ -153,6 +154,31 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 		$root.find(".btn-clear-filters").off("click").on("click", function() {
 			state.search = "";
 			render();
+		});
+
+		$root.find(".btn-reject").off("click").on("click", function() {
+			const candidate = $(this).data("c");
+			const d = new frappe.ui.Dialog({
+				title: "Rechazar candidato",
+				fields: [
+					{ fieldname: "motivo_rechazo", label: "Motivo (obligatorio)", fieldtype: "Small Text", reqd: 1 },
+				],
+				primary_action_label: "Rechazar",
+				primary_action(values) {
+					frappe.call("hubgh.hubgh.page.bandeja_contratacion.bandeja_contratacion.reject_candidate", {
+						candidate,
+						motivo_rechazo: values.motivo_rechazo,
+					}).then(() => {
+						frappe.show_alert({ indicator: "red", message: "Candidato rechazado" });
+						d.hide();
+						load();
+					}).catch(err => {
+						const msg = (err && (err.message || err.exc || err._server_messages)) || "No fue posible rechazar el candidato.";
+						frappe.msgprint(msg);
+					});
+				},
+			});
+			d.show();
 		});
 
 		$root.find(".btn-create").off("click").on("click", function() {
