@@ -74,11 +74,42 @@ def get_context(context):
 	estado = (cita_data.get("estado") or "").strip()
 
 	if estado == "Agendada":
-		# Mostrar resumen de la cita ya agendada
+		# Mostrar resumen de la cita ya agendada — incluye dirección de la sede
+		# elegida para que el candidato sepa adónde ir sin abrir el correo viejo.
+		ips_name = cita_data.get("ips") or ""
+		ips_doc_dict = {}
+		sede_info = {}
+		try:
+			if ips_name:
+				ips_full = frappe.get_doc("IPS", ips_name)
+				ips_doc_dict = ips_full.as_dict()
+				sede_seleccionada_nombre = (cita_data.get("sede_seleccionada") or "").strip()
+				if sede_seleccionada_nombre:
+					for sede_row in (ips_full.sedes or []):
+						if (sede_row.nombre_sede or "") == sede_seleccionada_nombre:
+							sede_info = {
+								"nombre_sede": sede_row.nombre_sede,
+								"direccion": sede_row.direccion or "",
+								"telefono": sede_row.telefono or "",
+							}
+							break
+				# Fallback: si no hay sede_seleccionada (citas viejas) o no se
+				# encontró, usar la dirección principal de la IPS.
+				if not sede_info:
+					sede_info = {
+						"nombre_sede": "",
+						"direccion": ips_doc_dict.get("direccion", "") or "",
+						"telefono": ips_doc_dict.get("telefono", "") or "",
+					}
+		except Exception:
+			ips_doc_dict = {}
+			sede_info = {}
+
 		_ctx_set(context, "mode", "booked")
 		_ctx_set(context, "cita", dict(cita_data))
 		_ctx_set(context, "slots", None)
-		_ctx_set(context, "ips", None)
+		_ctx_set(context, "ips", ips_doc_dict)
+		_ctx_set(context, "sede_info", sede_info)
 	else:
 		# Generar slots disponibles para los próximos 30 días
 		from datetime import date

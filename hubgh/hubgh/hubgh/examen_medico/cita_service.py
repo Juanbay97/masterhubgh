@@ -346,10 +346,10 @@ def create_cita_and_send_link(
 			ips_doc_for_examenes = frappe.get_doc("IPS", ips_name)
 			examenes = _resolve_examenes_for_cargo(ips_doc_for_examenes, cargo_al_enviar)
 
-			# Para cargos operativos adjuntar las 2 imágenes con instrucciones
-			# (muestra coprológica + KOH). Para administrativos, sin adjuntos.
-			attachments = _operativo_attachments() if tipo_cargo != "Administrativo" else []
-
+			# Las imágenes con instrucciones de muestras (coprológica + KOH)
+			# NO se adjuntan acá — irían recargadas y antes de que el candidato
+			# tenga fecha confirmada. Se mandan solo en el correo de confirmación
+			# post-agendamiento.
 			send_exam_email(
 				template_name=template_name,
 				recipients=[candidato_email],
@@ -359,7 +359,6 @@ def create_cita_and_send_link(
 					"ips": {"nombre": ips_name},
 					"examenes": examenes,
 				},
-				attachments=attachments,
 			)
 		except Exception:
 			pass

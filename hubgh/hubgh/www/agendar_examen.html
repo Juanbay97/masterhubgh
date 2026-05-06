@@ -23,9 +23,21 @@
       <strong>Hora:</strong> {{ cita.hora_cita or "—" }}<br>
       {% if ips %}
       <strong>IPS:</strong> {{ ips.nombre or cita.ips }}<br>
-      <strong>Dirección:</strong> {{ ips.direccion or "—" }}
       {% else %}
-      <strong>IPS:</strong> {{ cita.ips or "—" }}
+      <strong>IPS:</strong> {{ cita.ips or "—" }}<br>
+      {% endif %}
+      {% if sede_info and sede_info.nombre_sede %}
+      <strong>Sede:</strong> {{ sede_info.nombre_sede }}<br>
+      {% endif %}
+      {% if sede_info and sede_info.direccion %}
+      <strong>Dirección:</strong> {{ sede_info.direccion }}<br>
+      {% elif ips and ips.direccion %}
+      <strong>Dirección:</strong> {{ ips.direccion }}<br>
+      {% endif %}
+      {% if sede_info and sede_info.telefono %}
+      <strong>Teléfono:</strong> {{ sede_info.telefono }}
+      {% elif ips and ips.telefono %}
+      <strong>Teléfono:</strong> {{ ips.telefono }}
       {% endif %}
     </p>
     {% endif %}

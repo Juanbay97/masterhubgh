@@ -246,7 +246,7 @@ _EXAMENES_LIST_BLOCK = """
 _LINK_AGENDAR_HEAD = """
 <p>Hola {{ candidato.nombre }},</p>
 <p>Has sido seleccionado para continuar con tu proceso de vinculación. El siguiente paso es agendar tu <strong>examen médico de ingreso</strong>.</p>
-<p>Para agendarlo, por favor ten a mano <strong>tu cédula</strong> y hacé clic en el botón a continuación. Vas a poder elegir el día y la hora que mejor te queden dentro de los horarios disponibles.</p>
+<p>Hacé clic en el botón a continuación para elegir el día y la hora que mejor te queden dentro de los horarios disponibles.</p>
 <p style="text-align:center;margin:24px 0;">
   <a href="{{ portal_url }}" style="background:#1d4ed8;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;">Agendar mi examen médico</a>
 </p>
