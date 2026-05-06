@@ -18,7 +18,9 @@ COMPOSE_PROD = $(DOCKER_COMPOSE) -f docker/docker-compose.prod.yml --env-file .e
 	e2e-install e2e-candidato \
 	dev-up dev-down dev-restart dev-logs dev-shell dev-init-site dev-migrate dev-build dev-ps dev-destroy \
 	prod-up prod-down prod-restart prod-logs prod-shell prod-migrate prod-ps \
-	up-deploy down-deploy restart-deploy logs-deploy shell-deploy migrate-deploy ps-deploy
+	up-deploy down-deploy restart-deploy logs-deploy shell-deploy migrate-deploy ps-deploy \
+	migrate-help migrate-check-origen migrate-check-destino \
+	migrate-backup migrate-backup-cutover migrate-transfer migrate-restore migrate-test
 
 ## Alias legacy: entorno de desarrollo
 up: dev-up
@@ -150,3 +152,121 @@ e2e-install:
 ## Ejecutar E2E de candidato (onboarding + login + upload)
 e2e-candidato:
 	npm run e2e:candidato
+
+# ───────────────────────────────────────────────────────────────────────────────
+# MIGRACION VM -> VM (a prueba de tontos)
+# Orden:
+#   En VM ORIGEN:
+#     1. make migrate-check-origen
+#     2. make migrate-backup                       # backup en caliente, sin downtime
+#     3. make migrate-transfer DEST=user@host:/p   # rsync al destino (idempotente)
+#     ... (cuando estes listo para cutover)
+#     4. make migrate-backup-cutover               # backup final + maintenance mode
+#     5. make migrate-transfer DEST=user@host:/p   # transferir el backup final
+#   En VM DESTINO:
+#     6. make migrate-check-destino
+#     7. make migrate-restore
+#     8. (manual) cambiar DNS al IP de la VM destino
+#
+# Para testear localmente sin tocar prod: make migrate-test
+# ───────────────────────────────────────────────────────────────────────────────
+
+MIGRATION_DIR := docker/migration
+BACKUP_ROOT   ?= ./backups
+DEST          ?=
+
+## Mostrar el orden exacto de la migracion VM -> VM
+migrate-help:
+	@echo ""
+	@echo "  MIGRACION HAPPY NEST  (orden exacto, no te saltes pasos)"
+	@echo "  ========================================================"
+	@echo ""
+	@echo "  EN VM ORIGEN:"
+	@echo "    1. make migrate-check-origen"
+	@echo "    2. make migrate-backup                            # sin downtime"
+	@echo "    3. make migrate-transfer DEST=user@host:/path     # rsync al destino"
+	@echo ""
+	@echo "  >>> CUANDO ESTES LISTO PARA EL CUTOVER (downtime: minutos):"
+	@echo ""
+	@echo "    4. make migrate-backup-cutover                    # activa maintenance"
+	@echo "    5. make migrate-transfer DEST=user@host:/path     # backup final"
+	@echo ""
+	@echo "  EN VM DESTINO:"
+	@echo "    6. make migrate-check-destino"
+	@echo "    7. make migrate-restore"
+	@echo "    8. (manual) cambiar DNS al IP de esta VM"
+	@echo ""
+	@echo "  Variables override:"
+	@echo "    SITE_NAME       (default: $(SITE))"
+	@echo "    BACKUP_ROOT     (default: ./backups)"
+	@echo "    DEST            (requerido en migrate-transfer)"
+	@echo ""
+	@echo "  Test local sin tocar prod:"
+	@echo "    make migrate-test     # corre backup contra stack dev y valida"
+	@echo ""
+
+## Validar pre-requisitos en la VM ORIGEN antes de hacer backup
+migrate-check-origen:
+	@echo "[check-origen] Validando pre-requisitos..."
+	@test -f docker/docker-compose.prod.yml || { echo "  X falta docker/docker-compose.prod.yml"; exit 1; }
+	@test -f .env || { echo "  X falta .env en la raiz"; exit 1; }
+	@command -v rsync >/dev/null 2>&1 || { echo "  X falta rsync (sudo apt install rsync)"; exit 1; }
+	@$(COMPOSE_PROD) ps backend --status running --quiet | grep -q . || { echo "  X servicio backend no esta corriendo (make prod-up)"; exit 1; }
+	@test -x $(MIGRATION_DIR)/backup.sh || chmod +x $(MIGRATION_DIR)/backup.sh
+	@test -x $(MIGRATION_DIR)/transfer.sh || chmod +x $(MIGRATION_DIR)/transfer.sh
+	@echo "  OK origen listo para backup"
+
+## Validar pre-requisitos en la VM DESTINO antes del restore
+migrate-check-destino:
+	@echo "[check-destino] Validando pre-requisitos..."
+	@test -f docker/docker-compose.prod.yml || { echo "  X falta docker/docker-compose.prod.yml"; exit 1; }
+	@test -f .env || { echo "  X falta .env en la raiz (copialo con scp desde origen)"; exit 1; }
+	@grep -q '^MARIADB_ROOT_PASSWORD=' .env || { echo "  X .env no tiene MARIADB_ROOT_PASSWORD"; exit 1; }
+	@grep -q '^PUBLIC_DOMAIN=' .env || { echo "  X .env no tiene PUBLIC_DOMAIN"; exit 1; }
+	@grep -q '^ACME_EMAIL=' .env || { echo "  X .env no tiene ACME_EMAIL"; exit 1; }
+	@test -d restore-staging || { echo "  X falta directorio restore-staging/ (corre migrate-transfer desde origen primero)"; exit 1; }
+	@test -x $(MIGRATION_DIR)/restore.sh || chmod +x $(MIGRATION_DIR)/restore.sh
+	@echo "  OK destino listo para restore"
+
+## Backup en caliente (sin downtime). Genera ./backups/backup-<TS>/
+migrate-backup:
+	@bash $(MIGRATION_DIR)/backup.sh
+
+## Backup final con maintenance mode — solo en cutover
+migrate-backup-cutover:
+	@bash $(MIGRATION_DIR)/backup.sh --maintenance
+
+## Sincronizar el backup mas reciente al destino. Requiere DEST=user@host:/path
+migrate-transfer:
+	@if [ -z "$(DEST)" ]; then \
+		echo "ERROR: falta DEST."; \
+		echo "Ejemplo: make migrate-transfer DEST=ubuntu@10.0.0.5:/opt/hubgh/masterhubgh/restore-staging"; \
+		exit 1; \
+	fi
+	@LATEST=$$(ls -d $(BACKUP_ROOT)/backup-* 2>/dev/null | sort | tail -1); \
+	if [ -z "$$LATEST" ]; then \
+		echo "ERROR: no hay backups en $(BACKUP_ROOT)/. Corre 'make migrate-backup' primero."; \
+		exit 1; \
+	fi; \
+	echo "[transfer] mas reciente: $$LATEST"; \
+	bash $(MIGRATION_DIR)/transfer.sh "$$LATEST" "$(DEST)"
+
+## Restaurar en VM destino. Lee ./restore-staging y levanta el stack.
+migrate-restore:
+	@bash $(MIGRATION_DIR)/restore.sh
+
+## Test local NO destructivo: backup contra stack dev y valida los 4 archivos
+migrate-test:
+	@echo "[test] Validando que el stack dev este corriendo..."
+	@$(COMPOSE_DEV) ps backend --status running --quiet | grep -q . || { \
+		echo "  Levantando stack dev primero..."; \
+		$(COMPOSE_DEV) up -d; \
+		echo "  Esperando 30s a que arranquen los servicios..."; \
+		sleep 30; \
+	}
+	@echo "[test] Corriendo backup contra dev (no toca prod)..."
+	@COMPOSE_FILE=docker/docker-compose.dev.yml \
+	 BACKUP_ROOT=./backups-test \
+	 SITE_NAME=$(SITE) \
+	 bash $(MIGRATION_DIR)/backup.sh
+	@echo "[test] OK backup generado y validado en ./backups-test/"

@@ -1,0 +1,8 @@
+# Forzar LF en scripts y archivos que se ejecutan en Linux
+# (sin esto, bash en Linux falla con: /usr/bin/env bash^M: no such file or directory)
+*.sh        text eol=lf
+Makefile    text eol=lf
+Caddyfile   text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+.env*       text eol=lf
