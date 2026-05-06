@@ -251,10 +251,9 @@
                             <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Ciudad</label>
                             <select id="ciudad" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium focus:bg-white appearance-none cursor-pointer">
                                 <option value="" disabled selected>Selecciona tu ciudad</option>
-                                <option value="Bogota">Bogotá</option>
-                                <option value="Medellin">Medellín</option>
-                                <option value="Cartagena">Cartagena</option>
-                                <option value="Barranquilla">Barranquilla</option>
+                                {% for c in (ciudades or []) %}
+                                <option value="{{ c.name }}">{{ c.nombre or c.name }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div id="localidad-container" class="hidden">
@@ -458,8 +457,14 @@
         });
     }
 
+    function isBogota(value) {
+        // Tolerante a tildes y mayúsculas porque el catálogo Ciudad guarda
+        // 'Bogotá' pero datos legacy de Candidato tienen 'Bogota'.
+        return (value || '').toString().trim().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase() === 'bogota';
+    }
+
     ciudadSelect.addEventListener('change', (e) => {
-        if (e.target.value === 'Bogota') {
+        if (isBogota(e.target.value)) {
             localidadContainer.classList.remove('hidden');
             localidadContainer.classList.add('block');
             fillLocalidades();
@@ -579,7 +584,7 @@
         }
         if (step === 4) {
             document.getElementById('ciudad').value = data.ciudad || '';
-            if (data.ciudad === 'Bogota') {
+            if (isBogota(data.ciudad)) {
                 localidadContainer.classList.remove('hidden');
                 localidadContainer.classList.add('block');
                 fillLocalidades();
@@ -870,7 +875,7 @@
             if (!checkVal('direccion')) { isValid = false; errors.push('direccion'); }
             if (!checkVal('barrio')) { isValid = false; errors.push('barrio'); }
             const ciudad = document.getElementById('ciudad').value;
-            if (ciudad === 'Bogota' && !document.getElementById('localidad').value) {
+            if (isBogota(ciudad) && !document.getElementById('localidad').value) {
                 errorVal(document.getElementById('localidad')); isValid = false;
                 errors.push('localidad');
             }

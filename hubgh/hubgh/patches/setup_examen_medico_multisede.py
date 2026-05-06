@@ -97,16 +97,22 @@ def execute():
 	# 1. Module / Role profiles — recreate if missing.
 	_ensure_profiles(logger)
 
-	# 2. Ciudades referenciadas por sedes.
+	# 2. Ciudades referenciadas por sedes (+ Barranquilla por compatibilidad
+	#    con valores legacy del form público).
 	_ensure_ciudades(logger)
 
-	# 3. Cupos a 50 en horarios existentes.
+	# 3. Migrar valores legacy de Candidato.ciudad a los nombres canónicos
+	#    con tilde (Bogota → Bogotá, Medellin → Medellín, Chia → Chía) ahora
+	#    que el campo pasa de Select a Link → Ciudad.
+	_canonicalize_candidato_ciudad(logger)
+
+	# 4. Cupos a 50 en horarios existentes.
 	_bump_cupos_to_50(logger)
 
-	# 4. Sedes default en Zonamedica MR SAS.
+	# 5. Sedes default en Zonamedica MR SAS.
 	_seed_sedes_zonamedica(logger)
 
-	# 5. Scheduler activo + cola sin pausa.
+	# 6. Scheduler activo + cola sin pausa.
 	_enable_scheduler_and_queue(logger)
 
 	frappe.db.commit()
@@ -123,7 +129,10 @@ def _ensure_profiles(logger):
 
 
 def _ensure_ciudades(logger):
-	for nombre in ("Bogotá", "Chía", "Medellín", "Cartagena"):
+	# Las 4 con sedes seed + Barranquilla porque el form público histórico
+	# la ofrecía como opción. La incluimos para que el migrate de Candidatos
+	# legacy con ciudad="Barranquilla" no quede roto al pasar el campo a Link.
+	for nombre in ("Bogotá", "Chía", "Medellín", "Cartagena", "Barranquilla"):
 		if frappe.db.exists("Ciudad", nombre):
 			continue
 		try:
@@ -137,6 +146,40 @@ def _ensure_ciudades(logger):
 			logger.warning(
 				"examen_medico_multisede:ciudad_skip",
 				extra={"ciudad": nombre},
+				exc_info=True,
+			)
+
+
+def _canonicalize_candidato_ciudad(logger):
+	"""Normaliza Candidato.ciudad a los nombres con tilde del catálogo Ciudad.
+
+	Antes el campo era un Select con valores sin tilde ('Bogota', 'Medellin',
+	'Chia'). Ahora es Link → Ciudad y los registros del catálogo usan tilde.
+	Updateamos en bloque para evitar LinkValidationError post-migrate.
+	"""
+	mapping = {
+		"Bogota": "Bogotá",
+		"Medellin": "Medellín",
+		"Chia": "Chía",
+	}
+	for old, new in mapping.items():
+		try:
+			frappe.db.sql(
+				"""
+				UPDATE `tabCandidato`
+				SET ciudad = %s
+				WHERE ciudad = %s
+				""",
+				(new, old),
+			)
+			logger.info(
+				"examen_medico_multisede:ciudad_renamed",
+				extra={"from": old, "to": new},
+			)
+		except Exception:
+			logger.warning(
+				"examen_medico_multisede:ciudad_rename_skip",
+				extra={"from": old, "to": new},
 				exc_info=True,
 			)
 

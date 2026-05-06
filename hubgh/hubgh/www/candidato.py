@@ -434,6 +434,16 @@ from hubgh.hubgh.onboarding_security import (
 def get_context(context):
 	context.no_cache = 1
 	context.page_title = "Candidato"
+	# Ciudades activas para el dropdown del paso 4. Cargadas desde el catálogo
+	# Ciudad para evitar duplicar la lista en el HTML.
+	try:
+		context.ciudades = frappe.get_all(
+			"Ciudad",
+			fields=["name", "nombre"],
+			order_by="nombre asc",
+		)
+	except Exception:
+		context.ciudades = []
 
 
 @frappe.whitelist(allow_guest=True)
