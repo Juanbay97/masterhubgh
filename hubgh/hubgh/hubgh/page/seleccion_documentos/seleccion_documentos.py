@@ -292,13 +292,19 @@ def list_candidates(search=None):
 			"estado_proceso",
 			"concepto_medico",
 			"fecha_envio_examen_medico",
+			"solo_afiliacion",
 		],
 		order_by="creation desc",
 	)
 	pdv_name_map = _candidate_pdv_name_map(rows)
 	data = []
 	for row in rows:
-		if is_candidate_status(row.estado_proceso, "Rechazado", STATE_AFILIACION, STATE_LISTO_CONTRATAR, "Contratado"):
+		if is_candidate_status(row.estado_proceso, "Rechazado", STATE_LISTO_CONTRATAR, "Contratado"):
+			continue
+		# En afiliación: solo seguir mostrando si fue handoff parcial (solo a afiliación con docs pendientes).
+		# Cuando se envía oficialmente a RRLL (send_candidate_to_labor_relations), solo_afiliacion vuelve a 0
+		# y el candidato sale de la cola de Selección.
+		if is_candidate_status(row.estado_proceso, STATE_AFILIACION) and not (row.solo_afiliacion or 0):
 			continue
 		ensure_candidate_required_documents(row.name)
 		progress = get_candidate_progress(row.name)
@@ -320,6 +326,8 @@ def list_candidates(search=None):
 			"documentos_total": progress["required_total"],
 			"completo": progress["is_complete"],
 			"can_manage": is_manager,
+			"solo_afiliacion": int(row.solo_afiliacion or 0),
+			"fecha_tentativa_ingreso": frappe.db.get_value("Candidato", row.name, "fecha_tentativa_ingreso"),
 		})
 	return data
 
@@ -378,6 +386,9 @@ def candidate_detail(candidate):
 			"pdv_destino_nombre": pdv_destino_nombre,
 			"tipo_cuenta_bancaria": cand.tipo_cuenta_bancaria,
 			"numero_cuenta_bancaria": cand.numero_cuenta_bancaria,
+			"cargo_postulado": getattr(cand, "cargo_postulado", None),
+			"contacto_emergencia_nombre": getattr(cand, "contacto_emergencia_nombre", None),
+			"contacto_emergencia_telefono": getattr(cand, "contacto_emergencia_telefono", None),
 		},
 		"progress": progress,
 		"documents": docs,
@@ -414,14 +425,56 @@ def upload_candidate_document(candidate, document_type, file_url, notes=None):
 
 
 @frappe.whitelist()
-def send_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso=None):
+def send_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso=None, cargo=None):
 	_validate_selection_access(candidate)
 	cand = frappe.get_doc("Candidato", candidate)
 	if (cand.concepto_medico or "") != "Favorable":
 		frappe.throw("No se puede enviar a RRLL: el concepto médico debe ser Favorable.")
 	if not _has_uploaded_document(candidate, "SAGRILAFT"):
 		frappe.throw("No se puede enviar a RRLL: falta documento SAGRILAFT.")
-	return send_candidate_to_labor_relations(candidate, pdv_destino=pdv_destino, fecha_tentativa_ingreso=fecha_tentativa_ingreso)
+	return send_candidate_to_labor_relations(
+		candidate,
+		pdv_destino=pdv_destino,
+		fecha_tentativa_ingreso=fecha_tentativa_ingreso,
+		cargo=cargo,
+	)
+
+
+@frappe.whitelist()
+def send_to_affiliation(candidate, pdv_destino=None, fecha_tentativa_ingreso=None, cargo=None):
+	_validate_selection_access(candidate)
+	cand = frappe.get_doc("Candidato", candidate)
+	if (cand.estado_proceso or "") in ("Rechazado", "Contratado"):
+		frappe.throw("No se puede enviar a afiliación: candidato en estado terminal.")
+
+	updates = {"estado_proceso": STATE_AFILIACION, "solo_afiliacion": 1}
+	if pdv_destino:
+		updates["pdv_destino"] = pdv_destino
+	if fecha_tentativa_ingreso:
+		updates["fecha_tentativa_ingreso"] = fecha_tentativa_ingreso
+	if cargo:
+		updates["cargo_postulado"] = cargo
+	frappe.db.set_value("Candidato", candidate, updates)
+
+	persona = frappe.db.get_value("Candidato", candidate, "persona")
+	if persona and frappe.db.exists("Ficha Empleado", persona):
+		persona_updates = {}
+		if pdv_destino:
+			persona_updates["pdv"] = pdv_destino
+		if fecha_tentativa_ingreso:
+			persona_updates["fecha_ingreso"] = fecha_tentativa_ingreso
+		if cargo:
+			persona_updates["cargo"] = cargo
+		if persona_updates:
+			frappe.db.set_value("Ficha Empleado", persona, persona_updates)
+
+	if not frappe.db.exists("Datos Contratacion", {"candidato": candidate}):
+		frappe.get_doc({
+			"doctype": "Datos Contratacion",
+			"candidato": candidate,
+		}).insert(ignore_permissions=True)
+
+	return {"ok": True, "status": STATE_AFILIACION}
 
 
 @frappe.whitelist()

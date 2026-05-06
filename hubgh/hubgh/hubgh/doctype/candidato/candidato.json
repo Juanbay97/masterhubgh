@@ -55,6 +55,7 @@
    "pdv_destino",
    "cargo_postulado",
    "estado_proceso",
+   "solo_afiliacion",
    "concepto_medico",
    "fecha_envio_examen_medico",
    "modo_agendamiento_examen",
@@ -347,6 +348,14 @@
      "fieldtype": "Select",
      "label": "Estado Proceso",
      "options": "En Proceso\nDocumentación Incompleta\nDocumentación Completa\nEn Examen Médico\nEn Afiliación\nListo para Contratar\nContratado\nRechazado",
+     "permlevel": 1
+    },
+    {
+     "default": "0",
+     "fieldname": "solo_afiliacion",
+     "fieldtype": "Check",
+     "label": "Solo Afiliación (pendiente RRLL)",
+     "description": "Marcado cuando el candidato fue enviado solo a Afiliación con documentación pendiente. Se limpia automáticamente al enviarlo oficialmente a RRLL.",
      "permlevel": 1
     },
   {

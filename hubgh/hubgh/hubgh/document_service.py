@@ -885,7 +885,7 @@ def upload_person_document(person_type, person, document_type, file_url, notes=N
 	return doc
 
 
-def send_candidate_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso=None):
+def send_candidate_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso=None, cargo=None):
 	if not user_has_any_role(frappe.session.user, "HR Selection") and frappe.session.user != "Administrator":
 		frappe.throw(_("No autorizado para enviar candidatos a Relaciones Laborales."))
 
@@ -915,11 +915,13 @@ def send_candidate_to_labor_relations(candidate, pdv_destino=None, fecha_tentati
 			)
 		)
 
-	updates = {"estado_proceso": STATE_AFILIACION}
+	updates = {"estado_proceso": STATE_AFILIACION, "solo_afiliacion": 0}
 	if pdv_destino:
 		updates["pdv_destino"] = pdv_destino
 	if fecha_tentativa_ingreso:
 		updates["fecha_tentativa_ingreso"] = fecha_tentativa_ingreso
+	if cargo:
+		updates["cargo_postulado"] = cargo
 	frappe.db.set_value("Candidato", candidate, updates)
 
 	persona = frappe.db.get_value("Candidato", candidate, "persona")
@@ -929,6 +931,8 @@ def send_candidate_to_labor_relations(candidate, pdv_destino=None, fecha_tentati
 			persona_updates["pdv"] = pdv_destino
 		if fecha_tentativa_ingreso:
 			persona_updates["fecha_ingreso"] = fecha_tentativa_ingreso
+		if cargo:
+			persona_updates["cargo"] = cargo
 		if persona_updates:
 			frappe.db.set_value("Ficha Empleado", persona, persona_updates)
 

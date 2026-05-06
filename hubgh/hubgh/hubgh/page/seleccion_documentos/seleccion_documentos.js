@@ -217,6 +217,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 				const candidateInfoHtml = [
 					["Documento", candidateData.numero_documento],
 					["PDV destino", candidateData.pdv_destino_nombre || candidateData.pdv_destino],
+					["Cargo postulado", candidateData.cargo_postulado],
 					["Ciudad", candidateData.ciudad],
 					["Localidad", candidateData.localidad],
 					["Dirección", candidateData.direccion],
@@ -227,6 +228,8 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 					["Banco", candidateData.banco_siesa],
 					["Tipo cuenta", candidateData.tipo_cuenta_bancaria],
 					["Nro. cuenta", candidateData.numero_cuenta_bancaria],
+					["Contacto emergencia (nombre)", candidateData.contacto_emergencia_nombre],
+					["Contacto emergencia (teléfono)", candidateData.contacto_emergencia_telefono],
 				].map(([label, value]) => `
 					<div class='sel-docs-summary-card'>
 						<div class='sel-docs-summary-label'>${esc(label)}</div>
@@ -300,6 +303,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 	});
 
 	const renderCards = rows => {
+		const TERMINAL_OR_AFFILIATED = new Set(["En afiliación", "Listo para Contratar", "Rechazado", "Contratado"]);
 		const cards = (rows || []).map(row => {
 			const porcentaje = Number(row.avance_porcentaje || 0);
 			const progressTone = row.completo ? "green" : (porcentaje >= 100 ? "green" : (porcentaje >= 50 ? "blue" : "orange"));
@@ -307,6 +311,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 			const manageEnabled = !!row.can_manage;
 			const primary = getPrimaryAction(row);
 			const pdvLabel = row.pdv_destino_nombre || row.pdv_destino || "";
+			const canSendToAffiliation = manageEnabled && !TERMINAL_OR_AFFILIATED.has(row.estado_proceso || "");
 
 			return `
 				<div class='hubgh-card' data-c='${esc(row.name)}'>
@@ -316,6 +321,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 								<button type='button' class='btn btn-link btn-xs hubgh-name action-detail' data-c='${esc(row.name)}'>${esc(row.full_name || row.name)}</button>
 								${processBadge(row.estado_proceso)}
 								${conceptBadge(row.concepto_medico)}
+								${row.solo_afiliacion ? `<span class='indicator-pill blue' title='Enviado solo a Afiliación con documentación pendiente. Falta envío oficial a RRLL.'>Pendiente RRLL</span>` : ""}
 							</div>
 							<div class='hubgh-meta'>CC ${esc(row.numero_documento || "-")}</div>
 							<div class='hubgh-submeta'>
@@ -357,6 +363,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 						<div class='sel-docs-secondary-actions'>
 							<button class='btn btn-xs btn-link action-detail' data-c='${esc(row.name)}'>Detalle</button>
 							${primary.type === "upload" ? "" : `<button class='btn btn-xs btn-link action-upload-selection' data-c='${esc(row.name)}'>Subir soporte</button>`}
+							${canSendToAffiliation ? `<button class='btn btn-xs btn-link text-info action-send-affiliation' data-c='${esc(row.name)}'>Enviar a Afiliación</button>` : ""}
 							${manageEnabled ? `<button class='btn btn-xs btn-link text-danger action-reject' data-c='${esc(row.name)}'>Rechazar</button>` : ""}
 						</div>
 						<button class='d-none action-medical' data-c='${esc(row.name)}'></button>
@@ -480,16 +487,39 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 
 		$root.find(".action-send").off("click").on("click", function() {
 			const candidate = $(this).data("c");
+			const row = (state.rows || []).find(r => r.name === candidate) || {};
 			openSimpleDialog("Enviar a RL", [
-				{ fieldname: "pdv_destino", label: "Punto de Venta", fieldtype: "Link", options: "Punto de Venta", reqd: 1 },
-				{ fieldname: "fecha_tentativa_ingreso", label: "Fecha de Ingreso", fieldtype: "Date", reqd: 1 },
+				{ fieldname: "pdv_destino", label: "Punto de Venta", fieldtype: "Link", options: "Punto de Venta", default: row.pdv_destino || "", reqd: 1 },
+				{ fieldname: "fecha_tentativa_ingreso", label: "Fecha de Ingreso", fieldtype: "Date", default: row.fecha_tentativa_ingreso || "", reqd: 1 },
+				{ fieldname: "cargo", label: "Cargo", fieldtype: "Link", options: "Cargo", default: row.cargo_postulado || "", reqd: 1 },
 			], "Enviar", values => {
 				frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.send_to_labor_relations", {
 					candidate,
 					pdv_destino: values.pdv_destino,
 					fecha_tentativa_ingreso: values.fecha_tentativa_ingreso,
+					cargo: values.cargo,
 				}).then(() => {
 					frappe.show_alert({ indicator: "green", message: "Enviado a Relaciones Laborales" });
+					loadBoard();
+				});
+			});
+		});
+
+		$root.find(".action-send-affiliation").off("click").on("click", function() {
+			const candidate = $(this).data("c");
+			const row = (state.rows || []).find(r => r.name === candidate) || {};
+			openSimpleDialog("Enviar a Afiliación", [
+				{ fieldname: "pdv_destino", label: "Punto de Venta", fieldtype: "Link", options: "Punto de Venta", default: row.pdv_destino || "", reqd: 1 },
+				{ fieldname: "fecha_tentativa_ingreso", label: "Fecha de Ingreso", fieldtype: "Date", default: row.fecha_tentativa_ingreso || "", reqd: 1 },
+				{ fieldname: "cargo", label: "Cargo", fieldtype: "Link", options: "Cargo", default: row.cargo_postulado || "", reqd: 1 },
+			], "Enviar", values => {
+				frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.send_to_affiliation", {
+					candidate,
+					pdv_destino: values.pdv_destino,
+					fecha_tentativa_ingreso: values.fecha_tentativa_ingreso,
+					cargo: values.cargo,
+				}).then(() => {
+					frappe.show_alert({ indicator: "green", message: "Enviado a Afiliación" });
 					loadBoard();
 				});
 			});
