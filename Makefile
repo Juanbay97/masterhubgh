@@ -20,7 +20,9 @@ COMPOSE_PROD = $(DOCKER_COMPOSE) -f docker/docker-compose.prod.yml --env-file .e
 	prod-up prod-down prod-restart prod-logs prod-shell prod-migrate prod-ps \
 	up-deploy down-deploy restart-deploy logs-deploy shell-deploy migrate-deploy ps-deploy \
 	migrate-help migrate-check-origen migrate-check-destino \
-	migrate-backup migrate-backup-cutover migrate-transfer migrate-restore migrate-test
+	migrate-backup migrate-backup-cutover migrate-transfer migrate-restore migrate-test \
+	dev-feature-on dev-feature-off dev-feature-status \
+	prod-feature-on prod-feature-off prod-feature-status
 
 ## Alias legacy: entorno de desarrollo
 up: dev-up
@@ -143,6 +145,60 @@ prod-ps:
 
 ## Alias legacy: stack publico
 ps-deploy: prod-ps
+
+# ───────────────────────────────────────────────────────────────────────────────
+# FEATURE FLAGS — examen médico autogestionado
+#
+# El flag `hubgh_agendamiento_autogestionado_enabled` es un kill-switch en
+# caliente: cuando está en 1 el dialog "Enviar a examen" en Selección
+# muestra la opción "Autogestionado" (cita + correo + portal). Cuando está
+# en 0 sólo aparece "Manual" y todo el flujo nuevo desaparece de la UI sin
+# romper Selección — útil para apagar rápido si algo falla en producción.
+#
+# Uso:
+#   make prod-feature-on              # encender en producción
+#   make prod-feature-off             # apagar en producción
+#   make prod-feature-status          # ver el estado actual
+#   make dev-feature-on               # idem en desarrollo
+#
+# El target lee SITE de la variable FRAPPE_SITE_NAME del .env (default
+# hubgh.local). Para apuntar a otro site:
+#   make prod-feature-on SITE=intranet.comidasvarpel.com
+# ───────────────────────────────────────────────────────────────────────────────
+
+## Encender el flujo autogestionado de examen médico en DESARROLLO
+dev-feature-on:
+	$(COMPOSE_DEV) exec backend bash -c \
+		"cd /home/frappe/frappe-bench && bench --site $(SITE) set-config -p hubgh_agendamiento_autogestionado_enabled 1 && bench --site $(SITE) clear-cache"
+	@echo "  OK autogestionado ENCENDIDO en $(SITE)"
+
+## Apagar el flujo autogestionado de examen médico en DESARROLLO
+dev-feature-off:
+	$(COMPOSE_DEV) exec backend bash -c \
+		"cd /home/frappe/frappe-bench && bench --site $(SITE) set-config -p hubgh_agendamiento_autogestionado_enabled 0 && bench --site $(SITE) clear-cache"
+	@echo "  OK autogestionado APAGADO en $(SITE)"
+
+## Mostrar el estado del flag en DESARROLLO (1=ON, 0/null=OFF)
+dev-feature-status:
+	@$(COMPOSE_DEV) exec backend bash -c \
+		"cat /home/frappe/frappe-bench/sites/$(SITE)/site_config.json | grep -E 'hubgh_agendamiento_autogestionado_enabled|host_name' || echo '  (flag ausente — equivale a OFF)'"
+
+## Encender el flujo autogestionado de examen médico en PRODUCCION
+prod-feature-on:
+	$(COMPOSE_PROD) exec backend bash -c \
+		"cd /home/frappe/frappe-bench && bench --site $(SITE) set-config -p hubgh_agendamiento_autogestionado_enabled 1 && bench --site $(SITE) clear-cache"
+	@echo "  OK autogestionado ENCENDIDO en $(SITE)"
+
+## Apagar el flujo autogestionado de examen médico en PRODUCCION
+prod-feature-off:
+	$(COMPOSE_PROD) exec backend bash -c \
+		"cd /home/frappe/frappe-bench && bench --site $(SITE) set-config -p hubgh_agendamiento_autogestionado_enabled 0 && bench --site $(SITE) clear-cache"
+	@echo "  OK autogestionado APAGADO en $(SITE)"
+
+## Mostrar el estado del flag en PRODUCCION (1=ON, 0/null=OFF)
+prod-feature-status:
+	@$(COMPOSE_PROD) exec backend bash -c \
+		"cat /home/frappe/frappe-bench/sites/$(SITE)/site_config.json | grep -E 'hubgh_agendamiento_autogestionado_enabled|host_name' || echo '  (flag ausente — equivale a OFF)'"
 
 ## Instalar navegador Firefox para Playwright E2E
 e2e-install:
