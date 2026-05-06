@@ -309,8 +309,13 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 		# Email 2: notificación a la sede de la IPS
 		sede_email = sede_resuelta.get("email") or ""
 		if sede_email and ips_doc:
+			from hubgh.hubgh.examen_medico.cita_service import _resolve_cargo_label
+
 			candidato_ciudad = getattr(candidato, "ciudad", None) or ""
 			cargo_cita = cita.cargo_al_enviar or ""
+			# Para el correo y el FRSN-02 mostramos el nombre legible del cargo
+			# (ej. "AUXILIAR DE COCINA"), no el código numérico ("416").
+			cargo_label = _resolve_cargo_label(cargo_cita) or cargo_cita
 			examenes = [
 				{"nombre_examen": row.nombre_examen}
 				for row in (ips_doc.examenes_estandar or [])
@@ -323,7 +328,7 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 					candidato_for_frsn = {
 						"nombre": candidato_nombre,
 						"cedula": getattr(candidato, "numero_documento", None) or cita.candidato,
-						"cargo": cargo_cita,
+						"cargo": cargo_label,
 						"ciudad": candidato_ciudad,
 					}
 					xlsx_bytes = generate_frsn02(ips_doc.as_dict(), candidato_for_frsn)
@@ -342,7 +347,7 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 						"candidato": {
 							"nombre": candidato_nombre,
 							"cedula": cita.candidato,
-							"cargo": cargo_cita,
+							"cargo": cargo_label,
 							"ciudad": candidato_ciudad,
 						},
 						"cita": {

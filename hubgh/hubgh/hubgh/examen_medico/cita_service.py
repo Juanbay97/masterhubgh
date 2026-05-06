@@ -23,6 +23,30 @@ def _normalize_city_key(value: str) -> str:
 	return "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch))
 
 
+def _resolve_cargo_label(codigo: str | None) -> str:
+	"""Devuelve el nombre legible del Cargo a partir del código numérico.
+
+	El doctype Cargo usa `autoname: format:{codigo}` — su `name` es el código
+	numérico (ej. "416") y `nombre` la descripción ("AUXILIAR DE COCINA").
+	En la cita guardamos el código (para SIESA) pero al mostrarlo en correos
+	y en el FRSN-02 queremos la descripción para que sea legible.
+
+	Si no se encuentra el Cargo o no tiene nombre, retorna el código tal cual
+	(no rompe nada, peor caso muestra "416" como antes).
+	"""
+	import frappe
+
+	if not codigo:
+		return ""
+	try:
+		nombre = frappe.db.get_value("Cargo", codigo, "nombre")
+		if nombre:
+			return str(nombre).strip()
+	except Exception:
+		pass
+	return str(codigo).strip()
+
+
 def _candidato_full_name(candidato, fallback: str = "") -> str:
 	"""Resolve a candidate's display name from `nombres`/`primer_apellido`/
 	`segundo_apellido`. Falls back to `apellidos` then to the provided fallback
