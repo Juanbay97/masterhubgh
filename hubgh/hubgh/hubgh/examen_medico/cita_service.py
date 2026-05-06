@@ -64,6 +64,45 @@ def _resolve_cargo_tipo(codigo: str | None) -> str:
 	return "Operativo"
 
 
+def _operativo_attachments() -> list[dict]:
+	"""Carga las imágenes informativas que se adjuntan al correo del candidato
+	cuando su `tipo_cargo` es "Operativo" — instrucciones de muestra coprológica
+	y de uñas para el examen de KOH.
+
+	Las imágenes viven dentro del app en `examen_medico/static/`. Si por algún
+	motivo no se pueden leer (deploy parcial, permisos), se retorna lista vacía
+	y el correo igual sale (las recomendaciones en texto del template ya
+	cubren la información).
+	"""
+	import os
+	import frappe
+
+	specs = [
+		("instrucciones_materia_fecal.jpg", "Instrucciones - Recoleccion muestra coprologica.jpg"),
+		("instrucciones_examen_koh.jpg", "Instrucciones - Examen KOH (uñas).jpg"),
+	]
+	out = []
+	try:
+		base_dir = frappe.get_app_path("hubgh", "hubgh", "examen_medico", "static")
+	except Exception:
+		base_dir = None
+
+	if not base_dir or not os.path.isdir(base_dir):
+		return out
+
+	for filename, send_name in specs:
+		path = os.path.join(base_dir, filename)
+		if not os.path.isfile(path):
+			continue
+		try:
+			with open(path, "rb") as f:
+				out.append({"fname": send_name, "fcontent": f.read()})
+		except Exception:
+			# Si una imagen falla, continuamos con la otra. El correo igual sale.
+			continue
+	return out
+
+
 def _resolve_examenes_for_cargo(ips_doc, cargo_codigo: str | None) -> list[dict]:
 	"""Devuelve la lista de exámenes a realizar para el cargo del candidato.
 
@@ -307,6 +346,10 @@ def create_cita_and_send_link(
 			ips_doc_for_examenes = frappe.get_doc("IPS", ips_name)
 			examenes = _resolve_examenes_for_cargo(ips_doc_for_examenes, cargo_al_enviar)
 
+			# Para cargos operativos adjuntar las 2 imágenes con instrucciones
+			# (muestra coprológica + KOH). Para administrativos, sin adjuntos.
+			attachments = _operativo_attachments() if tipo_cargo != "Administrativo" else []
+
 			send_exam_email(
 				template_name=template_name,
 				recipients=[candidato_email],
@@ -316,6 +359,7 @@ def create_cita_and_send_link(
 					"ips": {"nombre": ips_name},
 					"examenes": examenes,
 				},
+				attachments=attachments,
 			)
 		except Exception:
 			pass

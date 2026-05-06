@@ -288,6 +288,7 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 			portal_url = f"{site_url}/agendar_examen?token={token}"
 
 			from hubgh.hubgh.examen_medico.cita_service import (
+				_operativo_attachments,
 				_resolve_cargo_tipo,
 				_resolve_examenes_for_cargo,
 			)
@@ -305,6 +306,11 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 
 			examenes_candidato = _resolve_examenes_for_cargo(ips_doc, cargo_cita_for_tipo)
 
+			# Adjuntar imágenes de instrucciones solo para cargos operativos.
+			confirm_attachments = (
+				_operativo_attachments() if tipo_cargo != "Administrativo" else []
+			)
+
 			try:
 				send_exam_email(
 					template_name=confirm_template,
@@ -321,6 +327,7 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 						"portal_url": portal_url,
 						"examenes": examenes_candidato,
 					},
+					attachments=confirm_attachments,
 				)
 				frappe.db.set_value("Cita Examen Medico", cita_name, "enviado_confirmacion", 1)
 			except Exception:
