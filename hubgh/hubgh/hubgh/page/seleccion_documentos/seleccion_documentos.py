@@ -485,11 +485,18 @@ def send_to_medical_exam(candidate, cargo=None, modo="manual", fecha_limite=None
 	modo = (modo or "manual").strip().lower()
 	if modo not in ("manual", "autogestionado"):
 		frappe.throw("Modo de agendamiento inválido. Debe ser 'manual' o 'autogestionado'.")
-	if cargo:
-		frappe.db.set_value("Candidato", candidate, "cargo", cargo)
-	cand_cargo = cargo or frappe.db.get_value("Candidato", candidate, "cargo")
-	if not cand_cargo:
+	# Resolver cargo con fallback: explícito > Candidato.cargo > Candidato.cargo_postulado
+	cargo = (cargo or "").strip() or None
+	if not cargo:
+		cargo = frappe.db.get_value("Candidato", candidate, "cargo")
+	if not cargo:
+		cargo = frappe.db.get_value("Candidato", candidate, "cargo_postulado")
+	if not cargo:
 		frappe.throw("Cargo es obligatorio para enviar a examen médico")
+	# Persistir el cargo elegido en Candidato.cargo para mantener consistencia
+	# (puede que sólo estuviera en cargo_postulado).
+	frappe.db.set_value("Candidato", candidate, "cargo", cargo)
+	cand_cargo = cargo
 	frappe.db.set_value(
 		"Candidato",
 		candidate,
@@ -516,6 +523,57 @@ def send_to_medical_exam(candidate, cargo=None, modo="manual", fecha_limite=None
 @frappe.whitelist()
 def get_agendamiento_autogestionado_enabled():
 	return bool(frappe.conf.get("hubgh_agendamiento_autogestionado_enabled"))
+
+
+@frappe.whitelist()
+def get_candidate_cargo_info(candidate):
+	"""Devuelve el cargo actual del candidato (o el cargo_postulado como
+	fallback) más el tipo del cargo (Operativo/Administrativo). Lo usa el
+	dialog de "Enviar a examen médico" para precargar el campo y mostrar
+	el tipo como confirmación al operador.
+	"""
+	_validate_selection_access(candidate)
+	row = frappe.db.get_value(
+		"Candidato",
+		candidate,
+		["cargo", "cargo_postulado"],
+		as_dict=True,
+	) or {}
+	cargo = (row.get("cargo") or "").strip() or (row.get("cargo_postulado") or "").strip() or ""
+	cargo_nombre = ""
+	tipo_cargo = ""
+	if cargo:
+		cargo_doc = frappe.db.get_value(
+			"Cargo",
+			cargo,
+			["nombre", "tipo_cargo"],
+			as_dict=True,
+		) or {}
+		cargo_nombre = cargo_doc.get("nombre") or ""
+		tipo_cargo = cargo_doc.get("tipo_cargo") or "Operativo"
+	return {
+		"cargo": cargo,
+		"cargo_nombre": cargo_nombre,
+		"tipo_cargo": tipo_cargo,
+	}
+
+
+@frappe.whitelist()
+def get_cargo_info(cargo):
+	"""Devuelve `nombre` + `tipo_cargo` de un Cargo. Lo usa el dialog para
+	mostrar el tipo cuando el operador elige un cargo distinto al precargado."""
+	if not cargo:
+		return {"nombre": "", "tipo_cargo": ""}
+	row = frappe.db.get_value(
+		"Cargo",
+		cargo,
+		["nombre", "tipo_cargo"],
+		as_dict=True,
+	) or {}
+	return {
+		"nombre": row.get("nombre") or "",
+		"tipo_cargo": row.get("tipo_cargo") or "Operativo",
+	}
 
 
 @frappe.whitelist()
