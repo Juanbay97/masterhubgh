@@ -317,6 +317,7 @@ frappe.pages["sst_examenes_medicos"].on_page_load = function(wrapper) {
 				</div>
 			</div>
 			<div class='hubgh-board-shortcuts'>
+				<button class='btn btn-sm btn-primary action-export-xlsx'>📥 Descargar próximos exámenes (Excel)</button>
 				<button class='btn btn-sm btn-default go-selection-board'>Volver a selección</button>
 				<button class='btn btn-sm btn-default go-rejected-board'>Ver rechazados</button>
 				<button class='btn btn-sm btn-default go-sst-board'>Centro SST</button>
@@ -348,6 +349,47 @@ frappe.pages["sst_examenes_medicos"].on_page_load = function(wrapper) {
 	$root.find(".go-selection-board").on("click", () => frappe.set_route("app", "seleccion_documentos"));
 	$root.find(".go-rejected-board").on("click", () => frappe.set_route("app", "candidatos_rechazados"));
 	$root.find(".go-sst-board").on("click", () => frappe.set_route("app", "sst_bandeja"));
+
+	$root.find(".action-export-xlsx").on("click", function() {
+		const $btn = $(this);
+		const originalText = $btn.html();
+		$btn.prop("disabled", true).html("Generando…");
+		frappe.call("hubgh.hubgh.page.sst_examenes_medicos.sst_examenes_medicos.export_proximos_examenes_xlsx")
+			.then(r => {
+				const m = (r && r.message) || {};
+				if (!m.content_b64) {
+					frappe.msgprint("No fue posible generar el archivo.");
+					return;
+				}
+				if (m.count === 0) {
+					frappe.show_alert({ indicator: "orange", message: "No hay exámenes agendados desde hoy en adelante." });
+					return;
+				}
+				// Decodificar base64 a Blob y disparar descarga
+				const byteChars = atob(m.content_b64);
+				const bytes = new Uint8Array(byteChars.length);
+				for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+				const blob = new Blob([bytes], {
+					type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				});
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = m.filename || "proximos_examenes.xlsx";
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				URL.revokeObjectURL(url);
+				frappe.show_alert({ indicator: "green", message: `Descargados ${m.count} exámenes` });
+			})
+			.catch(err => {
+				const msg = (err && (err.message || err.exc || err._server_messages)) || "No fue posible generar el archivo.";
+				frappe.msgprint(msg);
+			})
+			.finally(() => {
+				$btn.prop("disabled", false).html(originalText);
+			});
+	});
 
 	load();
 };
