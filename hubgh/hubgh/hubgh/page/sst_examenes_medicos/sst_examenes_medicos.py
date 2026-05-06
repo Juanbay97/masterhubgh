@@ -55,6 +55,8 @@ def export_proximos_examenes_xlsx():
 			cand.segundo_apellido,
 			cand.numero_documento,
 			cand.ciudad,
+			cand.celular,
+			cand.email,
 			cargo.nombre AS cargo_nombre,
 			cargo.tipo_cargo
 		FROM `tabCita Examen Medico` cita
@@ -76,6 +78,8 @@ def export_proximos_examenes_xlsx():
 		"Hora",
 		"Cédula",
 		"Nombre completo",
+		"Celular",
+		"Email",
 		"Ciudad",
 		"Sede",
 		"Cargo",
@@ -104,6 +108,8 @@ def export_proximos_examenes_xlsx():
 				str(r.hora_cita) if r.hora_cita else "",
 				r.numero_documento or r.candidato or "",
 				nombre_completo or r.candidato or "",
+				r.celular or "",
+				r.email or "",
 				r.ciudad or "",
 				r.sede_seleccionada or "",
 				r.cargo_nombre or r.cargo_al_enviar or "",
@@ -112,7 +118,7 @@ def export_proximos_examenes_xlsx():
 		)
 
 	# Anchos de columna razonables
-	col_widths = [12, 10, 16, 38, 14, 28, 36, 16]
+	col_widths = [12, 10, 16, 38, 16, 30, 14, 28, 36, 16]
 	for idx, w in enumerate(col_widths, start=1):
 		ws.column_dimensions[ws.cell(row=1, column=idx).column_letter].width = w
 
