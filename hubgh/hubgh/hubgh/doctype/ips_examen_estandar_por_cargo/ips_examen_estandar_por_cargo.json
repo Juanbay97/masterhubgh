@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "cargo",
+  "cargo_nombre",
   "codigo_examen",
   "nombre_examen",
   "celda_excel"
@@ -17,7 +18,15 @@
    "in_list_view": 1,
    "label": "Cargo",
    "options": "Cargo",
-   "reqd": 1
+   "description": "Dejar vacío para que el examen aplique a todos los cargos como fallback default."
+  },
+  {
+   "fetch_from": "cargo.nombre",
+   "fieldname": "cargo_nombre",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre del Cargo",
+   "read_only": 1
   },
   {
    "fieldname": "codigo_examen",

@@ -278,7 +278,7 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 
 		ips_nombre = getattr(ips_doc, "nombre", ips_name) if ips_doc else ips_name
 
-		# Email 1: confirmación al candidato
+		# Email 1: confirmación al candidato — template según tipo de cargo
 		candidato_email = getattr(candidato, "email", None) or ""
 		if candidato_email and ips_doc:
 			try:
@@ -286,9 +286,28 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 			except Exception:
 				site_url = ""
 			portal_url = f"{site_url}/agendar_examen?token={token}"
+
+			from hubgh.hubgh.examen_medico.cita_service import (
+				_resolve_cargo_tipo,
+				_resolve_examenes_for_cargo,
+			)
+			cargo_cita_for_tipo = cita.cargo_al_enviar or ""
+			tipo_cargo = _resolve_cargo_tipo(cargo_cita_for_tipo)
+			confirm_template = (
+				"examen_medico_confirmacion_administrativo"
+				if tipo_cargo == "Administrativo"
+				else "examen_medico_confirmacion_operativo"
+			)
+			# Fallback al legacy si el template específico no existe (entornos
+			# que aún no corrieron el patch nuevo).
+			if not frappe.db.exists("Email Template", confirm_template):
+				confirm_template = "examen_medico_confirmacion"
+
+			examenes_candidato = _resolve_examenes_for_cargo(ips_doc, cargo_cita_for_tipo)
+
 			try:
 				send_exam_email(
-					template_name="examen_medico_confirmacion",
+					template_name=confirm_template,
 					recipients=[candidato_email],
 					context={
 						"candidato": {"nombre": candidato_nombre},
@@ -300,6 +319,7 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 							"sede": sede_resuelta.get("nombre_sede", ""),
 						},
 						"portal_url": portal_url,
+						"examenes": examenes_candidato,
 					},
 				)
 				frappe.db.set_value("Cita Examen Medico", cita_name, "enviado_confirmacion", 1)
@@ -309,18 +329,18 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 		# Email 2: notificación a la sede de la IPS
 		sede_email = sede_resuelta.get("email") or ""
 		if sede_email and ips_doc:
-			from hubgh.hubgh.examen_medico.cita_service import _resolve_cargo_label
+			from hubgh.hubgh.examen_medico.cita_service import (
+				_resolve_cargo_label,
+				_resolve_examenes_for_cargo,
+			)
 
 			candidato_ciudad = getattr(candidato, "ciudad", None) or ""
 			cargo_cita = cita.cargo_al_enviar or ""
 			# Para el correo y el FRSN-02 mostramos el nombre legible del cargo
 			# (ej. "AUXILIAR DE COCINA"), no el código numérico ("416").
 			cargo_label = _resolve_cargo_label(cargo_cita) or cargo_cita
-			examenes = [
-				{"nombre_examen": row.nombre_examen}
-				for row in (ips_doc.examenes_estandar or [])
-				if (row.cargo or "") == cargo_cita
-			]
+			# Lista de exámenes con fallback (cargo específico → cargo vacío).
+			examenes = _resolve_examenes_for_cargo(ips_doc, cargo_cita)
 			attachments = []
 			if int(sede_resuelta.get("requiere_orden_servicio", 0) or 0):
 				try:

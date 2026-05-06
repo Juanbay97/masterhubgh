@@ -47,6 +47,61 @@ def _resolve_cargo_label(codigo: str | None) -> str:
 	return str(codigo).strip()
 
 
+def _resolve_cargo_tipo(codigo: str | None) -> str:
+	"""Devuelve "Operativo" o "Administrativo" según el campo `tipo_cargo`
+	del doctype Cargo. Default "Operativo" si no está configurado o el cargo
+	no existe — más conservador (más recomendaciones)."""
+	import frappe
+
+	if not codigo:
+		return "Operativo"
+	try:
+		tipo = frappe.db.get_value("Cargo", codigo, "tipo_cargo")
+		if tipo and str(tipo).strip() in ("Operativo", "Administrativo"):
+			return str(tipo).strip()
+	except Exception:
+		pass
+	return "Operativo"
+
+
+def _resolve_examenes_for_cargo(ips_doc, cargo_codigo: str | None) -> list[dict]:
+	"""Devuelve la lista de exámenes a realizar para el cargo del candidato.
+
+	Estrategia con fallback:
+	  1. Filas de IPS Examen Estandar Por Cargo donde `cargo == codigo` exacto.
+	  2. Si la lista anterior queda vacía, filas con `cargo` vacío (configuradas
+	     como "aplica a todos los cargos como default").
+	  3. Si la 2ª también está vacía, lista vacía (el correo no muestra exámenes).
+
+	Cada item retornado tiene `nombre_examen`.
+	"""
+	rows = []
+	if isinstance(ips_doc, dict):
+		rows = ips_doc.get("examenes_estandar") or []
+	else:
+		rows = getattr(ips_doc, "examenes_estandar", None) or []
+
+	def _row_get(row, key):
+		return row.get(key) if isinstance(row, dict) else getattr(row, key, None)
+
+	codigo = (cargo_codigo or "").strip()
+	# Path 1 — match exacto por cargo
+	matched = [
+		{"nombre_examen": _row_get(r, "nombre_examen") or ""}
+		for r in rows
+		if (_row_get(r, "cargo") or "").strip() == codigo and codigo
+	]
+	if matched:
+		return matched
+	# Path 2 — fallback a filas con cargo vacío
+	default = [
+		{"nombre_examen": _row_get(r, "nombre_examen") or ""}
+		for r in rows
+		if not (_row_get(r, "cargo") or "").strip()
+	]
+	return default
+
+
 def _candidato_full_name(candidato, fallback: str = "") -> str:
 	"""Resolve a candidate's display name from `nombres`/`primer_apellido`/
 	`segundo_apellido`. Falls back to `apellidos` then to the provided fallback
@@ -236,13 +291,30 @@ def create_cita_and_send_link(
 	candidato_email = getattr(candidato, "email", None) or ""
 	if candidato_email:
 		try:
+			# Tipo de cargo decide qué template (operativo/admin) usar y qué
+			# recomendaciones se incluyen.
+			tipo_cargo = _resolve_cargo_tipo(cargo_al_enviar)
+			template_name = (
+				"examen_medico_link_agendar_administrativo"
+				if tipo_cargo == "Administrativo"
+				else "examen_medico_link_agendar_operativo"
+			)
+			# Fallback al template legacy si por algún motivo el específico no existe.
+			if not frappe.db.exists("Email Template", template_name):
+				template_name = "examen_medico_link_agendar"
+
+			# Lista de exámenes que se realizarán — incluye fallback a cargo vacío.
+			ips_doc_for_examenes = frappe.get_doc("IPS", ips_name)
+			examenes = _resolve_examenes_for_cargo(ips_doc_for_examenes, cargo_al_enviar)
+
 			send_exam_email(
-				template_name="examen_medico_link_agendar",
+				template_name=template_name,
 				recipients=[candidato_email],
 				context={
 					"candidato": {"nombre": _candidato_full_name(candidato, fallback=candidato_name)},
 					"portal_url": portal_url,
 					"ips": {"nombre": ips_name},
+					"examenes": examenes,
 				},
 			)
 		except Exception:

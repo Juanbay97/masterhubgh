@@ -204,21 +204,115 @@ def _bump_cupos_to_50(logger):
 		logger.warning("examen_medico_multisede:cupos_skip", exc_info=True)
 
 
+_RECOMENDACIONES_OPERATIVO = """
+<p style="margin-top:18px;"><strong>Recomendaciones importantes:</strong></p>
+<ul>
+  <li>Uso obligatorio de tapabocas.</li>
+  <li>Llevar muestra coprológica.</li>
+  <li>Presentar documento de identidad en la recepción.</li>
+  <li>Informar que los exámenes fueron agendados por <strong>Comidas Varpel S.A.S.</strong></li>
+  <li>Si usas gafas, debes llevarlas.</li>
+  <li>No es necesario asistir en ayunas.</li>
+  <li>Llevar uñas limpias, cortas y sin esmalte.</li>
+  <li>Llegar con 15 minutos de anticipación.</li>
+  <li>Algunos exámenes se realizan en dos tiempos. No te ausentes del lugar durante el proceso. Si eres llamado y no estás presente, se cancelará la valoración.</li>
+</ul>
+<p>Agradecemos tu puntualidad y compromiso.</p>
+""".strip()
+
+_RECOMENDACIONES_ADMINISTRATIVO = """
+<p style="margin-top:18px;"><strong>Recomendaciones importantes:</strong></p>
+<ul>
+  <li>Uso obligatorio de tapabocas.</li>
+  <li>Presentar documento de identidad en la recepción.</li>
+  <li>Informar que los exámenes fueron agendados por <strong>Comidas Varpel S.A.S.</strong></li>
+  <li>Si usas gafas, debes llevarlas.</li>
+  <li>No es necesario asistir en ayunas.</li>
+  <li>Llegar con 15 minutos de anticipación.</li>
+  <li>Algunos exámenes se realizan en dos tiempos. No te ausentes del lugar durante el proceso. Si eres llamado y no estás presente, se cancelará la valoración.</li>
+</ul>
+<p>Agradecemos tu puntualidad y compromiso.</p>
+""".strip()
+
+_EXAMENES_LIST_BLOCK = """
+{% if examenes %}
+<p style="margin-top:18px;"><strong>Exámenes que se realizarán:</strong></p>
+<ul>
+  {% for examen in examenes %}<li>{{ examen.nombre_examen }}</li>{% endfor %}
+</ul>
+{% endif %}
+""".strip()
+
+_LINK_AGENDAR_HEAD = """
+<p>Hola {{ candidato.nombre }},</p>
+<p>Has sido seleccionado para continuar con tu proceso de vinculación. El siguiente paso es agendar tu <strong>examen médico de ingreso</strong>.</p>
+<p>Para agendarlo, por favor ten a mano <strong>tu cédula</strong> y hacé clic en el botón a continuación. Vas a poder elegir el día y la hora que mejor te queden dentro de los horarios disponibles.</p>
+<p style="text-align:center;margin:24px 0;">
+  <a href="{{ portal_url }}" style="background:#1d4ed8;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;">Agendar mi examen médico</a>
+</p>
+""".strip()
+
+_CONFIRMACION_HEAD = """
+<p>Hola {{ candidato.nombre }},</p>
+<p>Tu examen médico ha quedado <strong>confirmado</strong> con los siguientes datos:</p>
+<ul>
+  <li><strong>Fecha:</strong> {{ cita.fecha_cita }}</li>
+  <li><strong>Hora:</strong> {{ cita.hora_cita }}</li>
+  <li><strong>IPS:</strong> {{ ips.nombre }}</li>
+  {% if ips.sede %}<li><strong>Sede:</strong> {{ ips.sede }}</li>{% endif %}
+  <li><strong>Dirección:</strong> {{ ips.direccion }}</li>
+  {% if ips.telefono %}<li><strong>Teléfono:</strong> {{ ips.telefono }}</li>{% endif %}
+</ul>
+""".strip()
+
+_FOOTER = '<p><em>Equipo de Gestión Humana — Home Burgers</em></p>'
+
+_DUDAS = '<p>Si tenés alguna duda, podés escribirnos a <a href="mailto:SST@homeburgers.com">SST@homeburgers.com</a>.</p>'
+
+
+def _build_template(head, examenes_block, recomendaciones, dudas, footer):
+	return "\n".join([head, examenes_block, recomendaciones, dudas, footer])
+
+
 EMAIL_TEMPLATES = [
+	# Legacy / fallback — operativo por default (más conservador).
 	{
 		"name": "examen_medico_link_agendar",
 		"subject": "Agenda tu examen médico — Home Burgers",
-		"response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Te informamos que has sido seleccionado para continuar con tu proceso de vinculación. El siguiente paso es agendar tu examen médico de ingreso.</p>\n<p>Para agendarlo, por favor ten a mano <strong>tu cédula</strong> y hacé clic en el botón a continuación. Vas a poder elegir el día y la hora que mejor te quede dentro de los horarios disponibles de la IPS.</p>\n<p style=\"text-align:center;margin:24px 0;\">\n  <a href=\"{{ portal_url }}\" style=\"background:#1d4ed8;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;\">Agendar mi examen médico</a>\n</p>\n<p>Una vez confirmada tu cita, recibirás un correo con los detalles del lugar, la fecha y la hora.</p>\n<p>Si tenés alguna duda, podés escribirnos a <a href=\"mailto:SST@homeburgers.com\">SST@homeburgers.com</a>.</p>\n<p>¡Mucho éxito en tu proceso!</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+		"response": _build_template(_LINK_AGENDAR_HEAD, _EXAMENES_LIST_BLOCK, _RECOMENDACIONES_OPERATIVO, _DUDAS, _FOOTER),
 	},
+	# Por tipo de cargo
+	{
+		"name": "examen_medico_link_agendar_operativo",
+		"subject": "Agenda tu examen médico — Home Burgers",
+		"response": _build_template(_LINK_AGENDAR_HEAD, _EXAMENES_LIST_BLOCK, _RECOMENDACIONES_OPERATIVO, _DUDAS, _FOOTER),
+	},
+	{
+		"name": "examen_medico_link_agendar_administrativo",
+		"subject": "Agenda tu examen médico — Home Burgers",
+		"response": _build_template(_LINK_AGENDAR_HEAD, _EXAMENES_LIST_BLOCK, _RECOMENDACIONES_ADMINISTRATIVO, _DUDAS, _FOOTER),
+	},
+	# Confirmación post-agendamiento — incluye fecha/hora ya confirmada
 	{
 		"name": "examen_medico_confirmacion",
 		"subject": "Confirmación de cita — examen médico",
-		"response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Tu examen médico ha quedado confirmado con los siguientes datos:</p>\n<ul>\n  <li><strong>Fecha:</strong> {{ cita.fecha_cita }}</li>\n  <li><strong>Hora:</strong> {{ cita.hora_cita }}</li>\n  <li><strong>IPS:</strong> {{ ips.nombre }}</li>\n  <li><strong>Dirección:</strong> {{ ips.direccion }}</li>\n</ul>\n<p>Recordá llegar puntual y traer tu documento de identidad.</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+		"response": _build_template(_CONFIRMACION_HEAD, _EXAMENES_LIST_BLOCK, _RECOMENDACIONES_OPERATIVO, _DUDAS, _FOOTER),
 	},
+	{
+		"name": "examen_medico_confirmacion_operativo",
+		"subject": "Confirmación de cita — examen médico",
+		"response": _build_template(_CONFIRMACION_HEAD, _EXAMENES_LIST_BLOCK, _RECOMENDACIONES_OPERATIVO, _DUDAS, _FOOTER),
+	},
+	{
+		"name": "examen_medico_confirmacion_administrativo",
+		"subject": "Confirmación de cita — examen médico",
+		"response": _build_template(_CONFIRMACION_HEAD, _EXAMENES_LIST_BLOCK, _RECOMENDACIONES_ADMINISTRATIVO, _DUDAS, _FOOTER),
+	},
+	# A la IPS — sin cambios funcionales
 	{
 		"name": "examen_medico_ips_notificacion",
 		"subject": "Programación de examen médico — {{ candidato.nombre }}",
-		"response": "<p>Buenas tardes.</p>\n<p>Me ayudan por favor agendando a esta persona para el día <strong>{{ cita.fecha_cita }}</strong> a las <strong>{{ cita.hora_cita }}</strong>.</p>\n<ul>\n  <li><strong>CC:</strong> {{ candidato.cedula }}</li>\n  <li><strong>Nombre:</strong> {{ candidato.nombre }}</li>\n  <li><strong>Cargo:</strong> {{ candidato.cargo }}</li>\n  <li><strong>Ciudad:</strong> {{ candidato.ciudad }}</li>\n</ul>\n<p><strong>Exámenes a realizar:</strong></p>\n<ul>\n  {% for examen in examenes %}\n  <li>{{ examen.nombre_examen }}</li>\n  {% endfor %}\n</ul>\n<p><strong>Empresa que remite:</strong> Comidas Varpel S.A.S.</p>\n<p>Muchas gracias.</p>\n<p><em>SST — Home Burgers<br>SST@homeburgers.com</em></p>",
+		"response": "<p>Buenas tardes.</p>\n<p>Me ayudan por favor agendando a esta persona para el día <strong>{{ cita.fecha_cita }}</strong> a las <strong>{{ cita.hora_cita }}</strong>{% if cita.sede %} en la sede <strong>{{ cita.sede }}</strong>{% endif %}.</p>\n<ul>\n  <li><strong>CC:</strong> {{ candidato.cedula }}</li>\n  <li><strong>Nombre:</strong> {{ candidato.nombre }}</li>\n  <li><strong>Cargo:</strong> {{ candidato.cargo }}</li>\n  <li><strong>Ciudad:</strong> {{ candidato.ciudad }}</li>\n</ul>\n<p><strong>Exámenes a realizar:</strong></p>\n<ul>\n  {% for examen in examenes %}<li>{{ examen.nombre_examen }}</li>{% endfor %}\n</ul>\n<p><strong>Empresa que remite:</strong> Comidas Varpel S.A.S.</p>\n<p>Muchas gracias.</p>\n<p><em>SST — Home Burgers<br>SST@homeburgers.com</em></p>",
 	},
 	{
 		"name": "examen_medico_aplazado",
@@ -234,21 +328,33 @@ EMAIL_TEMPLATES = [
 
 
 def _ensure_email_templates(logger):
+	"""Crea o actualiza los templates del flujo. Force-update porque las
+	recomendaciones de copy cambian con frecuencia y es más útil para el
+	operador tener las versiones canónicas que custom-edits perdidos."""
 	for tpl in EMAIL_TEMPLATES:
-		if frappe.db.exists("Email Template", tpl["name"]):
-			continue
 		try:
-			frappe.get_doc({
-				"doctype": "Email Template",
-				"name": tpl["name"],
-				"subject": tpl["subject"],
-				"response": tpl["response"],
-				"use_html": 1,
-			}).insert(ignore_permissions=True, ignore_mandatory=True)
-			logger.info(
-				"examen_medico_multisede:email_template_created",
-				extra={"name": tpl["name"]},
-			)
+			if frappe.db.exists("Email Template", tpl["name"]):
+				doc = frappe.get_doc("Email Template", tpl["name"])
+				doc.subject = tpl["subject"]
+				doc.response = tpl["response"]
+				doc.use_html = 1
+				doc.save(ignore_permissions=True)
+				logger.info(
+					"examen_medico_multisede:email_template_updated",
+					extra={"name": tpl["name"]},
+				)
+			else:
+				frappe.get_doc({
+					"doctype": "Email Template",
+					"name": tpl["name"],
+					"subject": tpl["subject"],
+					"response": tpl["response"],
+					"use_html": 1,
+				}).insert(ignore_permissions=True, ignore_mandatory=True)
+				logger.info(
+					"examen_medico_multisede:email_template_created",
+					extra={"name": tpl["name"]},
+				)
 		except Exception:
 			logger.warning(
 				"examen_medico_multisede:email_template_skip",

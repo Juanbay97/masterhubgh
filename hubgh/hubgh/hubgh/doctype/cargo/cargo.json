@@ -9,6 +9,7 @@
  "field_order": [
   "nombre",
   "codigo",
+  "tipo_cargo",
   "descripcion",
   "activo"
  ],
@@ -27,6 +28,15 @@
    "label": "Código",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "default": "Operativo",
+   "fieldname": "tipo_cargo",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tipo Cargo",
+   "options": "Operativo\nAdministrativo",
+   "description": "Determina las recomendaciones y los adjuntos del correo de examen médico. Operativo = ej. cocina, requiere muestras y uñas limpias. Administrativo = staff de oficina, sin muestras."
   },
   {
    "fieldname": "descripcion",
