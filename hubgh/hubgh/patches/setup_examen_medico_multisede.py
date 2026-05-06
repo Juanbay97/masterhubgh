@@ -106,13 +106,19 @@ def execute():
 	#    que el campo pasa de Select a Link → Ciudad.
 	_canonicalize_candidato_ciudad(logger)
 
-	# 4. Cupos a 50 en horarios existentes.
+	# 4. Email Templates del flujo (5) — sync_fixtures es flaky en v15.
+	_ensure_email_templates(logger)
+
+	# 5. IPS Zonamedica MR SAS — la crea si el fixture nunca corrió.
+	_ensure_ips_zonamedica(logger)
+
+	# 6. Cupos a 50 en horarios existentes (después de 5 por si la creó).
 	_bump_cupos_to_50(logger)
 
-	# 5. Sedes default en Zonamedica MR SAS.
+	# 7. Sedes default en Zonamedica MR SAS (asume IPS ya existe).
 	_seed_sedes_zonamedica(logger)
 
-	# 6. Scheduler activo + cola sin pausa.
+	# 8. Scheduler activo + cola sin pausa.
 	_enable_scheduler_and_queue(logger)
 
 	frappe.db.commit()
@@ -196,6 +202,111 @@ def _bump_cupos_to_50(logger):
 		logger.info("examen_medico_multisede:cupos_bumped")
 	except Exception:
 		logger.warning("examen_medico_multisede:cupos_skip", exc_info=True)
+
+
+EMAIL_TEMPLATES = [
+	{
+		"name": "examen_medico_link_agendar",
+		"subject": "Agenda tu examen médico — Home Burgers",
+		"response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Te informamos que has sido seleccionado para continuar con tu proceso de vinculación. El siguiente paso es agendar tu examen médico de ingreso.</p>\n<p>Para agendarlo, por favor ten a mano <strong>tu cédula</strong> y hacé clic en el botón a continuación. Vas a poder elegir el día y la hora que mejor te quede dentro de los horarios disponibles de la IPS.</p>\n<p style=\"text-align:center;margin:24px 0;\">\n  <a href=\"{{ portal_url }}\" style=\"background:#1d4ed8;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;\">Agendar mi examen médico</a>\n</p>\n<p>Una vez confirmada tu cita, recibirás un correo con los detalles del lugar, la fecha y la hora.</p>\n<p>Si tenés alguna duda, podés escribirnos a <a href=\"mailto:SST@homeburgers.com\">SST@homeburgers.com</a>.</p>\n<p>¡Mucho éxito en tu proceso!</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+	},
+	{
+		"name": "examen_medico_confirmacion",
+		"subject": "Confirmación de cita — examen médico",
+		"response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Tu examen médico ha quedado confirmado con los siguientes datos:</p>\n<ul>\n  <li><strong>Fecha:</strong> {{ cita.fecha_cita }}</li>\n  <li><strong>Hora:</strong> {{ cita.hora_cita }}</li>\n  <li><strong>IPS:</strong> {{ ips.nombre }}</li>\n  <li><strong>Dirección:</strong> {{ ips.direccion }}</li>\n</ul>\n<p>Recordá llegar puntual y traer tu documento de identidad.</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+	},
+	{
+		"name": "examen_medico_ips_notificacion",
+		"subject": "Programación de examen médico — {{ candidato.nombre }}",
+		"response": "<p>Buenas tardes.</p>\n<p>Me ayudan por favor agendando a esta persona para el día <strong>{{ cita.fecha_cita }}</strong> a las <strong>{{ cita.hora_cita }}</strong>.</p>\n<ul>\n  <li><strong>CC:</strong> {{ candidato.cedula }}</li>\n  <li><strong>Nombre:</strong> {{ candidato.nombre }}</li>\n  <li><strong>Cargo:</strong> {{ candidato.cargo }}</li>\n  <li><strong>Ciudad:</strong> {{ candidato.ciudad }}</li>\n</ul>\n<p><strong>Exámenes a realizar:</strong></p>\n<ul>\n  {% for examen in examenes %}\n  <li>{{ examen.nombre_examen }}</li>\n  {% endfor %}\n</ul>\n<p><strong>Empresa que remite:</strong> Comidas Varpel S.A.S.</p>\n<p>Muchas gracias.</p>\n<p><em>SST — Home Burgers<br>SST@homeburgers.com</em></p>",
+	},
+	{
+		"name": "examen_medico_aplazado",
+		"subject": "Tu examen médico fue aplazado",
+		"response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Tu examen médico del <strong>{{ cita.fecha_cita }}</strong> fue aplazado.</p>\n<p><strong>Motivo:</strong> {{ motivo_aplazamiento }}</p>\n{% if instrucciones_reagendamiento %}\n<p><strong>Instrucciones:</strong> {{ instrucciones_reagendamiento }}</p>\n{% endif %}\n<p>Si tenés preguntas, escribinos a <a href=\"mailto:SST@homeburgers.com\">SST@homeburgers.com</a>.</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+	},
+	{
+		"name": "examen_medico_recordatorio",
+		"subject": "Recordatorio — examen médico mañana",
+		"response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Te recordamos que <strong>mañana {{ cita.fecha_cita }}</strong> a las <strong>{{ cita.hora_cita }}</strong> tenés tu examen médico en:</p>\n<ul>\n  <li><strong>{{ ips.nombre }}</strong></li>\n  <li>{{ ips.direccion }}</li>\n</ul>\n<p>Por favor llegá puntual con tu documento de identidad.</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+	},
+]
+
+
+def _ensure_email_templates(logger):
+	for tpl in EMAIL_TEMPLATES:
+		if frappe.db.exists("Email Template", tpl["name"]):
+			continue
+		try:
+			frappe.get_doc({
+				"doctype": "Email Template",
+				"name": tpl["name"],
+				"subject": tpl["subject"],
+				"response": tpl["response"],
+				"use_html": 1,
+			}).insert(ignore_permissions=True, ignore_mandatory=True)
+			logger.info(
+				"examen_medico_multisede:email_template_created",
+				extra={"name": tpl["name"]},
+			)
+		except Exception:
+			logger.warning(
+				"examen_medico_multisede:email_template_skip",
+				extra={"name": tpl["name"]},
+				exc_info=True,
+			)
+
+
+def _ensure_ips_zonamedica(logger):
+	"""Crea la IPS Zonamedica MR SAS desde cero con horarios y exámenes
+	estándar default si no existe (sync_fixtures de Frappe v15 puede fallar
+	silencioso). Si ya existe, no la toca."""
+	ips_name = "Zonamedica MR SAS"
+	if frappe.db.exists("IPS", ips_name):
+		return
+
+	# Bogotá tiene que existir como Ciudad para el Link de la IPS — esto
+	# se asegura en _ensure_ciudades, que corre antes en execute().
+	if not frappe.db.exists("Ciudad", "Bogotá"):
+		logger.warning(
+			"examen_medico_multisede:zonamedica_skip_no_ciudad_bogota",
+		)
+		return
+
+	try:
+		ips = frappe.get_doc({
+			"doctype": "IPS",
+			"name": ips_name,
+			"nombre": ips_name,
+			"ciudad": "Bogotá",
+			"direccion": "Calle 40 # 26 A 50 Barrio La Soledad",
+			"email_notificacion": "recepcion@zonamedicaips.com",
+			"telefono": "7514626 / 3168774072 / 3138536350",
+			"activa": 1,
+			"requiere_orden_servicio": 0,
+			"horarios": [
+				{"dia_semana": d, "hora_inicio": "07:00:00", "hora_fin": "11:00:00", "intervalo_minutos": 60, "cupos_por_slot": 50}
+				for d in ("L", "M", "X", "J", "V")
+			],
+			"emails_por_ciudad": [
+				{"ciudad": "Cartagena", "email": "ejecutivocuenta@zonamedicaips.com"},
+				{"ciudad": "Medellín", "email": "ejecutivocuenta@zonamedicaips.com"},
+			],
+			"examenes_estandar": [
+				{"cargo": "416", "codigo_examen": "EXM-INGRESO", "nombre_examen": "Examen médico con énfasis osteomuscular", "celda_excel": ""},
+				{"cargo": "416", "codigo_examen": "EXM-OPTO", "nombre_examen": "Optometría", "celda_excel": ""},
+				{"cargo": "416", "codigo_examen": "EXM-KOH", "nombre_examen": "KOH", "celda_excel": ""},
+				{"cargo": "416", "codigo_examen": "EXM-COPRO", "nombre_examen": "Coprológico", "celda_excel": ""},
+				{"cargo": "416", "codigo_examen": "EXM-FROTIS-G", "nombre_examen": "Frotis de garganta", "celda_excel": ""},
+			],
+		})
+		ips.insert(ignore_permissions=True, ignore_mandatory=True)
+		logger.info("examen_medico_multisede:zonamedica_created")
+	except Exception:
+		logger.warning(
+			"examen_medico_multisede:zonamedica_create_failed",
+			exc_info=True,
+		)
 
 
 def _seed_sedes_zonamedica(logger):
