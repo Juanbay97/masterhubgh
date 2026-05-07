@@ -413,6 +413,7 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 							"hora_cita": hora,
 							"sede": sede_resuelta.get("nombre_sede", ""),
 							"sede_direccion": sede_resuelta.get("direccion", ""),
+							"sede_ciudad": sede_resuelta.get("ciudad", "") or candidato_ciudad,
 						},
 						"examenes": examenes,
 					},
