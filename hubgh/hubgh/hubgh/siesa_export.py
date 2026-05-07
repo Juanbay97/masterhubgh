@@ -541,7 +541,7 @@ def _build_contract_context(data):
 		"id_entidad_eps": _catalog_code("Entidad EPS Siesa", contrato.entidad_eps_siesa),
 		"id_entidad_cesantias": _catalog_code("Entidad Cesantias Siesa", contrato.entidad_cesantias_siesa),
 		"id_entidad_ccf": _catalog_code("Entidad CCF Siesa", ccf_value),
-		"id_entidad_arl": _str(_first(data.arl_codigo_siesa, getattr(afiliacion, "arl_numero_afiliacion", None))),
+		"id_entidad_arl": "01",
 		"id_entidad_sena": "899999034",
 		"id_entidad_icbf": "899999239",
 		"fecha_ingreso": _safe_ymd(contrato.fecha_ingreso),
