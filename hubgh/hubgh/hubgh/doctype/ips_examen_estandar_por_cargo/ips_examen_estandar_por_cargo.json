@@ -7,6 +7,7 @@
  "field_order": [
   "cargo",
   "cargo_nombre",
+  "tipo_cargo_aplica",
   "codigo_examen",
   "nombre_examen",
   "celda_excel"
@@ -16,9 +17,9 @@
    "fieldname": "cargo",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Cargo",
+   "label": "Cargo (específico)",
    "options": "Cargo",
-   "description": "Dejar vacío para que el examen aplique a todos los cargos como fallback default."
+   "description": "Cargo específico. Dejar vacío para usar 'Tipo cargo aplica' o como fallback global."
   },
   {
    "fetch_from": "cargo.nombre",
@@ -27,6 +28,14 @@
    "in_list_view": 1,
    "label": "Nombre del Cargo",
    "read_only": 1
+  },
+  {
+   "fieldname": "tipo_cargo_aplica",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tipo cargo aplica",
+   "options": "\nOperativo\nAdministrativo",
+   "description": "Si 'Cargo' está vacío, este examen aplica a todos los cargos del tipo indicado. Si vacío también, es fallback global."
   },
   {
    "fieldname": "codigo_examen",

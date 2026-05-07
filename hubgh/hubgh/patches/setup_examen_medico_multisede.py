@@ -118,7 +118,12 @@ def execute():
 	# 7. Sedes default en Zonamedica MR SAS (asume IPS ya existe).
 	_seed_sedes_zonamedica(logger)
 
-	# 8. Scheduler activo + cola sin pausa.
+	# 8. Exámenes default por tipo de cargo (Administrativo, principalmente)
+	#    en IPS Zonamedica si no están todavía. Idempotente — chequea por
+	#    código de examen.
+	_ensure_admin_examenes_zonamedica(logger)
+
+	# 9. Scheduler activo + cola sin pausa.
 	_enable_scheduler_and_queue(logger)
 
 	frappe.db.commit()
@@ -399,11 +404,16 @@ def _ensure_ips_zonamedica(logger):
 				{"ciudad": "Medellín", "email": "ejecutivocuenta@zonamedicaips.com"},
 			],
 			"examenes_estandar": [
+				# Cargo específico (Auxiliar de Cocina) — overrides para ese cargo.
 				{"cargo": "416", "codigo_examen": "EXM-INGRESO", "nombre_examen": "Examen médico con énfasis osteomuscular", "celda_excel": ""},
 				{"cargo": "416", "codigo_examen": "EXM-OPTO", "nombre_examen": "Optometría", "celda_excel": ""},
 				{"cargo": "416", "codigo_examen": "EXM-KOH", "nombre_examen": "KOH", "celda_excel": ""},
 				{"cargo": "416", "codigo_examen": "EXM-COPRO", "nombre_examen": "Coprológico", "celda_excel": ""},
 				{"cargo": "416", "codigo_examen": "EXM-FROTIS-G", "nombre_examen": "Frotis de garganta", "celda_excel": ""},
+				# Default Administrativos (aplica a todos los cargos con tipo_cargo=Administrativo).
+				{"tipo_cargo_aplica": "Administrativo", "codigo_examen": "EXM-HC-INGRESO", "nombre_examen": "Historia clínica digital INGRESO", "celda_excel": ""},
+				{"tipo_cargo_aplica": "Administrativo", "codigo_examen": "EXM-OPTO-ADM", "nombre_examen": "Consulta Optometría", "celda_excel": ""},
+				{"tipo_cargo_aplica": "Administrativo", "codigo_examen": "EXM-OSTEO-ADM", "nombre_examen": "Osteomuscular", "celda_excel": ""},
 			],
 		})
 		ips.insert(ignore_permissions=True, ignore_mandatory=True)
@@ -411,6 +421,51 @@ def _ensure_ips_zonamedica(logger):
 	except Exception:
 		logger.warning(
 			"examen_medico_multisede:zonamedica_create_failed",
+			exc_info=True,
+		)
+
+
+ADMIN_EXAMENES_DEFAULT = [
+	{"codigo_examen": "EXM-HC-INGRESO", "nombre_examen": "Historia clínica digital INGRESO"},
+	{"codigo_examen": "EXM-OPTO-ADM", "nombre_examen": "Consulta Optometría"},
+	{"codigo_examen": "EXM-OSTEO-ADM", "nombre_examen": "Osteomuscular"},
+]
+
+
+def _ensure_admin_examenes_zonamedica(logger):
+	"""Garantiza que IPS Zonamedica MR SAS tenga las filas de exámenes
+	administrativos default (con tipo_cargo_aplica='Administrativo'). Si una
+	fila con el mismo código_examen ya existe (independiente del cargo),
+	no se duplica."""
+	ips_name = "Zonamedica MR SAS"
+	if not frappe.db.exists("IPS", ips_name):
+		return
+	try:
+		ips = frappe.get_doc("IPS", ips_name)
+		existing_codes = {
+			(getattr(r, "codigo_examen", "") or "").strip()
+			for r in (ips.examenes_estandar or [])
+		}
+		added = 0
+		for ex in ADMIN_EXAMENES_DEFAULT:
+			if ex["codigo_examen"] in existing_codes:
+				continue
+			ips.append("examenes_estandar", {
+				"tipo_cargo_aplica": "Administrativo",
+				"codigo_examen": ex["codigo_examen"],
+				"nombre_examen": ex["nombre_examen"],
+				"celda_excel": "",
+			})
+			added += 1
+		if added:
+			ips.save(ignore_permissions=True)
+			logger.info(
+				"examen_medico_multisede:admin_examenes_seeded",
+				extra={"count": added},
+			)
+	except Exception:
+		logger.warning(
+			"examen_medico_multisede:admin_examenes_skip",
 			exc_info=True,
 		)
 

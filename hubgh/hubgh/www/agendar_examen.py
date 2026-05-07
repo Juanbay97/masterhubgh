@@ -309,6 +309,15 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 
 		ips_nombre = getattr(ips_doc, "nombre", ips_name) if ips_doc else ips_name
 
+		# Resolver tipo_cargo una sola vez para usarlo en ambos correos
+		# (confirmación al candidato + notificación a la IPS).
+		from hubgh.hubgh.examen_medico.cita_service import (
+			_operativo_attachments,
+			_resolve_cargo_tipo,
+		)
+		cargo_cita_for_tipo = cita.cargo_al_enviar or ""
+		tipo_cargo = _resolve_cargo_tipo(cargo_cita_for_tipo)
+
 		# Email 1: confirmación al candidato — template según tipo de cargo
 		candidato_email = getattr(candidato, "email", None) or ""
 		if candidato_email and ips_doc:
@@ -318,13 +327,7 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 				site_url = ""
 			portal_url = f"{site_url}/agendar_examen?token={token}"
 
-			from hubgh.hubgh.examen_medico.cita_service import (
-				_operativo_attachments,
-				_resolve_cargo_tipo,
-				_resolve_examenes_for_cargo,
-			)
-			cargo_cita_for_tipo = cita.cargo_al_enviar or ""
-			tipo_cargo = _resolve_cargo_tipo(cargo_cita_for_tipo)
+			from hubgh.hubgh.examen_medico.cita_service import _resolve_examenes_for_cargo
 			confirm_template = (
 				"examen_medico_confirmacion_administrativo"
 				if tipo_cargo == "Administrativo"
@@ -335,7 +338,7 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 			if not frappe.db.exists("Email Template", confirm_template):
 				confirm_template = "examen_medico_confirmacion"
 
-			examenes_candidato = _resolve_examenes_for_cargo(ips_doc, cargo_cita_for_tipo)
+			examenes_candidato = _resolve_examenes_for_cargo(ips_doc, cargo_cita_for_tipo, tipo_cargo=tipo_cargo)
 
 			# Adjuntar imágenes de instrucciones solo para cargos operativos.
 			confirm_attachments = (
@@ -377,8 +380,8 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 			# Para el correo y el FRSN-02 mostramos el nombre legible del cargo
 			# (ej. "AUXILIAR DE COCINA"), no el código numérico ("416").
 			cargo_label = _resolve_cargo_label(cargo_cita) or cargo_cita
-			# Lista de exámenes con fallback (cargo específico → cargo vacío).
-			examenes = _resolve_examenes_for_cargo(ips_doc, cargo_cita)
+			# Lista de exámenes con cascada: cargo específico → tipo cargo → fallback global.
+			examenes = _resolve_examenes_for_cargo(ips_doc, cargo_cita, tipo_cargo=tipo_cargo)
 			attachments = []
 			if int(sede_resuelta.get("requiere_orden_servicio", 0) or 0):
 				try:

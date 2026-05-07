@@ -103,14 +103,20 @@ def _operativo_attachments() -> list[dict]:
 	return out
 
 
-def _resolve_examenes_for_cargo(ips_doc, cargo_codigo: str | None) -> list[dict]:
-	"""Devuelve la lista de exámenes a realizar para el cargo del candidato.
+def _resolve_examenes_for_cargo(
+	ips_doc,
+	cargo_codigo: str | None,
+	tipo_cargo: str | None = None,
+) -> list[dict]:
+	"""Devuelve la lista de exámenes a realizar, con cascada de fallbacks.
 
-	Estrategia con fallback:
-	  1. Filas de IPS Examen Estandar Por Cargo donde `cargo == codigo` exacto.
-	  2. Si la lista anterior queda vacía, filas con `cargo` vacío (configuradas
-	     como "aplica a todos los cargos como default").
-	  3. Si la 2ª también está vacía, lista vacía (el correo no muestra exámenes).
+	Cascade:
+	  1. Filas con `cargo == codigo` exacto (específico del cargo).
+	  2. Si la 1ª queda vacía, filas con `cargo` vacío y `tipo_cargo_aplica`
+	     coincide con el tipo del candidato (Operativo o Administrativo).
+	  3. Si la 2ª queda vacía, filas con `cargo` y `tipo_cargo_aplica`
+	     ambos vacíos (fallback global).
+	  4. Si la 3ª también está vacía, lista vacía.
 
 	Cada item retornado tiene `nombre_examen`.
 	"""
@@ -124,19 +130,35 @@ def _resolve_examenes_for_cargo(ips_doc, cargo_codigo: str | None) -> list[dict]
 		return row.get(key) if isinstance(row, dict) else getattr(row, key, None)
 
 	codigo = (cargo_codigo or "").strip()
+	tipo = (tipo_cargo or "").strip()
+
 	# Path 1 — match exacto por cargo
-	matched = [
-		{"nombre_examen": _row_get(r, "nombre_examen") or ""}
-		for r in rows
-		if (_row_get(r, "cargo") or "").strip() == codigo and codigo
-	]
-	if matched:
-		return matched
-	# Path 2 — fallback a filas con cargo vacío
+	if codigo:
+		matched = [
+			{"nombre_examen": _row_get(r, "nombre_examen") or ""}
+			for r in rows
+			if (_row_get(r, "cargo") or "").strip() == codigo
+		]
+		if matched:
+			return matched
+
+	# Path 2 — match por tipo de cargo
+	if tipo:
+		matched = [
+			{"nombre_examen": _row_get(r, "nombre_examen") or ""}
+			for r in rows
+			if not (_row_get(r, "cargo") or "").strip()
+			and (_row_get(r, "tipo_cargo_aplica") or "").strip() == tipo
+		]
+		if matched:
+			return matched
+
+	# Path 3 — fallback global (cargo vacío + tipo vacío)
 	default = [
 		{"nombre_examen": _row_get(r, "nombre_examen") or ""}
 		for r in rows
 		if not (_row_get(r, "cargo") or "").strip()
+		and not (_row_get(r, "tipo_cargo_aplica") or "").strip()
 	]
 	return default
 
@@ -344,7 +366,7 @@ def create_cita_and_send_link(
 
 			# Lista de exámenes que se realizarán — incluye fallback a cargo vacío.
 			ips_doc_for_examenes = frappe.get_doc("IPS", ips_name)
-			examenes = _resolve_examenes_for_cargo(ips_doc_for_examenes, cargo_al_enviar)
+			examenes = _resolve_examenes_for_cargo(ips_doc_for_examenes, cargo_al_enviar, tipo_cargo=tipo_cargo)
 
 			# Las imágenes con instrucciones de muestras (coprológica + KOH)
 			# NO se adjuntan acá — irían recargadas y antes de que el candidato
