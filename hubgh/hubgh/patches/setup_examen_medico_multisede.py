@@ -425,18 +425,25 @@ def _ensure_ips_zonamedica(logger):
 		)
 
 
-ADMIN_EXAMENES_DEFAULT = [
-	{"codigo_examen": "EXM-HC-INGRESO", "nombre_examen": "Historia clínica digital INGRESO"},
-	{"codigo_examen": "EXM-OPTO-ADM", "nombre_examen": "Consulta Optometría"},
-	{"codigo_examen": "EXM-OSTEO-ADM", "nombre_examen": "Osteomuscular"},
+EXAMENES_DEFAULT_BY_TIPO = [
+	# Administrativos — set reducido (Tecnico Mantenimiento, Gerente, etc.)
+	{"tipo_cargo_aplica": "Administrativo", "codigo_examen": "EXM-HC-INGRESO", "nombre_examen": "Historia clínica digital INGRESO"},
+	{"tipo_cargo_aplica": "Administrativo", "codigo_examen": "EXM-OPTO-ADM", "nombre_examen": "Consulta Optometría"},
+	{"tipo_cargo_aplica": "Administrativo", "codigo_examen": "EXM-OSTEO-ADM", "nombre_examen": "Osteomuscular"},
+	# Operativos default — para cargos operativos que no tienen override
+	# específico (los con cargo='416' tienen su propio set y ese gana en path 1).
+	{"tipo_cargo_aplica": "Operativo", "codigo_examen": "EXM-OP-OSTEO", "nombre_examen": "Examen médico con énfasis osteomuscular"},
+	{"tipo_cargo_aplica": "Operativo", "codigo_examen": "EXM-OP-OPTO", "nombre_examen": "Optometría"},
+	{"tipo_cargo_aplica": "Operativo", "codigo_examen": "EXM-OP-KOH", "nombre_examen": "KOH"},
+	{"tipo_cargo_aplica": "Operativo", "codigo_examen": "EXM-OP-COPRO", "nombre_examen": "Coprológico"},
+	{"tipo_cargo_aplica": "Operativo", "codigo_examen": "EXM-OP-FROTIS", "nombre_examen": "Frotis de garganta"},
 ]
 
 
 def _ensure_admin_examenes_zonamedica(logger):
-	"""Garantiza que IPS Zonamedica MR SAS tenga las filas de exámenes
-	administrativos default (con tipo_cargo_aplica='Administrativo'). Si una
-	fila con el mismo código_examen ya existe (independiente del cargo),
-	no se duplica."""
+	"""Garantiza que IPS Zonamedica MR SAS tenga las filas de exámenes default
+	por tipo de cargo (Administrativo + Operativo). Idempotente — si una fila
+	con el mismo código_examen ya existe, no se duplica."""
 	ips_name = "Zonamedica MR SAS"
 	if not frappe.db.exists("IPS", ips_name):
 		return
@@ -447,11 +454,11 @@ def _ensure_admin_examenes_zonamedica(logger):
 			for r in (ips.examenes_estandar or [])
 		}
 		added = 0
-		for ex in ADMIN_EXAMENES_DEFAULT:
+		for ex in EXAMENES_DEFAULT_BY_TIPO:
 			if ex["codigo_examen"] in existing_codes:
 				continue
 			ips.append("examenes_estandar", {
-				"tipo_cargo_aplica": "Administrativo",
+				"tipo_cargo_aplica": ex["tipo_cargo_aplica"],
 				"codigo_examen": ex["codigo_examen"],
 				"nombre_examen": ex["nombre_examen"],
 				"celda_excel": "",
@@ -460,12 +467,12 @@ def _ensure_admin_examenes_zonamedica(logger):
 		if added:
 			ips.save(ignore_permissions=True)
 			logger.info(
-				"examen_medico_multisede:admin_examenes_seeded",
+				"examen_medico_multisede:default_examenes_seeded",
 				extra={"count": added},
 			)
 	except Exception:
 		logger.warning(
-			"examen_medico_multisede:admin_examenes_skip",
+			"examen_medico_multisede:default_examenes_skip",
 			exc_info=True,
 		)
 
