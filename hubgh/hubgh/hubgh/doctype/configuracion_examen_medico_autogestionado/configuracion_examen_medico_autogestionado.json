@@ -1,0 +1,66 @@
+{
+ "actions": [],
+ "creation": "2026-05-08 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section_cc",
+  "cc_emails",
+  "section_info",
+  "info_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_cc",
+   "fieldtype": "Section Break",
+   "label": "Correos en copia (CC)"
+  },
+  {
+   "fieldname": "cc_emails",
+   "fieldtype": "Table",
+   "label": "Emails en copia",
+   "options": "Configuracion Examen Medico CC",
+   "description": "Estos correos serán incluidos en CC en TODOS los emails del flujo de examen médico (link de agendamiento, confirmación, notificación a IPS). Solo se envían los que tengan 'Activo' marcado."
+  },
+  {
+   "fieldname": "section_info",
+   "fieldtype": "Section Break",
+   "label": "Información"
+  },
+  {
+   "fieldname": "info_html",
+   "fieldtype": "HTML",
+   "options": "<div style='padding:8px;background:#f8fafc;border-left:3px solid #1D4ED8;color:#334155'>Cualquier cambio aquí impacta a TODOS los correos del flujo de examen médico autogestionado. Si la lista queda vacía, el sistema usa una lista por defecto codificada (SST + Generalistas GH). Cambios aplican inmediatamente, sin reiniciar el servicio.</div>"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-05-08 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Configuracion Examen Medico Autogestionado",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "HR Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

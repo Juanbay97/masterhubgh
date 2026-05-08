@@ -4,18 +4,55 @@
 """
 email_service — Wrapper sobre frappe.sendmail para emails de examen médico.
 
-Renderiza Email Templates de Frappe, agrega CC constantes y gestiona
+Renderiza Email Templates de Frappe, agrega CC configurables y gestiona
 adjuntos (FRSN-02 xlsx). Loguea en fallo, no relanza excepción.
 """
 
 from __future__ import annotations
 
-# CC siempre incluido en todos los emails a candidatos
-CC_ALWAYS: list[str] = [
+# Fallback: si la config no existe / está vacía, usar estos emails.
+# Mantener sincronizado con la siembra del patch
+# (setup_examen_medico_multisede._ensure_configuracion_examen_medico).
+CC_FALLBACK: list[str] = [
 	"SST@homeburgers.com",
 	"generalistagh1@homeburgers.com",
 	"generalistagh2@homeburgers.com",
 ]
+
+
+def _load_cc_always() -> list[str]:
+	"""
+	Lee los emails CC desde el Single 'Configuracion Examen Medico Autogestionado'.
+
+	Returns:
+		Lista de emails activos. Si el doctype no existe aún o la tabla está
+		vacía, retorna CC_FALLBACK.
+
+	Note:
+		Se llama por cada envío para que cambios en UI apliquen al instante,
+		sin reiniciar el servicio. El costo es despreciable (una sola query
+		al Single).
+	"""
+	import frappe
+
+	try:
+		config = frappe.get_cached_doc("Configuracion Examen Medico Autogestionado")
+		emails: list[str] = []
+		for row in config.get("cc_emails") or []:
+			activo = row.get("activo") if isinstance(row, dict) else getattr(row, "activo", 1)
+			email = row.get("email") if isinstance(row, dict) else getattr(row, "email", None)
+			if activo and email:
+				email = str(email).strip()
+				if email and email not in emails:
+					emails.append(email)
+		if emails:
+			return emails
+	except Exception:
+		# Doctype puede no existir aún (antes de la primera migración con el patch)
+		# o la fila Single puede no haberse creado. Caemos al fallback silenciosamente.
+		pass
+
+	return list(CC_FALLBACK)
 
 
 def send_exam_email(
@@ -33,7 +70,7 @@ def send_exam_email(
 		recipients: Lista de correos destinatarios.
 		context: Variables Jinja para renderizar el template.
 		attachments: Lista de adjuntos [{"fname": str, "fcontent": bytes}].
-		cc: Lista adicional de CC (se combina con CC_ALWAYS).
+		cc: Lista adicional de CC (se combina con los de la configuración).
 
 	Note:
 		Loguea en fallo mediante frappe.log_error; no relanza excepciones.
@@ -46,7 +83,7 @@ def send_exam_email(
 		subject = render_template(template_doc.subject or "", context)
 		message = render_template(template_doc.response or template_doc.message or "", context)
 
-		combined_cc = list(CC_ALWAYS)
+		combined_cc = _load_cc_always()
 		if cc:
 			combined_cc = combined_cc + [c for c in cc if c not in combined_cc]
 

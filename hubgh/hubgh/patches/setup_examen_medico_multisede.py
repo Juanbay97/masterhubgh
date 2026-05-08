@@ -123,7 +123,11 @@ def execute():
 	#    código de examen.
 	_ensure_admin_examenes_zonamedica(logger)
 
-	# 9. Scheduler activo + cola sin pausa.
+	# 9. Configuración Examen Médico Autogestionado — siembra inicial de
+	#    emails CC si el Single está vacío (operador puede editar luego en UI).
+	_ensure_configuracion_examen_medico(logger)
+
+	# 10. Scheduler activo + cola sin pausa.
 	_enable_scheduler_and_queue(logger)
 
 	frappe.db.commit()
@@ -513,6 +517,54 @@ def _seed_sedes_zonamedica(logger):
 		)
 	except Exception:
 		logger.warning("examen_medico_multisede:sedes_save_failed", exc_info=True)
+
+
+CC_EMAILS_DEFAULT = [
+	{"email": "SST@homeburgers.com", "nombre": "SST", "activo": 1},
+	{"email": "generalistagh1@homeburgers.com", "nombre": "Generalista GH 1", "activo": 1},
+	{"email": "generalistagh2@homeburgers.com", "nombre": "Generalista GH 2", "activo": 1},
+]
+
+
+def _ensure_configuracion_examen_medico(logger):
+	"""Seed `Configuracion Examen Medico Autogestionado` Single con CC defaults.
+
+	Idempotente:
+	  - Si el doctype todavía no existe (primera migración antes de que
+	    Frappe haya sincronizado el JSON), salimos silenciosamente.
+	  - Si el Single ya tiene filas en `cc_emails`, no tocamos nada — el
+	    operador ya configuró su lista vía UI.
+	  - Si el Single existe pero está vacío, sembramos los 3 emails por
+	    defecto (SST + 2 generalistas).
+	"""
+	try:
+		if not frappe.db.table_exists("Configuracion Examen Medico Autogestionado"):
+			logger.info("examen_medico_multisede:cc_config_table_missing_skip")
+			return
+
+		doc = frappe.get_single("Configuracion Examen Medico Autogestionado")
+
+		existing = list(doc.get("cc_emails") or [])
+		if existing:
+			logger.info(
+				"examen_medico_multisede:cc_config_present_skip count=%d",
+				len(existing),
+			)
+			return
+
+		for entry in CC_EMAILS_DEFAULT:
+			doc.append("cc_emails", entry)
+
+		doc.flags.ignore_permissions = True
+		doc.save(ignore_permissions=True)
+		logger.info(
+			"examen_medico_multisede:cc_config_seeded count=%d",
+			len(CC_EMAILS_DEFAULT),
+		)
+	except Exception:
+		logger.warning(
+			"examen_medico_multisede:cc_config_skip", exc_info=True
+		)
 
 
 def _enable_scheduler_and_queue(logger):
