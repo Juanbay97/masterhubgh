@@ -53,10 +53,17 @@ ls "$STAGING_DIR"/${BACKUP_TS}*-private-files.t*       >/dev/null 2>&1 || fail "
 
 # ───────────────────────────────────────────────────────────────────────────────
 # Cargar variables del .env (necesitamos MARIADB_ROOT_PASSWORD)
+# CRITICO: NO usar `source` porque bash expandiria $, \, backticks etc.
+# Docker compose lee el .env literal — tenemos que hacer lo mismo para que
+# el valor que usemos aca sea exactamente el que mariadb tiene inicializado.
 # ───────────────────────────────────────────────────────────────────────────────
-# shellcheck disable=SC1091
-set -a; source .env; set +a
-[[ -n "${MARIADB_ROOT_PASSWORD:-}" ]] || fail "MARIADB_ROOT_PASSWORD no está en .env"
+read_env_var() {
+    # Lee una variable del .env de forma literal (sin shell expansion).
+    # Strip CR (por si vino con CRLF) y comentarios despues de '#' no quoteados.
+    sed -n "s/^${1}=//p" .env | tr -d '\r' | head -1
+}
+MARIADB_ROOT_PASSWORD="$(read_env_var MARIADB_ROOT_PASSWORD)"
+[[ -n "$MARIADB_ROOT_PASSWORD" ]] || fail "MARIADB_ROOT_PASSWORD no está en .env"
 
 # Si no nos dieron sitename, intentamos sacarlo del nombre de archivo
 if [[ -z "$SITE_NAME" ]]; then
@@ -103,13 +110,19 @@ if dc exec -T backend bash -c "test -f /home/frappe/frappe-bench/sites/$SITE_NAM
     log "El sitio '$SITE_NAME' ya existe en destino. Se restaura encima con --force."
 else
     log "Creando sitio vacío '$SITE_NAME'..."
-    dc exec -T backend bash -c "
+    # Pasamos los passwords via env vars al exec (con -e) para evitar problemas
+    # de shell quoting si los passwords contienen $, \, backticks, etc.
+    dc exec -T \
+        -e MARIADB_ROOT_PASSWORD="$MARIADB_ROOT_PASSWORD" \
+        -e ADMIN_PASSWORD_TMP="$ADMIN_PASSWORD_TMP" \
+        -e SITE_NAME="$SITE_NAME" \
+        backend bash -c '
         cd /home/frappe/frappe-bench &&
-        bench new-site $SITE_NAME \
-            --admin-password '$ADMIN_PASSWORD_TMP' \
-            --mariadb-root-password '$MARIADB_ROOT_PASSWORD' \
+        bench new-site "$SITE_NAME" \
+            --admin-password "$ADMIN_PASSWORD_TMP" \
+            --mariadb-root-password "$MARIADB_ROOT_PASSWORD" \
             --no-mariadb-socket
-    "
+    '
 fi
 
 # ───────────────────────────────────────────────────────────────────────────────
