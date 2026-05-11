@@ -29,7 +29,10 @@ Layout de columnas (en orden):
     Adelanto Payflow $ | Sanitas $ | Gafas $ | FONGIGA Fondo $ |
     Libranza Comfenalco $ | Libranza Fincomercio $ |
     Libranza Davivienda $ | Libranza Compensar $ |
-    Préstamo Empresa $ | Préstamo FONGIGA $ | Pérdida Bonif. $
+    Préstamo Empresa $ | Préstamo FONGIGA $
+
+  Flag bonificación (sólo Operativo PDV)
+    Tiene bonif.   ← 1=conserva, 0=pierde, vacío=no aplica
 
   Totales
     Total Devengado | Total Descontado | Neto a Pagar
@@ -103,7 +106,9 @@ COLUMN_SPEC_HECHOS: list[tuple[str, str, str]] = _IDENT_COLUMNS + [
 	("Libranza Compensar $", "amt:LIBRANZA_COMPENSAR", "sum"),
 	("Préstamo Empresa $", "amt:PRESTAMO_EMPRESA", "sum"),
 	("Préstamo FONGIGA $", "amt:PRESTAMO_FONGIGA", "sum"),
-	("Pérdida Bonif. $", "amt:PERDIDA_BONIFICACION", "sum"),
+	# Flag informativo: sólo aplica a cargos Operativos (PDV).
+	# 1 = conserva bonificación, 0 = la pierde, vacío = no aplica.
+	("Tiene bonif.", "tiene_bonif", "first"),
 	# Auxilios y bonificaciones pactados (también valor literal del archivo)
 	("Auxilio Movilización $", "amt:AUXILIO_MOVILIZACION_DOM_FEST", "sum"),
 	("Auxilio Rodamiento $", "amt:AUXILIO_RODAMIENTO", "sum"),
@@ -142,7 +147,7 @@ COLUMN_SPEC_CALCULOS: list[tuple[str, str, str]] = _IDENT_COLUMNS + [
 	("Libranza Comfenalco $", "amt:LIBRANZA_COMFENALCO", "sum"),
 	("Préstamo Empresa $", "amt:PRESTAMO_EMPRESA", "sum"),
 	("Préstamo FONGIGA $", "amt:PRESTAMO_FONGIGA", "sum"),
-	("Pérdida Bonif. $", "amt:PERDIDA_BONIFICACION", "sum"),
+	# (Bonificación NO la calculamos — sólo el flag aparece en la hoja Hechos.)
 	# Auxilios y bonificaciones pactados (réplica)
 	("Auxilio Movilización $", "amt:AUXILIO_MOVILIZACION_DOM_FEST", "sum"),
 	("Auxilio Rodamiento $", "amt:AUXILIO_RODAMIENTO", "sum"),
@@ -299,6 +304,10 @@ def _aggregate(novedades: Iterable, employees_meta: dict[str, dict]) -> dict[str
 		_fill("id_jornada", nov.tipo_jornada_snapshot)
 		_fill("id_cargo", payload.get("cargo"))
 		_fill("id_sucursal", payload.get("sucursal"), payload.get("sede"))
+		# Tipo de cargo (Operativo/Administrativo): viene del catálogo
+		# Cargo a través del enrichment. Se usa para gatear la columna
+		# "Tiene bonif." (sólo Operativo).
+		_fill("id_cargo_tipo", getattr(nov, "cargo_tipo", "") or payload.get("tipo_cargo"))
 		if not rec.get("id_salario") and nov.salario_mensual:
 			rec["id_salario"] = float(nov.salario_mensual)
 		# dias_trabajados: tomar el máximo (todas las novedades del
@@ -311,6 +320,23 @@ def _aggregate(novedades: Iterable, employees_meta: dict[str, dict]) -> dict[str
 		tipo = nov.tipo_novedad
 		amount = float(nov.computed_amount or 0.0)
 		qty = float(nov.computed_quantity or nov.cantidad or 0.0)
+
+		# Tipos informativos: no van a totales ni a buckets de importe.
+		# Sólo guardan su flag/marca en el record para columnas dedicadas.
+		if tipo == "PERDIDA_BONIFICACION":
+			# Sólo aplica a cargo Operativo. Para admin lo dejamos vacío.
+			tiene = payload.get("tiene_bonificacion")
+			if tiene is None:
+				# Fallback: leer del computed_quantity (lo setea el compute).
+				tiene = int(qty) if qty in (0, 1, 0.0, 1.0) else None
+			if tiene is not None and (rec.get("id_cargo_tipo") or "").lower() == "operativo":
+				rec["tiene_bonif"] = int(tiene)
+			continue
+		if tipo == "EMPLEADO_ACTIVO":
+			# Sólo registra al empleado como activo en el periodo.
+			# El _fill de identidad ya capturó cargo/sucursal/tipo.
+			continue
+
 		if nov.unidad == "horas":
 			rec["h_qty"][tipo] += qty
 			rec["h_amt"][tipo] += amount
@@ -342,6 +368,7 @@ def _empty_emp_record() -> dict:
 		"id_set": False,
 		"id_cedula": "", "id_nombres": "", "id_apellidos": "",
 		"id_jornada": "", "id_cargo": "", "id_sucursal": "",
+		"id_cargo_tipo": "",
 		"id_salario": 0.0,
 		"id_dias_trabajados": 0.0,
 		"h_qty": defaultdict(float), "h_amt": defaultdict(float),
@@ -349,12 +376,16 @@ def _empty_emp_record() -> dict:
 		"amt": defaultdict(float),
 		"total_devengado": 0.0,
 		"total_descontado": 0.0,
+		"tiene_bonif": None,  # None = no aplica (admin); 0/1 = operativo
 	}
 
 
 def _resolve_value(rec: dict, source: str, params):
 	if source.startswith("id_"):
 		return rec.get(source, "")
+	if source == "tiene_bonif":
+		v = rec.get("tiene_bonif")
+		return "" if v is None else int(v)
 	if source == "auxilio_t":
 		return _auxilio_for(rec, params)
 	if source.startswith("h_qty:"):

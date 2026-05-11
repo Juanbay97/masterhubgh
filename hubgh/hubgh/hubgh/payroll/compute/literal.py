@@ -14,6 +14,10 @@ from __future__ import annotations
 
 
 # Tipos de descuento (signo negativo en computed_amount).
+# Ojo: PERDIDA_BONIFICACION NO está acá porque la bonificación la
+# calcula contabilidad — el sistema sólo registra el flag 1/0 como
+# novedad informativa y aparece en la hoja Hechos del export como
+# columna "Tiene bonif.".
 DESCUENTO_TYPES = frozenset(
 	{
 		"ADELANTO_NOMINA_PAYFLOW",
@@ -26,7 +30,6 @@ DESCUENTO_TYPES = frozenset(
 		"LIBRANZA_COMPENSAR",
 		"PRESTAMO_EMPRESA",
 		"PRESTAMO_FONGIGA",
-		"PERDIDA_BONIFICACION",
 	}
 )
 

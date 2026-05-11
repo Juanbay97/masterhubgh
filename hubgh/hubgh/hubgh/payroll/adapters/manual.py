@@ -61,6 +61,8 @@ def parse(workbook) -> Iterator[NovedadCanonica]:
 			yield from _parse_descuentos(ws)
 		elif template_id == "perdida_bonificacion":
 			yield from _parse_perdida_bonificacion(ws)
+		elif template_id == "maestro_empleados":
+			yield from _parse_maestro_empleados(ws)
 		# `ascensos` y `movimientos` se omiten en v1 — son informativos
 		# y los procesa otro flujo (actualización de Contrato / PDV).
 
@@ -96,28 +98,57 @@ def _parse_descuentos(ws) -> Iterator[NovedadCanonica]:
 
 
 def _parse_perdida_bonificacion(ws) -> Iterator[NovedadCanonica]:
-	"""Headers en R2: Cédula | Nombre | Valor | Motivo."""
+	"""Headers en R2: Cédula | Nombre | Tiene bonificación (1/0) | Motivo.
+
+	Acepta TODAS las filas (incluso con valor 0). El flag se conserva tal
+	cual: 1 = la mantiene, 0 = la pierde. Es informativo, no devenga.
+	"""
 	for row in ws.iter_rows(min_row=3, values_only=True):
 		documento = _str_id(row[0] if len(row) > 0 else None)
 		if not documento:
 			continue
 		nombre = str(row[1]).strip() if len(row) > 1 and row[1] else ""
+		raw_flag = row[2] if len(row) > 2 else None
 		try:
-			valor = float(row[2] or 0) if len(row) > 2 else 0
+			flag = 1 if int(float(raw_flag or 0)) else 0
 		except (TypeError, ValueError):
 			continue
 		motivo = str(row[3]).strip() if len(row) > 3 and row[3] else ""
-		if valor <= 0:
-			continue
 		yield NovedadCanonica(
 			documento_identidad=documento,
 			tipo_novedad="PERDIDA_BONIFICACION",
-			valor=valor,
-			unidad="cop",
+			valor=float(flag),  # 1 ó 0; el compute lo trata como informativo
+			unidad="unidades",
 			raw_payload={
 				"empleado_nombre": nombre,
 				"motivo": motivo,
+				"tiene_bonificacion": flag,
 				"sheet": "manual:perdida_bonificacion",
+			},
+		)
+
+
+def _parse_maestro_empleados(ws) -> Iterator[NovedadCanonica]:
+	"""Headers en R2: Cédula | Nombre | Cargo | Sucursal | Tipo."""
+	for row in ws.iter_rows(min_row=3, values_only=True):
+		documento = _str_id(row[0] if len(row) > 0 else None)
+		if not documento:
+			continue
+		nombre = str(row[1]).strip() if len(row) > 1 and row[1] else ""
+		cargo = str(row[2]).strip() if len(row) > 2 and row[2] else ""
+		sucursal = str(row[3]).strip() if len(row) > 3 and row[3] else ""
+		tipo = str(row[4]).strip() if len(row) > 4 and row[4] else ""
+		yield NovedadCanonica(
+			documento_identidad=documento,
+			tipo_novedad="EMPLEADO_ACTIVO",
+			valor=1.0,
+			unidad="unidades",
+			raw_payload={
+				"empleado_nombre": nombre,
+				"cargo": cargo,
+				"sucursal": sucursal,
+				"tipo_cargo": tipo,
+				"sheet": "manual:maestro_empleados",
 			},
 		)
 

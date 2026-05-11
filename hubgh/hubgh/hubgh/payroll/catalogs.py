@@ -330,10 +330,27 @@ NOVEDAD_TYPES: tuple[NovedadTypeSpec, ...] = (
 	),
 	NovedadTypeSpec(
 		"PERDIDA_BONIFICACION",
-		"Pérdida de bonificación",
-		"cop",
+		"Bonificación PDV (1=conserva, 0=pierde)",
+		"unidades",
 		JORNADA_BOTH,
-		notas="Valor declarado, descuenta.",
+		porcentaje_default=0.0,
+		notas=(
+			"Informativo, NO devenga. Sólo aplica a cargo Operativo (PDV). "
+			"El valor de la bonificación lo calcula contabilidad; el sistema "
+			"sólo registra el flag para mostrarlo en la hoja Hechos."
+		),
+	),
+	NovedadTypeSpec(
+		"EMPLEADO_ACTIVO",
+		"Marcación de empleado activo (maestro)",
+		"unidades",
+		JORNADA_BOTH,
+		porcentaje_default=0.0,
+		notas=(
+			"Informativo. Lo emite el adapter `maestro_empleados` para "
+			"incluir en la prenómina a empleados que no aparecen en CLONK "
+			"(típicamente administrativos)."
+		),
 	),
 
 	# ── Inducción ────────────────────────────────────────────────────

@@ -73,6 +73,7 @@ class CargoSalary:
 	salario_base_tc: float = 0.0
 	horas_trabajadas_mes: float = 0.0
 	aplica_horas_extras: bool = True
+	tipo_cargo: str = ""   # "Operativo" | "Administrativo" | ""
 
 
 @dataclass
@@ -117,6 +118,7 @@ class EnrichedNovedad:
 	valor_hora_base: float | None  # útil para tipos en horas
 	salario_mensual: float = 0.0   # para tipos en días: valor_día = salario/30
 	cargo_aplica_horas_extras: bool = True  # filtro para HE* en compute/recargos
+	cargo_tipo: str = ""            # "Operativo" | "Administrativo" | "" — gate de bonificación PDV
 	# Computed (lo llena el módulo compute, no enrich):
 	computed_amount: float | None = None
 	computed_quantity: float | None = None
@@ -250,6 +252,7 @@ def enrich(
 		valor_hora_base=valor_hora,
 		salario_mensual=salario,
 		cargo_aplica_horas_extras=(cargo_record.aplica_horas_extras if cargo_record else True),
+		cargo_tipo=(cargo_record.tipo_cargo if cargo_record else ""),
 		raw_payload=dict(novedad.raw_payload),
 	)
 
@@ -416,7 +419,10 @@ def build_runtime_context() -> EnrichmentContext:
 		all_cargos = frappe.get_all(
 			"Cargo",
 			filters={"activo": 1},
-			fields=["name", "nombre", "salario_base_tc", "horas_trabajadas_mes"],
+			fields=[
+				"name", "nombre", "salario_base_tc", "horas_trabajadas_mes",
+				"aplica_horas_extras", "tipo_cargo",
+			],
 			limit_page_length=0,
 		)
 		idx: dict[str, dict] = {}
@@ -442,15 +448,16 @@ def build_runtime_context() -> EnrichmentContext:
 			return _cargo_cache[key]
 
 		# 1) Match exacto por name o nombre (rápido, sin construir índice).
+		_fields = ["name", "salario_base_tc", "horas_trabajadas_mes", "aplica_horas_extras", "tipo_cargo"]
 		row = frappe.db.get_value(
 			"Cargo",
 			{"name": key, "activo": 1},
-			["name", "salario_base_tc", "horas_trabajadas_mes", "aplica_horas_extras"],
+			_fields,
 			as_dict=True,
 		) or frappe.db.get_value(
 			"Cargo",
 			{"nombre": key, "activo": 1},
-			["name", "salario_base_tc", "horas_trabajadas_mes", "aplica_horas_extras"],
+			_fields,
 			as_dict=True,
 		)
 
@@ -469,6 +476,7 @@ def build_runtime_context() -> EnrichmentContext:
 			salario_base_tc=float(row.get("salario_base_tc") or 0),
 			horas_trabajadas_mes=float(row.get("horas_trabajadas_mes") or 0),
 			aplica_horas_extras=bool(row.get("aplica_horas_extras", 1)),
+			tipo_cargo=str(row.get("tipo_cargo") or ""),
 		)
 		_cargo_cache[key] = result
 		return result

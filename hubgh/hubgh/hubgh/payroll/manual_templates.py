@@ -60,20 +60,23 @@ TEMPLATES: dict[str, dict] = {
 		),
 	},
 	"perdida_bonificacion": {
-		"label": "Pérdida de bonificación",
-		"sheet_title": "Pérdida bonificación",
+		"label": "Bonificación PDV (1/0)",
+		"sheet_title": "Bonificación PDV",
 		"headers": [
 			"Cédula",
 			"Nombre (opcional)",
-			"Valor a descontar",
-			"Motivo",
+			"Tiene bonificación (1=sí, 0=la pierde)",
+			"Motivo (si pierde)",
 		],
 		"help": (
-			"Pérdida total o parcial de bonificaciones CP / mensuales. Marcá UNA fila por "
-			"empleado afectado. El sistema lo persiste como PERDIDA_BONIFICACION."
+			"Sólo aplica a empleados de punto de venta (cargo Operativo). Marcá "
+			"1 si la conserva y 0 si la pierde. El sistema NO calcula el valor de "
+			"la bonificación — eso lo hace contabilidad. Acá sólo registramos el "
+			"flag para que aparezca como columna 'Tiene bonif.' en la hoja Hechos."
 		),
 		"sample_rows": [
-			["1019058261", "EJEMPLO PEREZ", 80000, "No cumplió KPI servicio"],
+			["1019058261", "EJEMPLO PEREZ", 1, ""],
+			["1017127331", "OTRO EJEMPLO", 0, "No cumplió KPI servicio"],
 		],
 	},
 	"ascensos": {
@@ -92,6 +95,29 @@ TEMPLATES: dict[str, dict] = {
 		),
 		"sample_rows": [
 			["1019058261", "EJEMPLO PEREZ", "ANALISTA DE GESTION HUMANA", 2300000, "2026-04-15"],
+		],
+	},
+	"maestro_empleados": {
+		"label": "Maestro de empleados activos",
+		"sheet_title": "Maestro empleados",
+		"headers": [
+			"Cédula",
+			"Nombre (opcional)",
+			"Cargo",
+			"Sucursal (opcional)",
+			"Tipo (Operativo/Administrativo)",
+		],
+		"help": (
+			"Lista de TODOS los empleados activos en este periodo (operativos y "
+			"administrativos). El sistema los incluye en la prenómina aunque NO "
+			"aparezcan en el CLONK (típico de personal administrativo): a esos "
+			"empleados se les asigna salario base por cargo y sólo se procesan "
+			"sus descuentos / novedades manuales. El cargo debe existir en el "
+			"catálogo de Cargos para que se les resuelva el salario."
+		),
+		"sample_rows": [
+			["1019058261", "EJEMPLO PEREZ", "ANALISTA DE GESTION HUMANA", "Bogotá", "Administrativo"],
+			["1128478178", "OTRO EJEMPLO", "AUXILIAR DE COCINA PDV", "Home 6", "Operativo"],
 		],
 	},
 	"movimientos": {
@@ -189,10 +215,14 @@ def build_template(template_id: str) -> bytes:
 # subido aunque el operador haya renombrado el archivo.
 _FIRST_HEADER_TO_TEMPLATE: dict[str, str] = {
 	"descuentos": "descuentos",
+	"bonificacion pdv": "perdida_bonificacion",
+	"bonificación pdv": "perdida_bonificacion",
 	"pérdida bonificación": "perdida_bonificacion",
 	"perdida bonificacion": "perdida_bonificacion",
 	"ascensos": "ascensos",
 	"movimientos": "movimientos",
+	"maestro empleados": "maestro_empleados",
+	"maestro de empleados": "maestro_empleados",
 }
 
 

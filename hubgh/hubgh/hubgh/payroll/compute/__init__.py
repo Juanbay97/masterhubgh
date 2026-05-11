@@ -33,6 +33,15 @@ def compute_novedad(novedad, params) -> None:
 
 	tipo = novedad.tipo_novedad
 
+	# Tipos informativos: no devengan, sólo registran (banderas/marcas).
+	# Aparecen en la hoja Hechos del export como columnas dedicadas.
+	if tipo in ("PERDIDA_BONIFICACION", "EMPLEADO_ACTIVO"):
+		novedad.computed_amount = 0.0
+		novedad.computed_quantity = float(novedad.valor or novedad.cantidad or 0.0)
+		novedad.calc_status = "computed"
+		novedad.calc_notes = "Informativo, no devenga."
+		return
+
 	if recargos.applies(tipo):
 		amount, qty, notes = recargos.compute(novedad)
 	elif induccion.applies(tipo):
