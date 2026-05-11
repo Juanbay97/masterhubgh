@@ -592,8 +592,12 @@ def ensure_banco_reference_catalog():
 	- ultimos_dos_digitos = últimos 2 del ACH
 	- description = nombre canonical
 
-	Los registros existentes con descripción matcheable se actualizan in-place;
-	los Link fields se repuntan vía rename si el code cambia.
+	Idempotente y tolerante a duplicados pre-existentes:
+	- Si `target_code` ya existe como doc, lo trata como el canonical y mergea
+	  los duplicados (rename con merge=True repunta Link fields).
+	- Si solo existe el doc viejo por description/code legacy, lo renombra al
+	  target.
+	- Si no existe ninguno, inserta uno nuevo.
 	"""
 	for canonical_name, codigo_ach, codigo_bancolombia in OFFICIAL_BANCO_CATALOG:
 		ach = _str(codigo_ach)
@@ -605,11 +609,48 @@ def ensure_banco_reference_catalog():
 		if not target_code or not canonical_name:
 			continue
 
-		# Buscar registro existente por description (canonical o alias) o por
-		# cualquier code/codigo_ach/codigo_bancolombia conocido.
+		updates = {
+			"description": canonical_name,
+			"codigo_ach": ach,
+			"codigo_bancolombia": bancolombia,
+			"ultimos_dos_digitos": last_two,
+			"enabled": 1,
+			"code": target_code,
+		}
+
 		candidate_descriptions = [canonical_name] + [
 			alias for alias, official in BANCO_NAME_ALIASES.items() if official == canonical_name
 		]
+
+		# Caso A: target_code ya existe como doc — actualizar in-place y
+		# mergear cualquier doc duplicado que represente al mismo banco.
+		if frappe.db.exists("Banco Siesa", target_code):
+			try:
+				frappe.db.set_value("Banco Siesa", target_code, updates, update_modified=False)
+			except Exception as exc:
+				frappe.logger("hubgh.siesa_export").warning(
+					"Falló set_value en Banco Siesa target_code",
+					extra={"target": target_code, "error": str(exc)},
+				)
+
+			# Buscar duplicados por descripción / aliases y mergear (rename
+			# con merge=True repunta Link fields antes de borrar el viejo).
+			duplicate_names = set()
+			for desc in candidate_descriptions:
+				dup = frappe.db.get_value("Banco Siesa", {"description": desc}, "name")
+				if dup and dup != target_code:
+					duplicate_names.add(dup)
+			for dup_name in duplicate_names:
+				try:
+					frappe.rename_doc("Banco Siesa", dup_name, target_code, force=True, merge=True)
+				except Exception:
+					frappe.db.set_value(
+						"Banco Siesa", dup_name, "enabled", 0, update_modified=False
+					)
+			continue
+
+		# Caso B: target_code NO existe. Buscar registro existente por description
+		# o code legacy para renombrarlo.
 		name = None
 		for desc in candidate_descriptions:
 			name = frappe.db.get_value("Banco Siesa", {"description": desc}, "name")
@@ -624,32 +665,26 @@ def ensure_banco_reference_catalog():
 		if not name and ach:
 			name = frappe.db.get_value("Banco Siesa", {"codigo_ach": ach}, "name")
 
-		updates = {
-			"description": canonical_name,
-			"codigo_ach": ach,
-			"codigo_bancolombia": bancolombia,
-			"ultimos_dos_digitos": last_two,
-			"enabled": 1,
-		}
-
 		if name:
-			# Si el code actual difiere del target, renombrar el doc — esto
-			# repunta automáticamente todos los Link fields que apuntan al name.
-			if name != target_code:
-				try:
-					frappe.rename_doc("Banco Siesa", name, target_code, force=True, merge=False)
-					name = target_code
-				except Exception:
-					frappe.logger("hubgh.siesa_export").warning(
-						"No se pudo renombrar Banco Siesa", extra={"from": name, "to": target_code}
-					)
-			updates["code"] = target_code
-			frappe.db.set_value("Banco Siesa", name, updates, update_modified=False)
+			try:
+				frappe.rename_doc("Banco Siesa", name, target_code, force=True, merge=False)
+				name = target_code
+			except Exception:
+				# Si el rename falla, actualizar el doc viejo en su sitio.
+				frappe.logger("hubgh.siesa_export").warning(
+					"No se pudo renombrar Banco Siesa", extra={"from": name, "to": target_code}
+				)
+			try:
+				frappe.db.set_value("Banco Siesa", name, updates, update_modified=False)
+			except Exception as exc:
+				frappe.logger("hubgh.siesa_export").warning(
+					"Falló set_value en Banco Siesa",
+					extra={"name": name, "error": str(exc)},
+				)
 			continue
 
-		doc = frappe.get_doc(
-			dict(doctype="Banco Siesa", code=target_code, **updates)
-		)
+		# Caso C: no existe ni target ni legacy. Insertar nuevo.
+		doc = frappe.get_doc(dict(doctype="Banco Siesa", **updates))
 		doc.insert(ignore_permissions=True)
 
 
