@@ -45,6 +45,8 @@ NUL
 *.session.sql
 AGENTS.md
 comandos servidor.txt
+frsn02_generado_smoke_test.xlsx
+**/graphify-out/
 
 # ─── Node ───────────────────────────────────────────────────────
 node_modules/
