@@ -26,3 +26,4 @@ hubgh.patches.permissions_batch1_role_alignment
 hubgh.patches.retire_legacy_caso_sst_entrypoints
 hubgh.patches.backfill_candidato_cargo
 hubgh.patches.setup_examen_medico_multisede
+hubgh.patches.drop_legacy_payroll_tables

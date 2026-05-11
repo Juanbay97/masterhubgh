@@ -157,104 +157,12 @@ def get_initial_tray_reports():
 
 def _build_nomina_dashboard():
 	actions = [
-		{"label": "Bandeja TC", "route": "app/payroll_tc_tray", "style": "primary"},
-		{"label": "Bandeja TP", "route": "app/payroll_tp_tray", "style": "secondary"},
-		{"label": "Bandeja Incapacidades", "route": "app/payroll_incapacity_tray", "style": "secondary"},
-		{"label": "Cargador Nómina", "route": "app/payroll_import_upload", "style": "secondary"},
+		{"label": "Workspace de Novedades", "route": "app/payroll_workspace", "style": "primary"},
 	]
-
-	if not _doctype_exists("Payroll Import Line"):
-		return _empty_payload("No existe Payroll Import Line en este entorno.", actions)
-
-	tc_pending = frappe.db.count("Payroll Import Line", {"tc_status": ["in", ["Pendiente", "Revisado"]]})
-	tp_pending = frappe.db.count("Payroll Import Line", {"tc_status": "Aprobado", "tp_status": ["in", ["Pendiente", "Revisado"]]})
-	import_rows = frappe.db.count("Payroll Import Line")
-	recobro_weighted = _compute_weighted_recobro_count()
-
-	alerts = []
-	if tc_pending > 0:
-		alerts.append(
-			build_dashboard_alert(
-				"Novedades pendientes en TC",
-				f"{tc_pending} línea(s) esperan revisión contable.",
-				severity="warning",
-				route="app/payroll_tc_tray",
-			)
-		)
-	if tp_pending > 0:
-		alerts.append(
-			build_dashboard_alert(
-				"Novedades pendientes en TP",
-				f"{tp_pending} línea(s) listas para aprobación final.",
-				severity="info",
-				route="app/payroll_tp_tray",
-			)
-		)
-	if recobro_weighted > 0:
-		alerts.append(
-			build_dashboard_alert(
-				"Recobros ponderados priorizados",
-				f"{recobro_weighted} línea(s) con deducción y envejecimiento activo.",
-				severity="danger",
-				route="app/payroll_tp_tray",
-			)
-		)
-
-	empty = (tc_pending + tp_pending + import_rows + recobro_weighted) == 0
-	return {
-		"empty": empty,
-		"empty_state": {
-			"title": "Sin actividad de nómina",
-			"message": "No hay líneas de importación para TC/TP en este entorno." if empty else "",
-		},
-		"kpis": {
-			"items": [
-				_kpi("nomina_tc_pendiente", "TC pendientes", tc_pending),
-				_kpi("nomina_tp_pendiente", "TP pendientes", tp_pending),
-				_kpi("nomina_import_rows", "Líneas importadas", import_rows),
-				_kpi("nomina_recobro_weighted", "Recobros ponderados", recobro_weighted),
-			],
-			"empty": False,
-		},
-		"alerts": {
-			"items": alerts,
-			"empty": len(alerts) == 0,
-			"message": "Sin alertas activas en Nómina." if not alerts else "",
-		},
-		"actions": actions,
-	}
-
-
-def _compute_weighted_recobro_count():
-	if not _doctype_exists("Payroll Import Line"):
-		return 0
-
-	rows = frappe.get_all(
-		"Payroll Import Line",
-		filters={
-			"status": ["in", ["Válido", "Procesado"]],
-			"amount": ["<", 0],
-		},
-		fields=["name", "amount", "novedad_date"],
-		limit=300,
+	return _empty_payload(
+		"El módulo de novedades de nómina está en reescritura. El nuevo workspace estará disponible próximamente.",
+		actions,
 	)
-	if not rows:
-		return 0
-
-	weighted = 0
-	today = frappe.utils.getdate()
-	for row in rows:
-		amount = abs(float(row.get("amount") or 0))
-		aging_days = 0
-		if row.get("novedad_date"):
-			try:
-				aging_days = max((today - frappe.utils.getdate(row.get("novedad_date"))).days, 0)
-			except Exception:
-				aging_days = 0
-		score = min(100.0, (amount / 10000.0) + (aging_days * 2.0))
-		if score >= 45:
-			weighted += 1
-	return weighted
 
 
 def _build_seleccion_dashboard():

@@ -399,30 +399,177 @@ def _sst_documents(employee):
 
 
 def _disciplinary_documents(employee):
+	"""
+	Returns disciplinary document items for an employee from ALL sources:
+	  1. Caso Disciplinario (legacy): Files attached to cases where empleado==employee
+	  2. Afectado Disciplinario: Files attached where empleado==employee
+	  3. Citacion Disciplinaria: archivo_citacion linked to those afectados
+	  4. Acta Descargos: archivo_acta linked to those afectados
+	  5. Comunicado Sancion: archivo_comunicado linked to those afectados
+	  6. Evidencia Disciplinaria: archivo linked where afectado.empleado==employee
+	"""
 	items = []
-	case_names = [r.name for r in frappe.get_all("Caso Disciplinario", filters={"empleado": employee}, fields=["name"], order_by="modified desc")]
-	if not case_names:
-		return items
 
-	for f in frappe.get_all(
-		"File",
-		filters={
-			"attached_to_doctype": "Caso Disciplinario",
-			"attached_to_name": ["in", case_names],
-			"file_url": ["is", "set"],
-		},
-		fields=["name", "attached_to_name", "file_url", "modified", "owner"],
+	# ---- Source 1: Legacy Caso Disciplinario attachments ----
+	case_names = [
+		r.name if not isinstance(r, dict) else r["name"]
+		for r in frappe.get_all("Caso Disciplinario", filters={"empleado": employee}, fields=["name"], order_by="modified desc")
+	]
+	if case_names:
+		for f in frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "Caso Disciplinario",
+				"attached_to_name": ["in", case_names],
+				"file_url": ["is", "set"],
+			},
+			fields=["name", "attached_to_name", "file_url", "modified", "owner"],
+			order_by="modified desc",
+		):
+			f_url = f.file_url if not isinstance(f, dict) else f.get("file_url")
+			f_name = f.attached_to_name if not isinstance(f, dict) else f.get("attached_to_name")
+			f_mod = f.modified if not isinstance(f, dict) else f.get("modified")
+			f_own = f.owner if not isinstance(f, dict) else f.get("owner")
+			if f_url:
+				items.append(_mk_folder_item(
+					"disciplinary_documents",
+					f"Caso Disciplinario {f_name}",
+					file_url=f_url,
+					uploaded_on=f_mod,
+					uploaded_by=f_own,
+					source_doctype="Caso Disciplinario",
+					source_name=f_name,
+				))
+
+	# ---- Sources 2-6: Afectado Disciplinario and linked doctypes ----
+	afectados = frappe.get_all(
+		"Afectado Disciplinario",
+		filters={"empleado": employee},
+		fields=["name", "empleado"],
 		order_by="modified desc",
-	):
-		items.append(_mk_folder_item(
-			"disciplinary_documents",
-			f"Caso Disciplinario {f.attached_to_name}",
-			file_url=f.file_url,
-			uploaded_on=f.modified,
-			uploaded_by=f.owner,
-			source_doctype="Caso Disciplinario",
-			source_name=f.attached_to_name,
-		))
+	)
+	afectado_names = [
+		af.name if not isinstance(af, dict) else af.get("name")
+		for af in afectados
+	]
+
+	if afectado_names:
+		# Source 2: Files directly attached to Afectado Disciplinario
+		for f in frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "Afectado Disciplinario",
+				"attached_to_name": ["in", afectado_names],
+				"file_url": ["is", "set"],
+			},
+			fields=["name", "attached_to_name", "file_url", "modified", "owner"],
+			order_by="modified desc",
+		):
+			f_url = f.file_url if not isinstance(f, dict) else f.get("file_url")
+			f_name = f.attached_to_name if not isinstance(f, dict) else f.get("attached_to_name")
+			f_mod = f.modified if not isinstance(f, dict) else f.get("modified")
+			f_own = f.owner if not isinstance(f, dict) else f.get("owner")
+			if f_url:
+				items.append(_mk_folder_item(
+					"disciplinary_documents",
+					f"Afectado Disciplinario {f_name}",
+					file_url=f_url,
+					uploaded_on=f_mod,
+					uploaded_by=f_own,
+					source_doctype="Afectado Disciplinario",
+					source_name=f_name,
+				))
+
+		# Source 3: Citacion Disciplinaria → archivo_citacion
+		for cit in frappe.get_all(
+			"Citacion Disciplinaria",
+			filters={"afectado": ["in", afectado_names]},
+			fields=["name", "afectado", "archivo_citacion", "modified", "owner"],
+			order_by="modified desc",
+		):
+			f_url = cit.archivo_citacion if not isinstance(cit, dict) else cit.get("archivo_citacion")
+			cit_name = cit.name if not isinstance(cit, dict) else cit.get("name")
+			cit_mod = cit.modified if not isinstance(cit, dict) else cit.get("modified")
+			cit_own = cit.owner if not isinstance(cit, dict) else cit.get("owner")
+			if f_url:
+				items.append(_mk_folder_item(
+					"disciplinary_documents",
+					f"Citación {cit_name}",
+					file_url=f_url,
+					uploaded_on=cit_mod,
+					uploaded_by=cit_own,
+					source_doctype="Citacion Disciplinaria",
+					source_name=cit_name,
+				))
+
+		# Source 4: Acta Descargos → archivo_acta
+		for acta in frappe.get_all(
+			"Acta Descargos",
+			filters={"afectado": ["in", afectado_names]},
+			fields=["name", "afectado", "archivo_acta", "modified", "owner"],
+			order_by="modified desc",
+		):
+			f_url = acta.archivo_acta if not isinstance(acta, dict) else acta.get("archivo_acta")
+			acta_name = acta.name if not isinstance(acta, dict) else acta.get("name")
+			acta_mod = acta.modified if not isinstance(acta, dict) else acta.get("modified")
+			acta_own = acta.owner if not isinstance(acta, dict) else acta.get("owner")
+			if f_url:
+				items.append(_mk_folder_item(
+					"disciplinary_documents",
+					f"Acta Descargos {acta_name}",
+					file_url=f_url,
+					uploaded_on=acta_mod,
+					uploaded_by=acta_own,
+					source_doctype="Acta Descargos",
+					source_name=acta_name,
+				))
+
+		# Source 5: Comunicado Sancion → archivo_comunicado
+		for com in frappe.get_all(
+			"Comunicado Sancion",
+			filters={"afectado": ["in", afectado_names]},
+			fields=["name", "afectado", "archivo_comunicado", "modified", "owner"],
+			order_by="modified desc",
+		):
+			f_url = com.archivo_comunicado if not isinstance(com, dict) else com.get("archivo_comunicado")
+			com_name = com.name if not isinstance(com, dict) else com.get("name")
+			com_mod = com.modified if not isinstance(com, dict) else com.get("modified")
+			com_own = com.owner if not isinstance(com, dict) else com.get("owner")
+			if f_url:
+				items.append(_mk_folder_item(
+					"disciplinary_documents",
+					f"Comunicado Sanción {com_name}",
+					file_url=f_url,
+					uploaded_on=com_mod,
+					uploaded_by=com_own,
+					source_doctype="Comunicado Sancion",
+					source_name=com_name,
+				))
+
+		# Source 6: Evidencia Disciplinaria where afectado IN afectado_names
+		for evi in frappe.get_all(
+			"Evidencia Disciplinaria",
+			filters={"afectado": ["in", afectado_names]},
+			fields=["name", "afectado", "archivo", "modified", "owner"],
+			order_by="modified desc",
+		):
+			f_url = evi.archivo if not isinstance(evi, dict) else evi.get("archivo")
+			evi_name = evi.name if not isinstance(evi, dict) else evi.get("name")
+			evi_mod = evi.modified if not isinstance(evi, dict) else evi.get("modified")
+			evi_own = evi.owner if not isinstance(evi, dict) else evi.get("owner")
+			if f_url:
+				items.append(_mk_folder_item(
+					"disciplinary_documents",
+					f"Evidencia {evi_name}",
+					file_url=f_url,
+					uploaded_on=evi_mod,
+					uploaded_by=evi_own,
+					source_doctype="Evidencia Disciplinaria",
+					source_name=evi_name,
+				))
+
+	# Sort all collected items by fecha_carga (uploaded_on) descending
+	items.sort(key=lambda x: str(x.get("uploaded_on") or ""), reverse=True)
 	return items
 
 

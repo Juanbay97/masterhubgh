@@ -200,21 +200,10 @@ def ensure_workflows():
 		],
 	)
 
-	_ensure_workflow(
-		"HubGH - Caso Disciplinario",
-		"Caso Disciplinario",
-		"estado",
-		states=[
-			("Abierto", "0", "GH - RRLL"),
-			("En Proceso", "0", "GH - RRLL"),
-			("Cerrado", "0", "GH - RRLL"),
-		],
-		transitions=[
-			("Abierto", "Iniciar Gestión", "En Proceso", "GH - RRLL"),
-			("En Proceso", "Cerrar", "Cerrado", "GH - RRLL"),
-			("Cerrado", "Reabrir", "Abierto", "GH - RRLL"),
-		],
-	)
+	# REMOVED: "HubGH - Caso Disciplinario" Frappe Workflow was replaced by
+	# the new disciplinary state machine (disciplinary_workflow_service.py).
+	# The Frappe Workflow blocked state transitions — deleted post-cleanup.
+	# Do NOT re-add: frappe.db.exists("Workflow", "HubGH - Caso Disciplinario") must be None.
 
 	_ensure_workflow(
 		"HubGH - GH Novedad",

@@ -1,0 +1,14 @@
+{
+ "doctype": "Page",
+ "name": "payroll_workspace",
+ "title": "Workspace de Novedades",
+ "module": "Hubgh",
+ "standard": "Yes",
+ "page_name": "payroll_workspace",
+ "icon": "payment",
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "Operativo Nómina"},
+  {"role": "Gestión Humana"}
+ ]
+}

@@ -84,7 +84,8 @@ class TestDisciplinaryCaseService(FrappeTestCase):
 		self.assertEqual(case_doc.fecha_inicio_suspension, "2026-04-14")
 		self.assertEqual(result["decision"], "Suspensión")
 
-	def test_get_disciplinary_tray_filters_by_pdv_from_employee_map(self):
+	def test_get_disciplinary_tray_filters_by_pdv_from_afectado(self):
+		"""PDV filter resolves from Afectado Disciplinario's employee (canonical source)."""
 		case_rows = [
 			{
 				"name": "DIS-001",
@@ -97,18 +98,33 @@ class TestDisciplinaryCaseService(FrappeTestCase):
 				"resumen_cierre": "",
 				"fecha_inicio_suspension": "",
 				"fecha_fin_suspension": "",
+				"modified": "2026-04-10 10:00:00",
 			},
+		]
+		afectado_rows = [
+			{"name": "AFE-001", "caso": "DIS-001", "empleado": "EMP-001", "estado": "En Triage", "decision_final_afectado": None},
 		]
 		employee_rows = [
 			{"name": "EMP-001", "nombres": "Ana", "apellidos": "Paz", "cedula": "1001", "pdv": "PDV-1", "estado": "Activo"},
 		]
+
+		def get_all_stub(doctype, **kwargs):
+			if doctype == "Caso Disciplinario":
+				return case_rows
+			if doctype == "Afectado Disciplinario":
+				return afectado_rows
+			if doctype == "Citacion Disciplinaria":
+				return []
+			if doctype == "Ficha Empleado":
+				return employee_rows
+			return []
 
 		with patch(
 			"hubgh.hubgh.disciplinary_case_service.enforce_disciplinary_access",
 			return_value={"can_manage": True},
 		), patch(
 			"hubgh.hubgh.disciplinary_case_service.frappe.get_all",
-			side_effect=[case_rows, employee_rows],
+			side_effect=get_all_stub,
 		):
 			result = disciplinary_case_service.get_disciplinary_tray(filters={"pdv": "PDV-1"})
 

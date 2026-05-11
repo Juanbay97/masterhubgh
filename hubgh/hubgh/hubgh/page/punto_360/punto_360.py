@@ -216,6 +216,14 @@ def _build_point_contextual_actions(pdv_id, user, sensitive_policy):
 					"context": {"pdv": pdv_id},
 				},
 				{
+					"key": "open_bandeja_disciplinaria",
+					"label": "Bandeja disciplinaria",
+					"route": "app/bandeja_casos_disciplinarios",
+					"style": "secondary",
+					"visible": bool(is_rrll),
+					"prefill": {"pdv": pdv_id},
+				},
+				{
 					"key": "view_documents",
 					"label": "Ver Expediente Documental",
 					"route": "/app/query-report/Person%20Documents",
@@ -455,16 +463,32 @@ def get_punto_stats(pdv_id):
         nov["rrll_handoff_label"] = _handoff_label(nov)
         nov["rrll_handoff_name"] = _row_value(nov, "ref_docname") if _row_value(nov, "ref_doctype") == "GH Novedad" else None
     
-    # 4. Casos Disciplinarios Abiertos
+    # 4. Casos Disciplinarios Abiertos (legacy + afectado-based)
     disciplinarios = []
     if sensitive_policy.get("effective_allowed"):
-        disciplinarios = frappe.get_all("Caso Disciplinario",
+        open_disc_states = ["Abierto", "En Proceso", "En Triage", "Descargos Programados", "Citado", "En Descargos", "En Deliberación", "Solicitado"]
+        legacy_disciplinarios = frappe.get_all("Caso Disciplinario",
             filters={
-                "estado": ["in", ["Abierto", "En Proceso"]],
-                 "empleado": ["in", empleados_pdv]
+                "estado": ["in", open_disc_states],
+                "empleado": ["in", empleados_pdv],
             },
-            fields=["name", "empleado.nombres", "empleado.apellidos", "tipo_falta", "fecha_incidente"]
+            fields=["name", "tipo_falta", "fecha_incidente"],
         )
+        seen_casos = {(r.name if not isinstance(r, dict) else r.get("name")) for r in legacy_disciplinarios}
+        disciplinarios = list(legacy_disciplinarios)
+        # Add cases from Afectado Disciplinario for employees in this PDV
+        if empleados_pdv:
+            for af_row in frappe.get_all(
+                "Afectado Disciplinario",
+                filters={"empleado": ["in", empleados_pdv], "estado": ["!=", "Cerrado"]},
+                fields=["name", "caso", "empleado"],
+                limit_page_length=0,
+            ):
+                caso_name = af_row.caso if not isinstance(af_row, dict) else af_row.get("caso")
+                if caso_name and caso_name not in seen_casos:
+                    seen_casos.add(caso_name)
+                    # Add a lightweight reference for the feed
+                    disciplinarios.append({"name": caso_name, "tipo_falta": "—", "fecha_incidente": None})
     
     # 5. Casos SST Abiertos (legacy desactivado)
     sst = []
@@ -870,6 +894,47 @@ def get_all_puntos_overview():
         })
 
     return summary_list
+
+
+def _count_disciplinarios_abiertos_for_pdv(empleados_pdv: list[str]) -> int:
+	"""
+	Returns count of open disciplinary cases for employees in a PDV.
+
+	Counts BOTH:
+	  1. Caso Disciplinario where empleado IN empleados_pdv (legacy)
+	  2. Afectado Disciplinario where empleado IN empleados_pdv
+	     and estado NOT IN ["Cerrado"] — deduplicates by caso name.
+	"""
+	if not empleados_pdv:
+		return 0
+
+	open_caso_states = ["Abierto", "En Proceso", "En Triage", "Descargos Programados", "Citado", "En Descargos", "En Deliberación", "Solicitado"]
+
+	caso_names: set[str] = set()
+
+	# Legacy source: Caso Disciplinario
+	for row in frappe.get_all(
+		"Caso Disciplinario",
+		filters={"estado": ["in", open_caso_states], "empleado": ["in", empleados_pdv]},
+		fields=["name"],
+		limit_page_length=0,
+	):
+		name = row.name if not isinstance(row, dict) else row.get("name")
+		if name:
+			caso_names.add(name)
+
+	# New source: Afectado Disciplinario
+	for row in frappe.get_all(
+		"Afectado Disciplinario",
+		filters={"empleado": ["in", empleados_pdv], "estado": ["!=", "Cerrado"]},
+		fields=["name", "caso"],
+		limit_page_length=0,
+	):
+		caso = row.caso if not isinstance(row, dict) else row.get("caso")
+		if caso:
+			caso_names.add(caso)
+
+	return len(caso_names)
 
 
 def _novedad_tipo_values(clave):

@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "creation": "2026-04-29 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "vigencia_section",
+  "anio_vigente",
+  "salario_minimo_mensual",
+  "column_break_av",
+  "valor_hora_tp_fija",
+  "valores_section",
+  "auxilio_transporte",
+  "column_break_at",
+  "jornada_induccion_tp_horas",
+  "divisor_section",
+  "divisor_hora_tc"
+ ],
+ "fields": [
+  {
+   "fieldname": "vigencia_section",
+   "fieldtype": "Section Break",
+   "label": "Vigencia"
+  },
+  {
+   "fieldname": "anio_vigente",
+   "fieldtype": "Int",
+   "label": "Año vigente",
+   "reqd": 1
+  },
+  {
+   "default": "1750905",
+   "description": "Salario mínimo mensual legal vigente (SMMLV). Determina el tope para auxilio de transporte (≤ 2 SMMLV) y otros cálculos legales.",
+   "fieldname": "salario_minimo_mensual",
+   "fieldtype": "Currency",
+   "label": "Salario mínimo mensual (SMMLV)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_av",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "9530",
+   "description": "Valor fijo (COP) de la hora ordinaria para empleados Tiempo Parcial. Se ajusta cada año.",
+   "fieldname": "valor_hora_tp_fija",
+   "fieldtype": "Currency",
+   "label": "Valor hora TP (fijo)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "valores_section",
+   "fieldtype": "Section Break",
+   "label": "Valores parametrizables"
+  },
+  {
+   "default": "249095",
+   "description": "Valor mensual del auxilio de transporte vigente.",
+   "fieldname": "auxilio_transporte",
+   "fieldtype": "Currency",
+   "label": "Auxilio de transporte",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_at",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "7.33",
+   "description": "Horas de inducción para Tiempo Parcial.",
+   "fieldname": "jornada_induccion_tp_horas",
+   "fieldtype": "Float",
+   "label": "Jornada inducción TP (horas)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "divisor_section",
+   "fieldtype": "Section Break",
+   "label": "Cálculo del valor hora"
+  },
+  {
+   "default": "240",
+   "description": "Divisor para calcular el valor hora TC = salario_mensual / divisor.",
+   "fieldname": "divisor_hora_tc",
+   "fieldtype": "Float",
+   "label": "Divisor hora TC",
+   "reqd": 1
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-04-29 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Payroll Parametros Globales",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Operativo Nómina",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

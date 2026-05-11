@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "autoname": "format:EVD-{YYYY}-{#####}",
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "caso",
+  "afectado",
+  "tipo_documento",
+  "archivo",
+  "cargado_por",
+  "fecha_carga",
+  "descripcion"
+ ],
+ "fields": [
+  {
+   "fieldname": "caso",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Caso Disciplinario",
+   "options": "Caso Disciplinario",
+   "reqd": 0,
+   "search_index": 1
+  },
+  {
+   "fieldname": "afectado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Afectado Disciplinario",
+   "options": "Afectado Disciplinario",
+   "reqd": 0
+  },
+  {
+   "fieldname": "tipo_documento",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tipo de Documento",
+   "options": "Evidencia Hechos\nCitación\nActa Descargos\nComunicado Sanción\nRecordatorio Funciones\nOtro",
+   "reqd": 1
+  },
+  {
+   "fieldname": "archivo",
+   "fieldtype": "Attach",
+   "label": "Archivo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cargado_por",
+   "fieldtype": "Link",
+   "label": "Cargado Por",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fecha_carga",
+   "fieldtype": "Datetime",
+   "label": "Fecha de Carga",
+   "read_only": 1
+  },
+  {
+   "fieldname": "descripcion",
+   "fieldtype": "Small Text",
+   "label": "Descripción",
+   "reqd": 0
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-04-23 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Evidencia Disciplinaria",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Labor Relations",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "read": 1,
+   "role": "Relaciones Laborales Jefe",
+   "select": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -11,6 +11,7 @@ dependencies = [
     # "frappe~=15.0.0" # Installed and managed by bench.
     "holidays>=0.59",
     "openpyxl>=3.1",
+    "docxtpl>=0.17,<1.0",
 ]
 
 [build-system]

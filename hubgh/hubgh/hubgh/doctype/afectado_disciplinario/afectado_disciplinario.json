@@ -1,0 +1,173 @@
+{
+ "actions": [],
+ "autoname": "format:AFE-{YYYY}-{#####}",
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "caso",
+  "empleado",
+  "estado",
+  "conclusion_publica",
+  "alerta_citacion_vencida",
+  "decision_final_afectado",
+  "fecha_cierre_afectado",
+  "resumen_cierre_afectado",
+  "fecha_inicio_suspension",
+  "fecha_fin_suspension",
+  "transition_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "caso",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Caso Disciplinario",
+   "options": "Caso Disciplinario",
+   "reqd": 1,
+   "read_only": 0,
+   "search_index": 1
+  },
+  {
+   "fieldname": "empleado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Empleado",
+   "options": "Ficha Empleado",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "Pendiente Triage",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Pendiente Triage\nCitado\nEn Descargos\nEn Deliberación\nCerrado",
+   "reqd": 1
+  },
+  {
+   "default": "En proceso",
+   "fieldname": "conclusion_publica",
+   "fieldtype": "Data",
+   "label": "Conclusión Pública",
+   "read_only": 1,
+   "reqd": 0
+  },
+  {
+   "default": "0",
+   "fieldname": "alerta_citacion_vencida",
+   "fieldtype": "Check",
+   "label": "Alerta Citación Vencida",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.estado=='Cerrado'",
+   "fieldname": "decision_final_afectado",
+   "fieldtype": "Select",
+   "label": "Decisión Final",
+   "options": "Recordatorio de Funciones\nLlamado de Atención Directo\nArchivo\nLlamado de Atención\nSuspensión\nTerminación"
+  },
+  {
+   "depends_on": "eval:doc.estado=='Cerrado'",
+   "fieldname": "fecha_cierre_afectado",
+   "fieldtype": "Date",
+   "label": "Fecha de Cierre"
+  },
+  {
+   "depends_on": "eval:doc.estado=='Cerrado'",
+   "fieldname": "resumen_cierre_afectado",
+   "fieldtype": "Text Editor",
+   "label": "Resumen de Cierre"
+  },
+  {
+   "depends_on": "eval:doc.decision_final_afectado=='Suspensión'",
+   "fieldname": "fecha_inicio_suspension",
+   "fieldtype": "Date",
+   "label": "Inicio Suspensión"
+  },
+  {
+   "depends_on": "eval:doc.decision_final_afectado=='Suspensión'",
+   "fieldname": "fecha_fin_suspension",
+   "fieldtype": "Date",
+   "label": "Fin Suspensión"
+  },
+  {
+   "fieldname": "transition_log",
+   "fieldtype": "Table",
+   "label": "Historial de Transiciones",
+   "options": "Disciplinary Transition Log",
+   "reqd": 0
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-04-23 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Afectado Disciplinario",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Labor Relations",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "read": 1,
+   "role": "Relaciones Laborales Jefe",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "Gerente GH",
+   "select": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,186 @@
+/* Workspace de Novedades — estilos específicos.
+ *
+ * Las clases base (hubgh-board-shell, hubgh-board-hero, hubgh-card,
+ * hubgh-meta-pill, hubgh-table-shell, …) viven en
+ * public/js/bandejas_ui_base.js y se inyectan vía
+ * window.hubghBandejasUI.injectBaseStyles(). Acá solo agregamos las
+ * piezas exclusivas de esta pantalla: drop-zone, badges del estado
+ * del Run y tabla de archivos.
+ */
+
+/* ── Drop zone ─────────────────────────────────────────────────── */
+.pwsp-dropzone {
+	display: block;
+	border: 2px dashed #cbd5e1;
+	border-radius: 12px;
+	padding: 22px;
+	text-align: center;
+	color: #475569;
+	background: #f8fafc;
+	transition: all .15s;
+	cursor: pointer;
+}
+.pwsp-dropzone:hover { border-color: #1d4ed8; color: #1d4ed8; }
+.pwsp-dropzone.is-active {
+	border-color: #1d4ed8;
+	background: #eff6ff;
+	color: #1e3a8a;
+}
+.pwsp-dropzone strong { display: block; margin-bottom: 4px; font-weight: 700; color: #0f172a; }
+.pwsp-dropzone .muted { color: #64748b; font-size: 12px; }
+.pwsp-dropzone input { display: none; }
+
+/* ── Estado del Run (badges) ───────────────────────────────────── */
+.pwsp-state-pill {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 12px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+}
+.pwsp-state-pill.draft     { background: #f1f5f9; color: #475569; }
+.pwsp-state-pill.ingesting { background: #fef3c7; color: #92400e; }
+.pwsp-state-pill.parsed    { background: #dbeafe; color: #1e3a8a; }
+.pwsp-state-pill.reviewing { background: #ede9fe; color: #5b21b6; }
+.pwsp-state-pill.exported  { background: #dcfce7; color: #166534; }
+.pwsp-state-pill.archived  { background: #e2e8f0; color: #334155; }
+.pwsp-state-pill.failed    { background: #fee2e2; color: #991b1b; }
+.pwsp-state-pill.partial   { background: #fef3c7; color: #92400e; }
+.pwsp-state-pill.compact   { padding: 1px 7px; font-size: 9px; letter-spacing: .03em; }
+
+/* ── Tabla de archivos del Run ─────────────────────────────────── */
+.pwsp-files { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+.pwsp-files thead th {
+	background: #f8fafc;
+	border-bottom: 1px solid #e2e8f0;
+	padding: 8px 10px;
+	color: #334155;
+	font-weight: 700;
+	text-align: left;
+}
+.pwsp-files tbody td {
+	padding: 8px 10px;
+	border-bottom: 1px solid #f1f5f9;
+	vertical-align: middle;
+}
+.pwsp-files .pill {
+	display: inline-flex;
+	padding: 2px 9px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	background: #f1f5f9;
+	color: #475569;
+}
+.pwsp-files .pill.ok    { background: #dcfce7; color: #166534; }
+.pwsp-files .pill.error { background: #fee2e2; color: #991b1b; }
+.pwsp-files .pill.parsing,
+.pwsp-files .pill.pending { background: #fef3c7; color: #92400e; }
+
+/* ── KPI tiles ─────────────────────────────────────────────────── */
+.pwsp-kpis {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 10px;
+}
+.pwsp-kpi {
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 10px;
+	padding: 10px 12px;
+}
+.pwsp-kpi .label {
+	font-size: 11px;
+	color: #64748b;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	font-weight: 600;
+}
+.pwsp-kpi .value { font-size: 18px; font-weight: 700; color: #0f172a; margin-top: 2px; }
+.pwsp-kpi.is-error  .value { color: #991b1b; }
+.pwsp-kpi.is-skipped .value { color: #92400e; }
+.pwsp-kpi.is-computed .value { color: #166534; }
+
+/* ── Tabla de novedades ────────────────────────────────────────── */
+.pwsp-novedades { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pwsp-novedades thead th {
+	background: #f8fafc;
+	border-bottom: 1px solid #e2e8f0;
+	padding: 8px 10px;
+	color: #334155;
+	font-weight: 700;
+	text-align: left;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+}
+.pwsp-novedades tbody td {
+	padding: 6px 10px;
+	border-bottom: 1px solid #f1f5f9;
+	vertical-align: top;
+	color: #0f172a;
+}
+.pwsp-novedades tbody tr:hover { background: #f8fafc; }
+.pwsp-novedades .num { text-align: right; font-variant-numeric: tabular-nums; }
+.pwsp-novedades .status-error    { color: #991b1b; }
+.pwsp-novedades .status-skipped  { color: #92400e; font-style: italic; }
+.pwsp-novedades .status-computed { color: #166534; }
+
+.pwsp-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pwsp-filters .form-control { max-width: 260px; }
+
+/* ── Filas clickables ──────────────────────────────────────────── */
+.pwsp-row-clickable { cursor: pointer; transition: background .12s; }
+.pwsp-row-clickable:hover { background: #eff6ff !important; }
+.pwsp-row-clickable .pwsp-link { color: #1d4ed8; }
+.pwsp-row-clickable:hover .pwsp-link { text-decoration: underline; }
+
+/* ── Modal de detalle ──────────────────────────────────────────── */
+.pwsp-detail-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 18px;
+	flex-wrap: wrap;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #e2e8f0;
+	margin-bottom: 12px;
+}
+.pwsp-detail-head h4 { margin: 0 0 6px; font-size: 1rem; color: #0f172a; }
+.pwsp-detail-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.pwsp-detail-totals {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(110px, 1fr));
+	gap: 10px;
+	min-width: 480px;
+}
+.pwsp-detail-totals > div {
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 6px 10px;
+	text-align: right;
+}
+.pwsp-detail-totals .label {
+	display: block;
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	color: #64748b;
+	font-weight: 600;
+}
+.pwsp-detail-totals .value { font-size: 14px; font-weight: 700; color: #0f172a; }
+.pwsp-detail-totals .pwsp-neto strong { font-size: 16px; }
+.pwsp-detail-table-wrap { max-height: 480px; overflow: auto; }
+.pwsp-detail-table-wrap table { font-size: 12px; }
+.pwsp-detail-table-wrap thead th {
+	background: #f8fafc;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	padding: 8px 10px;
+	border-bottom: 1px solid #e2e8f0;
+}

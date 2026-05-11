@@ -1,0 +1,260 @@
+{
+ "actions": [],
+ "autoname": "format:ACT-{YYYY}-{#####}",
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "afectado",
+  "citacion",
+  "numero_ronda",
+  "fecha_sesion",
+  "lugar_sesion",
+  "col_break_1",
+  "autorizacion_grabacion",
+  "derechos_informados",
+  "section_break_empleado",
+  "fecha_ingreso_empleado",
+  "cargo_actual",
+  "col_break_empleado",
+  "jefe_inmediato",
+  "section_break_participantes",
+  "participantes_empresa",
+  "testigos_trabajador",
+  "section_break_hechos",
+  "hechos_leidos",
+  "section_break_qa",
+  "preguntas_respuestas",
+  "section_break_firma",
+  "firma_empleado",
+  "testigo_1",
+  "testigo_2",
+  "section_break_archivo",
+  "archivo_acta"
+ ],
+ "fields": [
+  {
+   "fieldname": "afectado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Afectado Disciplinario",
+   "options": "Afectado Disciplinario",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "citacion",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Citación",
+   "options": "Citacion Disciplinaria",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "numero_ronda",
+   "fieldtype": "Int",
+   "label": "Número de Ronda",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_sesion",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Fecha y Hora de Sesión",
+   "reqd": 1
+  },
+  {
+   "default": "Oficina Administrativa",
+   "fieldname": "lugar_sesion",
+   "fieldtype": "Data",
+   "label": "Lugar de Sesión",
+   "reqd": 1
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "autorizacion_grabacion",
+   "fieldtype": "Check",
+   "label": "Autorización de Grabación"
+  },
+  {
+   "default": "0",
+   "fieldname": "derechos_informados",
+   "fieldtype": "Check",
+   "label": "Derechos Informados (Art. 29 CN)"
+  },
+  {
+   "fieldname": "section_break_empleado",
+   "fieldtype": "Section Break",
+   "label": "Datos del Empleado"
+  },
+  {
+   "fieldname": "fecha_ingreso_empleado",
+   "fieldtype": "Date",
+   "label": "Fecha de Ingreso",
+   "reqd": 0
+  },
+  {
+   "fieldname": "cargo_actual",
+   "fieldtype": "Data",
+   "label": "Cargo Actual",
+   "reqd": 0
+  },
+  {
+   "fieldname": "col_break_empleado",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "jefe_inmediato",
+   "fieldtype": "Data",
+   "label": "Jefe Inmediato",
+   "reqd": 0
+  },
+  {
+   "fieldname": "section_break_participantes",
+   "fieldtype": "Section Break",
+   "label": "Participantes"
+  },
+  {
+   "fieldname": "participantes_empresa",
+   "fieldtype": "Table",
+   "label": "Participantes por la Empresa",
+   "options": "Participante Acta"
+  },
+  {
+   "fieldname": "testigos_trabajador",
+   "fieldtype": "Small Text",
+   "label": "Testigos del Trabajador"
+  },
+  {
+   "fieldname": "section_break_hechos",
+   "fieldtype": "Section Break",
+   "label": "Hechos"
+  },
+  {
+   "fieldname": "hechos_leidos",
+   "fieldtype": "Text Editor",
+   "label": "Hechos Leídos al Empleado"
+  },
+  {
+   "fieldname": "section_break_qa",
+   "fieldtype": "Section Break",
+   "label": "Preguntas y Respuestas"
+  },
+  {
+   "fieldname": "preguntas_respuestas",
+   "fieldtype": "Table",
+   "label": "Preguntas y Respuestas",
+   "options": "Pregunta Respuesta Descargos"
+  },
+  {
+   "fieldname": "section_break_firma",
+   "fieldtype": "Section Break",
+   "label": "Firma y Testigos"
+  },
+  {
+   "default": "0",
+   "fieldname": "firma_empleado",
+   "fieldtype": "Check",
+   "label": "El Empleado Firma"
+  },
+  {
+   "fieldname": "testigo_1",
+   "fieldtype": "Link",
+   "label": "Testigo 1",
+   "options": "Ficha Empleado"
+  },
+  {
+   "fieldname": "testigo_2",
+   "fieldtype": "Link",
+   "label": "Testigo 2",
+   "options": "Ficha Empleado"
+  },
+  {
+   "fieldname": "section_break_archivo",
+   "fieldtype": "Section Break",
+   "label": "Archivo"
+  },
+  {
+   "fieldname": "archivo_acta",
+   "fieldtype": "Attach",
+   "label": "Archivo Acta",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-04-23 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Acta Descargos",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Labor Relations",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "Relaciones Laborales Jefe",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "Gerente GH",
+   "select": 1,
+   "write": 0
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -15,7 +15,7 @@ from hubgh.hubgh.candidate_states import (
 	is_candidate_status,
 )
 from hubgh.hubgh.people_ops_handoffs import validate_handoff_contract
-from hubgh.hubgh.payroll_employee_compat import normalize_tipo_jornada
+from hubgh.hubgh.jornada_utils import normalize_tipo_jornada
 from hubgh.hubgh.role_matrix import user_has_any_role
 from hubgh.hubgh.siesa_reference_matrix import ensure_reference_catalog, normalize_code_for_doctype
 from hubgh.hubgh.display_labels import (

@@ -1,0 +1,166 @@
+{
+ "actions": [],
+ "autoname": "format:CIT-{YYYY}-{#####}",
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "afectado",
+  "numero_ronda",
+  "fecha_citacion",
+  "fecha_programada_descargos",
+  "hora_descargos",
+  "lugar",
+  "estado",
+  "hechos_narrados",
+  "articulos_rit",
+  "archivo_citacion"
+ ],
+ "fields": [
+  {
+   "fieldname": "afectado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Afectado Disciplinario",
+   "options": "Afectado Disciplinario",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "numero_ronda",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Número de Ronda",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "fecha_citacion",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha de Citación",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_programada_descargos",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha Programada Descargos",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hora_descargos",
+   "fieldtype": "Time",
+   "label": "Hora Descargos",
+   "reqd": 1
+  },
+  {
+   "default": "Oficina Administrativa — Bogotá D.C.",
+   "fieldname": "lugar",
+   "fieldtype": "Data",
+   "label": "Lugar",
+   "reqd": 1
+  },
+  {
+   "default": "Borrador",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Borrador\nEmitida\nEntregada\nRespondida\nSin Respuesta\nAnulada",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hechos_narrados",
+   "fieldtype": "Text Editor",
+   "label": "Hechos Narrados",
+   "reqd": 1
+  },
+  {
+   "fieldname": "articulos_rit",
+   "fieldtype": "Table",
+   "label": "Artículos RIT",
+   "options": "Articulo RIT Caso",
+   "reqd": 0
+  },
+  {
+   "fieldname": "archivo_citacion",
+   "fieldtype": "Attach",
+   "label": "Archivo Citación",
+   "read_only": 1,
+   "reqd": 0
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-04-23 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Citacion Disciplinaria",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Labor Relations",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "Relaciones Laborales Jefe",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "Gerente GH",
+   "select": 1,
+   "write": 0
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

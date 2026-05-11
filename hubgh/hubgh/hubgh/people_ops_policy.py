@@ -80,6 +80,13 @@ DOCUMENT_SENSITIVITY_DIMENSIONS = {
 		"descargo disciplinario",
 		"llamado de atencion",
 		"acta de retiro",
+		# T048-T049: disciplinary flow sub-documents
+		"afectado disciplinario",
+		"citacion disciplinaria",
+		"acta descargos",
+		"comunicado sancion",
+		"evidencia disciplinaria",
+		"recordatorio de funciones",
 	},
 }
 
