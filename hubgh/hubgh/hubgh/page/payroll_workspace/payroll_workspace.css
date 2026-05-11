@@ -132,6 +132,49 @@
 .pwsp-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .pwsp-filters .form-control { max-width: 260px; }
 
+/* ── Spinner + live status del procesamiento ──────────────────── */
+.pwsp-spinner {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border: 2px solid #cbd5e1;
+	border-top-color: #1d4ed8;
+	border-radius: 50%;
+	animation: pwsp-spin .8s linear infinite;
+	vertical-align: -2px;
+	margin-right: 6px;
+}
+.pwsp-spinner-light {
+	border-color: rgba(255,255,255,.35);
+	border-top-color: #fff;
+}
+@keyframes pwsp-spin { to { transform: rotate(360deg); } }
+.pwsp-live { color: #0f172a; font-weight: 500; margin-top: 6px; }
+.pwsp-live strong { color: #0f172a; }
+.pwsp-live .status-error { color: #991b1b; }
+
+/* Pill clickable cuando trae log/error */
+.pwsp-files .pill.is-clickable {
+	cursor: pointer;
+	text-decoration: underline;
+	text-decoration-style: dotted;
+}
+.pwsp-files .pill.is-clickable:hover { filter: brightness(.93); }
+
+/* Pre del log en el dialog */
+.pwsp-log {
+	max-height: 380px;
+	overflow: auto;
+	background: #0f172a;
+	color: #f1f5f9;
+	padding: 12px;
+	border-radius: 6px;
+	font-size: 11px;
+	line-height: 1.45;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
 /* ── Filas clickables ──────────────────────────────────────────── */
 .pwsp-row-clickable { cursor: pointer; transition: background .12s; }
 .pwsp-row-clickable:hover { background: #eff6ff !important; }

@@ -216,13 +216,60 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 
 	const onProcessRun = async () => {
 		if (!state.current) return;
-		const r = await apiCall("process_run", { run_name: state.current });
-		const totals = (r && r.message && r.message.totals) || {};
-		showSuccess(
-			`Procesado: ${totals.files || 0} archivo(s) · ${totals.novedades || 0} novedades · ` +
-				`${totals.errors || 0} error · ${totals.skipped || 0} skip.`
-		);
-		await refresh();
+		// Bloquear el botón y mostrar estado en vivo.
+		state.processing = true;
+		render();
+
+		// Polling cada 2.5s para refrescar la tabla de archivos mientras
+		// el process_run corre. Llamamos a get_run_summary (barato) sin
+		// recargar las novedades.
+		let polling = true;
+		const tick = async () => {
+			while (polling) {
+				try {
+					await loadSummary(state.current);
+					render();
+				} catch (e) {
+					/* ignoramos transient errors del polling */
+				}
+				await new Promise((r) => setTimeout(r, 2500));
+			}
+		};
+		const pollPromise = tick();
+
+		try {
+			const r = await apiCall("process_run", { run_name: state.current });
+			const totals = (r && r.message && r.message.totals) || {};
+			showSuccess(
+				`Procesado: ${totals.files || 0} archivo(s) · ${totals.novedades || 0} novedades · ` +
+					`${totals.errors || 0} error · ${totals.skipped || 0} skip.`
+			);
+		} catch (e) {
+			showError(`Falló el procesamiento: ${(e && e.message) || e}`);
+		} finally {
+			polling = false;
+			await pollPromise;
+			state.processing = false;
+			await refresh();
+		}
+	};
+
+	const onShowParseLog = (fileName, fileLabel) => {
+		const f = ((state.summary && state.summary.files) || []).find((x) => x.name === fileName);
+		if (!f) return;
+		let logHtml = `<pre class="pwsp-log">${esc(f.parse_log || "(sin log)")}</pre>`;
+		try {
+			const data = JSON.parse(f.parse_log || "{}");
+			logHtml = `<pre class="pwsp-log">${esc(JSON.stringify(data, null, 2))}</pre>`;
+		} catch (_) {
+			/* deja el texto plano */
+		}
+		const dlg = new frappe.ui.Dialog({
+			title: `Log de parse · ${fileLabel || fileName}`,
+			size: "large",
+			fields: [{ fieldtype: "HTML", fieldname: "log", options: logHtml }],
+		});
+		dlg.show();
 	};
 
 	const onEmployeeClick = async (documento) => {
@@ -501,6 +548,8 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 				)
 				.join("");
 			const period = fmtPeriod(f.detected_period_year, f.detected_period_month);
+			const hasLog = f.parse_status === "error" || (f.parse_log && f.parse_log.length > 2);
+			const pillExtra = hasLog ? "is-clickable" : "";
 			const $tr = $(`
 				<tr>
 					<td>
@@ -512,12 +561,15 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 					</td>
 					<td><select class="form-control input-sm" data-src="${esc(f.name)}">${sourceOptions}</select></td>
 					<td>${esc(period)}</td>
-					<td><span class="pill ${esc(f.parse_status)}">${esc(f.parse_status)}</span></td>
+					<td><span class="pill ${esc(f.parse_status)} ${pillExtra}" data-log="${esc(f.name)}">${esc(f.parse_status)}</span></td>
 					<td><button class="btn btn-link btn-xs text-danger" data-del="${esc(f.name)}">Quitar</button></td>
 				</tr>
 			`).appendTo($tbody);
 			$tr.find("select").on("change", (e) => onChangeSource(f.name, $(e.currentTarget).val()));
 			$tr.find("button[data-del]").on("click", () => onDeleteFile(f.name));
+			if (hasLog) {
+				$tr.find(".pill.is-clickable").on("click", () => onShowParseLog(f.name, f.file_name));
+			}
 		});
 	};
 
@@ -525,6 +577,25 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 		const run = state.summary.run;
 		if (!["draft", "ingesting", "parsed", "reviewing", "failed"].includes(run.status)) return;
 		const $card = $('<div class="hubgh-card"></div>').appendTo($shell);
+
+		// Conteo en vivo de estados de parse para mostrar progreso.
+		const files = (state.summary && state.summary.files) || [];
+		const counts = { pending: 0, parsing: 0, ok: 0, error: 0 };
+		for (const f of files) counts[f.parse_status] = (counts[f.parse_status] || 0) + 1;
+
+		const liveStatus = state.processing
+			? `<p class="hubgh-section-copy pwsp-live">
+				<span class="pwsp-spinner"></span>
+				Procesando…
+				${counts.ok ? `<strong>${counts.ok}</strong> ok` : ""}
+				${counts.parsing ? `· <strong>${counts.parsing}</strong> en curso` : ""}
+				${counts.pending ? `· <strong>${counts.pending}</strong> pendiente(s)` : ""}
+				${counts.error ? `· <strong class="status-error">${counts.error}</strong> error(es)` : ""}
+			</p>`
+			: counts.error
+			? `<p class="hubgh-section-copy"><strong class="status-error">${counts.error}</strong> archivo(s) con error de parse. Click en el pill <code>error</code> para ver detalle.</p>`
+			: "";
+
 		$card.append(`
 			<div class="hubgh-section-head">
 				<div>
@@ -533,11 +604,16 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 						Detecta la fuente, parsea las novedades, resuelve empleado/contrato/jornada y calcula cada línea.
 						Idempotente: podés re-correr después de corregir fuentes.
 					</p>
+					${liveStatus}
 				</div>
 			</div>
 		`);
 		const $row = $('<div class="hubgh-board-toolbar"></div>').appendTo($card);
-		$row.append('<button class="btn btn-sm btn-dark">Procesar Run</button>').find("button").on("click", onProcessRun);
+		const label = state.processing
+			? '<span class="pwsp-spinner pwsp-spinner-light"></span> Procesando…'
+			: "Procesar Run";
+		const $btn = $(`<button class="btn btn-sm btn-dark" ${state.processing ? "disabled" : ""}>${label}</button>`).appendTo($row);
+		if (!state.processing) $btn.on("click", onProcessRun);
 	};
 
 	const renderReviewCard = () => {
