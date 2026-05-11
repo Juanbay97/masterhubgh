@@ -5,7 +5,6 @@
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 hubgh.patches.seleccion_seed
-hubgh.patches.update_candidato_webform
 hubgh.patches.update_system_settings_email_validation
 hubgh.patches.document_model_refactor
 hubgh.patches.document_phase4_unification
@@ -28,3 +27,4 @@ hubgh.patches.backfill_candidato_cargo
 hubgh.patches.setup_examen_medico_multisede
 hubgh.patches.refresh_nivel_educativo_descriptions
 hubgh.patches.reseed_siesa_entidades_con_nits
+hubgh.patches.remove_candidato_portal_webform
