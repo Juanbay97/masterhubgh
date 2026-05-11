@@ -17,9 +17,25 @@ from typing import Any
 
 def _registered_adapters():
 	"""Importa diferido para evitar ciclos al cargar Frappe."""
-	from hubgh.hubgh.payroll.adapters import clonk, fincomercio, fongiga, manual, payflow
+	from hubgh.hubgh.payroll.adapters import (
+		clonk,
+		fincomercio,
+		fongiga,
+		libranza_compensar,
+		libranza_davivienda,
+		manual,
+		payflow,
+	)
 
-	return [clonk, payflow, fincomercio, fongiga, manual]
+	return [
+		clonk,
+		payflow,
+		fincomercio,
+		fongiga,
+		libranza_davivienda,
+		libranza_compensar,
+		manual,
+	]
 
 
 def file_meta_from_path(path: str | Path) -> dict[str, Any]:

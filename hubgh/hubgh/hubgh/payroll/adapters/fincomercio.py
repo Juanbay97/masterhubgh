@@ -26,7 +26,8 @@ from hubgh.hubgh.payroll.adapters import NovedadCanonica
 
 SOURCE_ID = "fincomercio"
 HEADER_ROW = 7
-_FILENAME_PATTERN = re.compile(r"fincomercio|7898_8153", re.IGNORECASE)
+HEADER_ROW_CONCILIACION = 4
+_FILENAME_PATTERN = re.compile(r"fincomercio|7898_8153|conciliacionlinea", re.IGNORECASE)
 
 
 def matches(file_meta) -> int:
@@ -35,7 +36,11 @@ def matches(file_meta) -> int:
 	if _FILENAME_PATTERN.search(filename):
 		score += 1
 	sheets = (file_meta or {}).get("sheets") or []
-	if any("descuentos nomina" in s.lower() for s in sheets):
+	# Cualquiera de los dos formatos: el viejo "Descuentos Nomina ..."
+	# o el nuevo "Conciliacion en linea" + "Tabla de causales".
+	if any("descuentos nomina" in (s or "").lower() for s in sheets):
+		score += 2
+	elif any("conciliacion en linea" in (s or "").lower() for s in sheets):
 		score += 2
 	return score
 
@@ -56,11 +61,73 @@ def detect_period(workbook) -> tuple[int, int] | None:
 
 
 def parse(workbook) -> Iterator[NovedadCanonica]:
+	# Formato nuevo "Conciliacion en linea" (apareció en abril 2026):
+	if "Conciliacion en linea" in workbook.sheetnames:
+		yield from _parse_conciliacion(workbook)
+		return
+	# Formato viejo "Descuentos Nomina ...":
 	if "Descuentos Nomina Agrupado" in workbook.sheetnames:
 		yield from _parse_agrupado(workbook)
 		return
 	if "Descuentos Nomina Detalle" in workbook.sheetnames:
 		yield from _parse_detalle(workbook)
+
+
+def _parse_conciliacion(workbook) -> Iterator[NovedadCanonica]:
+	"""Formato `conciliacionLinea.xlsx`:
+	  R4 headers: ('', Identificación, Apellidos, Nombres, Valor novedad,
+	              Valor descontado, Código Causal, ...)
+	  R5+ datos. Usamos `Valor descontado` (el monto que efectivamente
+	  se descuenta de nómina, normalmente igual al `Valor novedad`).
+	"""
+	ws = workbook["Conciliacion en linea"]
+	header = _row(ws, HEADER_ROW_CONCILIACION)
+	if not header:
+		return
+	idx = {(str(h).strip().lower() if h else ""): i for i, h in enumerate(header)}
+	doc_idx = idx.get("identificación") or idx.get("identificacion")
+	apellidos_idx = idx.get("apellidos")
+	nombres_idx = idx.get("nombres")
+	valor_idx = idx.get("valor descontado")
+	if valor_idx is None:
+		valor_idx = idx.get("valor novedad")
+	causal_idx = idx.get("código causal") or idx.get("codigo causal")
+	if doc_idx is None or valor_idx is None:
+		return
+
+	for row in ws.iter_rows(min_row=HEADER_ROW_CONCILIACION + 1, values_only=True):
+		doc = _str_id(row[doc_idx] if doc_idx < len(row) else None)
+		if not doc:
+			continue
+		try:
+			valor = float(row[valor_idx] or 0)
+		except (TypeError, ValueError):
+			continue
+		if valor <= 0:
+			continue
+		empleado_nombre = " ".join(
+			str(row[i]).strip()
+			for i in (apellidos_idx, nombres_idx)
+			if i is not None and row[i]
+		).strip()
+		yield NovedadCanonica(
+			documento_identidad=doc,
+			tipo_novedad="LIBRANZA_FINCOMERCIO",
+			valor=round(valor, 2),
+			unidad="cop",
+			raw_payload={
+				"empleado_nombre": empleado_nombre,
+				"causal": str(row[causal_idx]).strip()
+				if causal_idx is not None and row[causal_idx]
+				else "",
+				"sheet": "Conciliacion en linea",
+			},
+		)
+
+
+def _row(ws, n: int):
+	rows = ws.iter_rows(min_row=n, max_row=n, values_only=True)
+	return next(rows, None)
 
 
 def _parse_agrupado(workbook) -> Iterator[NovedadCanonica]:

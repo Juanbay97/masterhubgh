@@ -26,6 +26,8 @@ from hubgh.hubgh.payroll.adapters import (
 	clonk,
 	fincomercio,
 	fongiga,
+	libranza_compensar,
+	libranza_davivienda,
 	manual,
 	payflow,
 )
@@ -38,6 +40,8 @@ SOURCE_PARSERS = {
 	"payflow": payflow,
 	"fincomercio": fincomercio,
 	"fongiga": fongiga,
+	"libranza_davivienda": libranza_davivienda,
+	"libranza_compensar": libranza_compensar,
 	"manual_internal": manual,
 }
 
