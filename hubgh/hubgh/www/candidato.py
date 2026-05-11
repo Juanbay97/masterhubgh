@@ -6,23 +6,11 @@ from frappe.sessions import get_csrf_token
 
 _PROCEDENCIA_WORKBOOK_CACHE = None
 
-_DEFAULT_BANCOS_SIESA = [
-	{"code": "0002", "description": "BANCOLOMBIA"},
-	{"code": "1001", "description": "BANCO DE BOGOTA"},
-	{"code": "1002", "description": "BANCO POPULAR"},
-	{"code": "1006", "description": "BBVA"},
-	{"code": "1007", "description": "BANCOLOMBIA AHORROS"},
-	{"code": "1012", "description": "BANCO GNB SUDAMERIS"},
-	{"code": "1013", "description": "BANCO DAVIVIENDA"},
-	{"code": "1014", "description": "BANCO DE OCCIDENTE"},
-	{"code": "1019", "description": "SCOTIABANK COLPATRIA"},
-	{"code": "1032", "description": "BANCO CAJA SOCIAL"},
-	{"code": "1052", "description": "BANCO AV VILLAS"},
-	{"code": "1060", "description": "BANCO AGRARIO"},
-	{"code": "1551", "description": "BANCO W"},
-	{"code": "1801", "description": "NEQUI"},
-	{"code": "1803", "description": "DAVIPLATA"},
-]
+# NOTA: el catálogo oficial de bancos vive en
+# `hubgh/hubgh/siesa_reference_matrix.OFFICIAL_BANCO_CATALOG` y se
+# materializa en BD vía `ensure_banco_reference_catalog`. Cualquier
+# fallback hardcoded acá generaba duplicados y códigos ACH mal mapeados
+# (ej. "BBVA" code=1006 cuando 1006 es ITAU). NO restaurar.
 
 _DEFAULT_PROCEDENCIA_PAISES = [
 	{"codigo": "169", "nombre": "Colombia", "aliases": ["CO", "Colombia", "169"]},
@@ -357,52 +345,20 @@ def _resolve_banco_siesa_name(raw_value: str | None) -> str:
 	return ""
 
 
-def _default_bank_map():
-	return {
-		row["code"]: row["description"]
-		for row in _DEFAULT_BANCOS_SIESA
-	}
+def _ensure_official_bancos_seeded():
+	"""Asegura que el catálogo oficial de Banco Siesa esté en BD.
 
-
-def _seed_default_bancos_if_missing() -> int:
-	inserted = 0
-	for row in _DEFAULT_BANCOS_SIESA:
-		code = (row.get("code") or "").strip()
-		description = (row.get("description") or "").strip()
-		if not code or not description:
-			continue
-		if frappe.db.exists("Banco Siesa", code):
-			continue
-		frappe.get_doc(
-			{
-				"doctype": "Banco Siesa",
-				"code": code,
-				"description": description,
-				"enabled": 1,
-			}
-		).insert(ignore_permissions=True)
-		inserted += 1
-	return inserted
-
-
-def _ensure_default_bank_exists(code: str) -> str:
-	code = (code or "").strip()
-	if not code:
-		return ""
-	if frappe.db.exists("Banco Siesa", code):
-		return code
-	description = _default_bank_map().get(code)
-	if not description:
-		return ""
-	frappe.get_doc(
-		{
-			"doctype": "Banco Siesa",
-			"code": code,
-			"description": description,
-			"enabled": 1,
-		}
-	).insert(ignore_permissions=True)
-	return code
+	Idempotente y seguro de llamar en cada request. La fuente de verdad es
+	`OFFICIAL_BANCO_CATALOG` en siesa_reference_matrix.
+	"""
+	try:
+		from hubgh.hubgh.siesa_reference_matrix import ensure_banco_reference_catalog
+		ensure_banco_reference_catalog()
+	except Exception as exc:
+		frappe.logger("hubgh.onboarding").warning(
+			"ensure_banco_reference_catalog falló desde candidato.py",
+			extra={"error": str(exc)},
+		)
 
 
 def _split_apellidos(apellidos: str | None) -> tuple[str, str]:
@@ -553,11 +509,9 @@ def create_candidate(payload):
 		if not (data.get("numero_cuenta_bancaria") or "").strip():
 			frappe.throw("Debes diligenciar el número de cuenta bancaria.", frappe.ValidationError)
 	banco_resuelto = _resolve_banco_siesa_name(banco)
-	if banco and not banco_resuelto:
-		banco_resuelto = _ensure_default_bank_exists(banco)
 	if banco and not banco_resuelto and " - " in banco:
 		left_code = banco.split(" - ", 1)[0].strip()
-		banco_resuelto = _ensure_default_bank_exists(left_code) or _resolve_banco_siesa_name(left_code)
+		banco_resuelto = _resolve_banco_siesa_name(left_code)
 	banco_exists_by_name = 1 if (banco and frappe.db.exists("Banco Siesa", banco)) else 0
 	banco_exists_by_description = 1 if (banco and frappe.db.exists("Banco Siesa", {"description": banco})) else 0
 	logger.info(
@@ -707,11 +661,6 @@ def create_candidate(payload):
 
 @frappe.whitelist(allow_guest=True)
 def get_bancos_siesa():
-	logger = frappe.logger("hubgh.onboarding")
-	seeded = _seed_default_bancos_if_missing()
-	if seeded:
-		logger.info("get_bancos_siesa:seed_defaults", extra={"inserted": seeded})
-
 	bancos = frappe.get_all(
 		"Banco Siesa",
 		filters={"enabled": 1},
@@ -722,17 +671,16 @@ def get_bancos_siesa():
 	if bancos:
 		return bancos
 
-	all_bancos = frappe.get_all(
+	# Edge case: la tabla está vacía. Sembrar desde el catálogo oficial
+	# (idempotente) y reintentar.
+	_ensure_official_bancos_seeded()
+	return frappe.get_all(
 		"Banco Siesa",
+		filters={"enabled": 1},
 		fields=["name", "description"],
 		order_by="description asc",
 		ignore_permissions=True,
 	)
-	if all_bancos:
-		return all_bancos
-
-	# Fallback sin escritura en GET: exponer lista mínima cuando la tabla está vacía.
-	return [{"name": row["code"], "description": row["description"]} for row in _DEFAULT_BANCOS_SIESA]
 
 
 @frappe.whitelist(allow_guest=True)

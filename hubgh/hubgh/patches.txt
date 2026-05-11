@@ -28,3 +28,4 @@ hubgh.patches.setup_examen_medico_multisede
 hubgh.patches.refresh_nivel_educativo_descriptions
 hubgh.patches.reseed_siesa_entidades_con_nits
 hubgh.patches.remove_candidato_portal_webform
+hubgh.patches.dedupe_banco_siesa
