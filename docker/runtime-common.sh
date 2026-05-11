@@ -159,7 +159,9 @@ initialize_bench_if_needed() {
 
   echo "==> Inicializando bench ($HUBGH_RUNTIME_MODE, primera vez, ~10-15 min)..."
 
-  sudo chown -R frappe:frappe "$BENCH_DIR"
+  # chown best-effort: los bind-mounts read-only (ej apps/hubgh) van a dar error
+  # pero no impide la inicializacion — frappe ya puede leer esos archivos.
+  sudo chown -R frappe:frappe "$BENCH_DIR" 2>/dev/null || true
 
   cd /tmp
   rm -rf frappe-bench-tmp
