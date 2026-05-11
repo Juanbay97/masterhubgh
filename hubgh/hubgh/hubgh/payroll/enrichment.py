@@ -72,6 +72,7 @@ class CargoSalary:
 	name: str
 	salario_base_tc: float = 0.0
 	horas_trabajadas_mes: float = 0.0
+	aplica_horas_extras: bool = True
 
 
 @dataclass
@@ -115,6 +116,7 @@ class EnrichedNovedad:
 	calc_notes: str
 	valor_hora_base: float | None  # útil para tipos en horas
 	salario_mensual: float = 0.0   # para tipos en días: valor_día = salario/30
+	cargo_aplica_horas_extras: bool = True  # filtro para HE* en compute/recargos
 	# Computed (lo llena el módulo compute, no enrich):
 	computed_amount: float | None = None
 	computed_quantity: float | None = None
@@ -202,7 +204,11 @@ def enrich(
 	#    c) Sin nada → 0 (queda en `partial`).
 	cargo_label = (novedad.raw_payload or {}).get("cargo") or ""
 	cargo_record: CargoSalary | None = None
-	if not contrato and cargo_label:
+	# Resolvemos siempre el cargo del archivo (haya contrato o no) porque
+	# `aplica_horas_extras` se usa para filtrar HE* aunque tengamos
+	# contrato en DB. Si falla la consulta lo dejamos en None y el
+	# default sigue siendo "sí aplica".
+	if cargo_label:
 		try:
 			cargo_record = ctx.resolve_cargo(cargo_label)
 		except Exception:
@@ -243,6 +249,7 @@ def enrich(
 		calc_notes=" ".join(notas),
 		valor_hora_base=valor_hora,
 		salario_mensual=salario,
+		cargo_aplica_horas_extras=(cargo_record.aplica_horas_extras if cargo_record else True),
 		raw_payload=dict(novedad.raw_payload),
 	)
 
@@ -438,12 +445,12 @@ def build_runtime_context() -> EnrichmentContext:
 		row = frappe.db.get_value(
 			"Cargo",
 			{"name": key, "activo": 1},
-			["name", "salario_base_tc", "horas_trabajadas_mes"],
+			["name", "salario_base_tc", "horas_trabajadas_mes", "aplica_horas_extras"],
 			as_dict=True,
 		) or frappe.db.get_value(
 			"Cargo",
 			{"nombre": key, "activo": 1},
-			["name", "salario_base_tc", "horas_trabajadas_mes"],
+			["name", "salario_base_tc", "horas_trabajadas_mes", "aplica_horas_extras"],
 			as_dict=True,
 		)
 
@@ -461,6 +468,7 @@ def build_runtime_context() -> EnrichmentContext:
 			name=row["name"],
 			salario_base_tc=float(row.get("salario_base_tc") or 0),
 			horas_trabajadas_mes=float(row.get("horas_trabajadas_mes") or 0),
+			aplica_horas_extras=bool(row.get("aplica_horas_extras", 1)),
 		)
 		_cargo_cache[key] = result
 		return result

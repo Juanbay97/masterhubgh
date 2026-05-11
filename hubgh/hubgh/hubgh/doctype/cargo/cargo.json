@@ -14,7 +14,9 @@
   "activo",
   "payroll_section",
   "salario_base_tc",
-  "horas_trabajadas_mes"
+  "horas_trabajadas_mes",
+  "column_break_aplica",
+  "aplica_horas_extras"
  ],
  "fields": [
   {
@@ -72,6 +74,17 @@
    "fieldtype": "Float",
    "label": "Horas trabajadas / mes",
    "precision": "2"
+  },
+  {
+   "fieldname": "column_break_aplica",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "Si está desmarcado, los recargos por hora extra (HED/HEN/HEFD/HEFN) NO se pagan a empleados con este cargo aunque el archivo CLONK los traiga. Útil para asistentes/administrativos que cobran salario fijo. Los recargos por nocturno/dominical/festivo (HN/HFD/HFN) y la hora ordinaria (HD) sí se siguen pagando.",
+   "fieldname": "aplica_horas_extras",
+   "fieldtype": "Check",
+   "label": "Aplica horas extra"
   }
  ],
  "grid_page_length": 50,

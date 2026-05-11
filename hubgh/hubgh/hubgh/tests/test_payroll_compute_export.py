@@ -131,6 +131,33 @@ class AusentismosTests(unittest.TestCase):
 		self.assertIn("tope luto", nov.calc_notes)
 
 
+class CargoFiltraHorasExtraTests(unittest.TestCase):
+	"""Cargo con aplica_horas_extras=False NO recibe HE*
+	(HED/HEN/HEFD/HEFN) aunque CLONK los traiga. Los recargos
+	HN/HFD/HFN y la hora ordinaria HD SÍ se siguen pagando."""
+
+	def test_he_no_aplica_devuelve_cero_y_computed(self):
+		ctx = _make_ctx()
+		nov = _enrich(ctx, "1001", "HEN", cantidad=10.0, unidad="horas")
+		nov.cargo_aplica_horas_extras = False
+		compute.compute_novedad(nov, ctx.params)
+		self.assertEqual(nov.computed_amount, 0.0)
+		self.assertEqual(nov.computed_quantity, 10.0)
+		self.assertEqual(nov.calc_status, "computed")
+		self.assertIn("no aplica horas extra", nov.calc_notes.lower())
+
+	def test_recargo_nocturno_siempre_paga_aunque_cargo_no_aplique_extras(self):
+		ctx = _make_ctx()
+		# HN es recargo nocturno, no hora extra → siempre paga.
+		nov = _enrich(ctx, "1001", "HN", cantidad=10.0, unidad="horas")
+		nov.cargo_aplica_horas_extras = False
+		compute.compute_novedad(nov, ctx.params)
+		valor_hora = 1_400_000 / 220
+		expected = round(10 * valor_hora * 1.35, 2)
+		self.assertEqual(nov.computed_amount, expected)
+		self.assertEqual(nov.calc_status, "computed")
+
+
 class TpRulesTests(unittest.TestCase):
 	"""Reglas refinadas para Tiempo Parcial confirmadas con el dueño:
 	descanso TP no se paga; vacaciones / licencias / incapacidades TP
