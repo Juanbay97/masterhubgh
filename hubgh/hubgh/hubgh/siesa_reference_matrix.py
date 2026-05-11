@@ -20,8 +20,11 @@ OFFICIAL_SIESA_CATALOGS = {
 		("19", "APRENDIZ ETAPA PRODUCTIVA"),
 	],
 	"Entidad CCF Siesa": [
-		("001", "CCF Bogotá"),
-		("002", "CCF Medellín"),
+		("890900842", "CCF COMFENALCO ANTIOQUIA"),
+		("890102002", "CCF COMBARRANQUILLA"),
+		("860066942", "CCF COMPENSAR"),
+		("890480023", "CCF COMFENALCO CARTAGENA"),
+		("999999999", "SIN CAJA"),
 	],
 	"Unidad Negocio Siesa": [
 		("100", "HAMBURGUESAS"),
@@ -57,9 +60,9 @@ OFFICIAL_SIESA_CATALOGS = {
 	],
 	"Nivel Educativo Siesa": [
 		("01", "PREESCOLAR"),
-		("02", "BÁSICA PRIMARIA"),
-		("03", "BÁSICA SECUNDARIA"),
-		("04", "MEDIA"),
+		("02", "BÁSICA PRIMARIA (1° - 5°)"),
+		("03", "BÁSICA SECUNDARIA (6° - 9°)"),
+		("04", "MEDIA (10° - 13°)"),
 		("05", "TÉCNICO LABORAL"),
 		("06", "FORMACIÓN TÉCNICA PROFESIONAL"),
 		("07", "TECNOLÓGICA"),
@@ -75,28 +78,55 @@ OFFICIAL_SIESA_CATALOGS = {
 
 SOCIAL_SECURITY_REFERENCE_CATALOGS = {
 	"Entidad EPS Siesa": [
-		("210101", "EPS SURA"),
-		("210102", "NUEVA EPS"),
-		("210103", "EPS SANITAS"),
-		("210104", "SALUD TOTAL EPS"),
-		("210105", "COMPENSAR EPS"),
-		("210106", "FAMISANAR EPS"),
-		("210107", "COOSALUD EPS"),
-		("210108", "ALIANSALUD EPS"),
+		("830113831", "ALIANSALUD EPS"),
+		("800130907", "EPS SALUD TOTAL"),
+		("800251440", "SANITAS EPS"),
+		("860066942", "COMPENSAR EPS"),
+		("800088702", "EPS SURA"),
+		("830003564", "FAMISANAR EPS"),
+		("900604350", "ALIANZA MEDELLIN ANTIOQUIA EPS SAS"),
+		("900298372", "RECAUDO SGP CAPITAL SALUD"),
+		("806008394", "EPS-S MUTUAL SER"),
+		("800249241", "EPS COOSALUD"),
+		("804002105", "Cooperativa de Salud Comunitaria Comparta"),
+		("860045904", "Comfacundi - CCF de Cundinamarca"),
+		("900462447", "Fondo de Solidaridad y Garantia Fosyga"),
+		("818000140", "Asociacion Mutual Barrios Unidos de Quibdo E.S.S. AMBUQ"),
+		("8300396705", "SANIDAD MILITAR"),
+		("901093846", "ECOOPSOS EPS SAS"),
+		("892115006", "COMFAMILIAR GUAJIRA"),
+		("824001398", "ASOCIACION DE CABILDOS INDIGENAS DEL CESAR Y GUAJIRA DUSAKA"),
+		("805001157", "ENTIDAD PROMOTORA DE SALUD SERVICIO OCCIDENTAL DE SALUD S.A."),
+		("800249241-0", "EPS COOSALUD MOVIL"),
+		("890500675", "CAJA DE COMPENSACION DEL ORIENTE COLOMBIANO COMFAORIENTE"),
+		("837000084", "ENTIDAD PROMOTORA DE SALUD MALLAMAS EPSI"),
+		("899999107", "EPS-S CONVIDA"),
+		("901097473", "MEDIMAS EPS"),
+		("830009783", "CRUZ BLANCA EPS"),
+		("805000427", "COOMEVA EPS"),
+		("891080005", "EPS-S COMFACOR"),
+		("900156264", "NUEVA EPS"),
+		("900156264-2", "NUEVA EPS S.A. MOVILIDAD"),
+		("901543761", "EPS FAMILIAR DE COLOMBIA S A S"),
+		("901037916", "Fosyga Regimen de Excepcion"),
+		("890102044", "EPS CAJACOPI"),
+		("900226715", "COOSALUD ENTIDAD PROMOTORA DE SALUD S A"),
 	],
 	"Entidad AFP Siesa": [
-		("230301", "COLPENSIONES"),
-		("230302", "PORVENIR"),
-		("230303", "PROTECCIÓN"),
-		("230304", "COLFONDOS"),
-		("230305", "SKANDIA"),
+		("800229739", "AFP PROTECCION (ING + PROTECCION)"),
+		("800224808", "AFP PORVENIR"),
+		("800227940", "AFP COLFONDOS"),
+		("900336004", "AFP COLPENSIONES"),
+		("999999999", "SIN AFP"),
+		("8001485142", "Skandia Administradora De Fondos De Pensiones Y Cesantias"),
 	],
 	"Entidad Cesantias Siesa": [
-		("240301", "PORVENIR CESANTÍAS"),
-		("240302", "PROTECCIÓN CESANTÍAS"),
-		("240303", "COLFONDOS CESANTÍAS"),
-		("240304", "SKANDIA CESANTÍAS"),
-		("240305", "FONDO NACIONAL DEL AHORRO"),
+		("999999999", "SIN FONDO DE CESANTIAS"),
+		("800170494", "PROTECCION"),
+		("899999284", "FNA"),
+		("800198644", "COLFONDOS"),
+		("800170043", "PORVENIR"),
+		("8001485142", "Skandia Administradora De Fondos De Pensiones Y Cesantias"),
 	],
 }
 
@@ -155,6 +185,86 @@ OFFICIAL_BANCO_BANCOLOMBIA_CODES = [
 	("SCOTIABANK COLPATRIA S.A", "5600191"),
 	("Ualá", "1804"),
 ]
+
+
+# Catálogo combinado oficial: cada banco con su nombre canonical (matching plantilla SIESA),
+# código ACH y código Bancolombia. None cuando el banco no aparece en alguna de las dos tablas.
+# Tupla: (description_canonical, codigo_ach, codigo_bancolombia)
+OFFICIAL_BANCO_CATALOG = [
+	("BANCAMIA S.A", "1059", "1059"),
+	("BANCO AGRARIO", "1040", "1040"),
+	("BANCO AV VILLAS", "1052", "6013677"),
+	("BANCO BTG PACTUAL", "1805", "1805"),
+	("BANCO CAJA SOCIAL BCSC SA", "1032", "5600829"),
+	("BANCO CONTACTAR S.A.", None, "1819"),
+	("BANCO COOPERATIVO COOPCENTRAL", "1066", "1066"),
+	("BANCO CREDIFINANCIERA SA.", "1558", "1558"),
+	("BANCO DAVIVIENDA SA", "1051", "5895142"),
+	("BANCO DE BOGOTA", "1001", "5600010"),
+	("BANCO DE OCCIDENTE", "1023", "5600230"),
+	("BANCO FALABELLA S.A.", "1062", "1062"),
+	("BANCO FINANDINA S.A.", "1063", "1063"),
+	("BANCO GNB SUDAMERIS", "1012", "5600120"),
+	("BANCO J.P. MORGAN COLOMBIA S.A", "1071", "1071"),
+	("BANCO MUNDO MUJER", "1047", "1047"),
+	("BANCO NU", "1809", "1809"),
+	("BANCO PICHINCHA", "1060", "1060"),
+	("BANCO POPULAR", "1002", "5600023"),
+	("BANCO SANTANDER DE NEGOCIOS COLOMBIA S.A", "1065", "1065"),
+	("BANCO SERFINANZA S.A", "1069", "1069"),
+	("BANCO UNION S.A", None, "1303"),
+	("BANCO W S.A", "1053", "1053"),
+	("BANCOLDEX S.A.", "1031", "1031"),
+	("BANCOLOMBIA", "1007", "5600078"),
+	("BANCOOMEVA", "1061", "1061"),
+	("BBVA COLOMBIA", "1013", "5600133"),
+	("BOLD CF", None, "1808"),
+	("CITIBANK", "1009", "5600094"),
+	("COINK", "1812", "1812"),
+	("COLTEFINANCIERA S.A", "1370", "1370"),
+	("CONFIAR COOPERATIVA FINANCIERA", "1292", "1292"),
+	("COOPERATIVA FINANCIERA DE ANTIOQUIA", "1283", "1283"),
+	("COOTRAFA COOPERATIVA FINANCIERA", "1289", "1289"),
+	("DAVIPLATA", "1551", "1551"),
+	("DING TECNIPAGOS SA", "1802", "1802"),
+	("FINANCIERA JURISCOOP S.A. COMPAÑIA DE FINANCIAMIENTO", "1121", "1121"),
+	("GLOBAL66", None, "1814"),
+	("IRIS", "1637", "1637"),
+	("ITAU", "1014", "5600146"),
+	("ITAU antes Corpbanca", "1006", "5600065"),
+	("JFK COOPERATIVA FINANCIERA", "1286", "1286"),
+	("LULO BANK S.A.", "1070", "1070"),
+	("MIBANCO S.A.", "1067", "1067"),
+	("MOVII", "1801", "1801"),
+	("NEQUI", "1507", "1507"),
+	("PIBANK", "1560", "1560"),
+	("POWWI", "1803", "1803"),
+	("RAPPIPAY", "1811", "1811"),
+	("RIA MONEY TRANSFER COLOMBIA S.", None, "1817"),
+	("SCOTIABANK COLPATRIA S.A", "1019", "5600191"),
+	("UALA", "1804", "1804"),
+	# Solo ACH (no en Bancolombia)
+	("ASOPAGOS S.A.S", "1086", None),
+	("COOFINEP COOPERATIVA FINANCIERA", "1291", None),
+	("SANTANDER CONSUMER", "1813", None),
+]
+
+
+# Aliases: nombres alternativos del mismo banco que aparecen en datos viejos
+# o en el catálogo Bancolombia con texto truncado/diferente.
+BANCO_NAME_ALIASES = {
+	"BANCO DE LAS MICROFINANZAS - BANCAMIA S.A.": "BANCAMIA S.A",
+	"BAN100 S.A": "BANCO CREDIFINANCIERA SA.",
+	"BANCO W": "BANCO W S.A",
+	"BANCO SANTANDER DE NEGOCIOS CO": "BANCO SANTANDER DE NEGOCIOS COLOMBIA S.A",
+	"COOPERATIVA FINANCIERA DE ANTI": "COOPERATIVA FINANCIERA DE ANTIOQUIA",
+	"COOTRAFA COOPERATIVA FINANCIER": "COOTRAFA COOPERATIVA FINANCIERA",
+	"FINANCIERA JURISCOOP S.A. COMP": "FINANCIERA JURISCOOP S.A. COMPAÑIA DE FINANCIAMIENTO",
+	"BANCO J.P. MORGAN COLOMBIA S.A.": "BANCO J.P. MORGAN COLOMBIA S.A",
+	"NU": "BANCO NU",
+	"Ualá": "UALA",
+	"BANCO BBVA": "BBVA COLOMBIA",
+}
 
 
 OFFICIAL_CARGOS = [
@@ -253,15 +363,36 @@ def ensure_social_security_reference_catalogs():
 			_upsert_reference_row(doctype, code, description)
 
 
+def _get_official_codes_for_doctype(doctype):
+	rows = OFFICIAL_SIESA_CATALOGS.get(doctype) or SOCIAL_SECURITY_REFERENCE_CATALOGS.get(doctype) or []
+	return {code for code, _ in rows}
+
+
+def ensure_catalog_for_doctype(doctype):
+	rows = OFFICIAL_SIESA_CATALOGS.get(doctype) or SOCIAL_SECURITY_REFERENCE_CATALOGS.get(doctype) or []
+	for code, description in rows:
+		_upsert_reference_row(doctype, code, description)
+
+
 def ensure_official_ccf_catalog(strict_disable_others=True):
 	"""Normaliza catálogo CCF a códigos oficiales y opcionalmente deshabilita el resto."""
 	doctype = "Entidad CCF Siesa"
 	ensure_reference_catalog(doctype)
+	_repoint_to_official_catalog(
+		doctype,
+		[
+			("Contrato", "entidad_ccf_siesa"),
+			("Candidato", "ccf_siesa"),
+			("Datos Contratacion", "ccf_siesa"),
+			("Ficha Empleado", "ccf_siesa"),
+		],
+		fallback_code="999999999",
+	)
 
 	if not strict_disable_others:
 		return
 
-	official_codes = {code for code, _ in OFFICIAL_SIESA_CATALOGS.get(doctype, [])}
+	official_codes = _get_official_codes_for_doctype(doctype)
 	rows = frappe.get_all(doctype, fields=["name", "code", "enabled"])
 	for row in rows:
 		code = str(row.get("code") or "").strip()
@@ -271,13 +402,85 @@ def ensure_official_ccf_catalog(strict_disable_others=True):
 			frappe.db.set_value(doctype, row["name"], "enabled", 0, update_modified=False)
 
 
+def ensure_official_eps_catalog(strict_disable_others=True):
+	doctype = "Entidad EPS Siesa"
+	ensure_catalog_for_doctype(doctype)
+	_repoint_to_official_catalog(
+		doctype,
+		[
+			("Contrato", "entidad_eps_siesa"),
+			("Candidato", "eps_siesa"),
+			("Datos Contratacion", "eps_siesa"),
+			("Ficha Empleado", "eps_siesa"),
+		],
+		fallback_code=None,
+	)
+
+	if not strict_disable_others:
+		return
+
+	official_codes = _get_official_codes_for_doctype(doctype)
+	for row in frappe.get_all(doctype, fields=["name", "code", "enabled"]):
+		code = str(row.get("code") or "").strip()
+		if code not in official_codes and int(row.get("enabled") or 0) == 1:
+			frappe.db.set_value(doctype, row["name"], "enabled", 0, update_modified=False)
+
+
+def ensure_official_afp_catalog(strict_disable_others=True):
+	doctype = "Entidad AFP Siesa"
+	ensure_catalog_for_doctype(doctype)
+	_repoint_to_official_catalog(
+		doctype,
+		[
+			("Contrato", "entidad_afp_siesa"),
+			("Candidato", "afp_siesa"),
+			("Datos Contratacion", "afp_siesa"),
+			("Ficha Empleado", "afp_siesa"),
+		],
+		fallback_code="999999999",
+	)
+
+	if not strict_disable_others:
+		return
+
+	official_codes = _get_official_codes_for_doctype(doctype)
+	for row in frappe.get_all(doctype, fields=["name", "code", "enabled"]):
+		code = str(row.get("code") or "").strip()
+		if code not in official_codes and int(row.get("enabled") or 0) == 1:
+			frappe.db.set_value(doctype, row["name"], "enabled", 0, update_modified=False)
+
+
+def ensure_official_cesantias_catalog(strict_disable_others=True):
+	doctype = "Entidad Cesantias Siesa"
+	ensure_catalog_for_doctype(doctype)
+	_repoint_to_official_catalog(
+		doctype,
+		[
+			("Contrato", "entidad_cesantias_siesa"),
+			("Candidato", "cesantias_siesa"),
+			("Datos Contratacion", "cesantias_siesa"),
+			("Ficha Empleado", "cesantias_siesa"),
+		],
+		fallback_code="999999999",
+	)
+
+	if not strict_disable_others:
+		return
+
+	official_codes = _get_official_codes_for_doctype(doctype)
+	for row in frappe.get_all(doctype, fields=["name", "code", "enabled"]):
+		code = str(row.get("code") or "").strip()
+		if code not in official_codes and int(row.get("enabled") or 0) == 1:
+			frappe.db.set_value(doctype, row["name"], "enabled", 0, update_modified=False)
+
+
 def _normalize_text(value):
 	return " ".join(str(value or "").strip().lower().split())
 
 
 def _repoint_to_official_catalog(doctype, references, fallback_code):
 	rows = frappe.get_all(doctype, fields=["name", "code", "description", "enabled"])
-	official_codes = {code for code, _ in OFFICIAL_SIESA_CATALOGS.get(doctype, [])}
+	official_codes = _get_official_codes_for_doctype(doctype)
 
 	by_name = {str(r.get("name") or ""): r for r in rows}
 	by_name_official = {
@@ -381,37 +584,77 @@ def ensure_official_nivel_educativo_catalog(strict_disable_others=True):
 
 
 def ensure_banco_reference_catalog():
-	for bank_name, bank_code in OFFICIAL_BANCO_BANCOLOMBIA_CODES:
-		code = str(bank_code or "").strip()
-		last_two = code[-2:] if len(code) >= 2 else ""
+	"""Pobla Banco Siesa con códigos ACH + Bancolombia oficiales.
 
-		name = (
-			frappe.db.get_value("Banco Siesa", {"description": bank_name}, "name")
-			or frappe.db.get_value("Banco Siesa", {"code": code}, "name")
-			or frappe.db.get_value("Banco Siesa", {"code": bank_name}, "name")
-		)
+	Para cada banco del catálogo combinado:
+	- code y codigo_ach = código ACH (lo que SIESA quiere para ID BANCO EMPLEADO)
+	- codigo_bancolombia = código bancolombia interno (para columna NOTAS)
+	- ultimos_dos_digitos = últimos 2 del ACH
+	- description = nombre canonical
+
+	Los registros existentes con descripción matcheable se actualizan in-place;
+	los Link fields se repuntan vía rename si el code cambia.
+	"""
+	for canonical_name, codigo_ach, codigo_bancolombia in OFFICIAL_BANCO_CATALOG:
+		ach = _str(codigo_ach)
+		bancolombia = _str(codigo_bancolombia)
+		last_two = ach[-2:] if len(ach) >= 2 else ""
+
+		# code en Banco Siesa = ACH cuando exista; si no, bancolombia (fallback).
+		target_code = ach or bancolombia
+		if not target_code or not canonical_name:
+			continue
+
+		# Buscar registro existente por description (canonical o alias) o por
+		# cualquier code/codigo_ach/codigo_bancolombia conocido.
+		candidate_descriptions = [canonical_name] + [
+			alias for alias, official in BANCO_NAME_ALIASES.items() if official == canonical_name
+		]
+		name = None
+		for desc in candidate_descriptions:
+			name = frappe.db.get_value("Banco Siesa", {"description": desc}, "name")
+			if name:
+				break
+		if not name:
+			for code_candidate in (ach, bancolombia):
+				if code_candidate:
+					name = frappe.db.get_value("Banco Siesa", {"code": code_candidate}, "name")
+					if name:
+						break
+		if not name and ach:
+			name = frappe.db.get_value("Banco Siesa", {"codigo_ach": ach}, "name")
+
+		updates = {
+			"description": canonical_name,
+			"codigo_ach": ach,
+			"codigo_bancolombia": bancolombia,
+			"ultimos_dos_digitos": last_two,
+			"enabled": 1,
+		}
 
 		if name:
-			doc = frappe.get_doc("Banco Siesa", name)
-			doc.code = code
-			doc.description = bank_name
-			doc.codigo_bancolombia = code
-			doc.ultimos_dos_digitos = last_two
-			doc.enabled = 1
-			doc.save(ignore_permissions=True)
+			# Si el code actual difiere del target, renombrar el doc — esto
+			# repunta automáticamente todos los Link fields que apuntan al name.
+			if name != target_code:
+				try:
+					frappe.rename_doc("Banco Siesa", name, target_code, force=True, merge=False)
+					name = target_code
+				except Exception:
+					frappe.logger("hubgh.siesa_export").warning(
+						"No se pudo renombrar Banco Siesa", extra={"from": name, "to": target_code}
+					)
+			updates["code"] = target_code
+			frappe.db.set_value("Banco Siesa", name, updates, update_modified=False)
 			continue
 
 		doc = frappe.get_doc(
-			{
-				"doctype": "Banco Siesa",
-				"code": code,
-				"description": bank_name,
-				"codigo_bancolombia": code,
-				"ultimos_dos_digitos": last_two,
-				"enabled": 1,
-			}
+			dict(doctype="Banco Siesa", code=target_code, **updates)
 		)
 		doc.insert(ignore_permissions=True)
+
+
+def _str(value):
+	return "" if value is None else str(value).strip()
 
 
 def _repoint_link_values(doctype, fieldname, old_values, new_value):

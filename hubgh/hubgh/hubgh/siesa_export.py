@@ -245,7 +245,7 @@ def _get_banco_siesa_snapshot(bank_name):
 		frappe.db.get_value(
 			"Banco Siesa",
 			bank_name,
-			["name", "code", "description", "ultimos_dos_digitos", "codigo_bancolombia"],
+			["name", "code", "description", "codigo_ach", "ultimos_dos_digitos", "codigo_bancolombia"],
 			as_dict=True,
 		)
 		or {}
@@ -300,15 +300,23 @@ def _normalize_banco_siesa_record(bank_name):
 
 
 def _resolve_id_banco_empleado(bank_name):
-	snapshot = _normalize_banco_siesa_record(bank_name)
+	"""Devuelve (id_banco_empleado, notas_banco) para el export SIESA.
+
+	id_banco_empleado = últimos 2 dígitos del codigo_ach del banco.
+	notas_banco = código bancolombia interno (columna NOTAS).
+	"""
+	snapshot = _get_banco_siesa_snapshot(bank_name)
 	if not snapshot:
 		return "", ""
 
-	bank_code = _str(snapshot.get("ultimos_dos_digitos"))
-	if _is_blank(bank_code):
-		bank_code = _last_two_digits(snapshot.get("description")) or _last_two_digits(snapshot.get("code"))
+	codigo_ach = _digits_only(snapshot.get("codigo_ach")) or _digits_only(snapshot.get("code"))
+	bank_code = codigo_ach[-2:] if len(codigo_ach) >= 2 else ""
 
-	notas_banco = _digits_only(snapshot.get("codigo_bancolombia")) or _digits_only(snapshot.get("code"))
+	# Fallback histórico: si codigo_ach está vacío, intentar el campo legacy.
+	if _is_blank(bank_code):
+		bank_code = _str(snapshot.get("ultimos_dos_digitos"))
+
+	notas_banco = _digits_only(snapshot.get("codigo_bancolombia"))
 
 	if _is_blank(bank_code):
 		frappe.logger("hubgh.siesa_export").warning(
@@ -318,7 +326,7 @@ def _resolve_id_banco_empleado(bank_name):
 				"snapshot": {
 					"code": _str(snapshot.get("code")),
 					"description": _str(snapshot.get("description")),
-					"ultimos_dos_digitos": _str(snapshot.get("ultimos_dos_digitos")),
+					"codigo_ach": _str(snapshot.get("codigo_ach")),
 					"codigo_bancolombia": notas_banco,
 				},
 			},
@@ -352,6 +360,37 @@ def _catalog_code(doctype, value):
 	return normalize_code_for_doctype(doctype, raw)
 
 
+def _catalog_description(doctype, value):
+	if _is_blank(value):
+		return ""
+	raw = normalize_code_for_doctype(doctype, _str(value))
+
+	if frappe.db.exists(doctype, raw):
+		description = frappe.db.get_value(doctype, raw, "description")
+		if description:
+			return _str(description)
+
+	name = frappe.db.get_value(doctype, {"code": raw}, "name")
+	if name:
+		description = frappe.db.get_value(doctype, name, "description")
+		if description:
+			return _str(description)
+
+	name = frappe.db.get_value(doctype, {"description": raw}, "name")
+	if name:
+		description = frappe.db.get_value(doctype, name, "description")
+		if description:
+			return _str(description)
+
+	alias_code = _resolve_catalog_code_by_alias(doctype, raw)
+	if alias_code and frappe.db.exists(doctype, alias_code):
+		description = frappe.db.get_value(doctype, alias_code, "description")
+		if description:
+			return _str(description)
+
+	return ""
+
+
 def _tipo_documento_siesa(tipo_documento):
 	return {
 		"Cedula": "C",
@@ -362,8 +401,18 @@ def _tipo_documento_siesa(tipo_documento):
 	}.get(_str(tipo_documento), "")
 
 
+_GENERO_SIESA_MAP = {
+	"masculino": "0",
+	"hombre": "0",
+	"m": "0",
+	"femenino": "1",
+	"mujer": "1",
+	"f": "1",
+}
+
+
 def _genero_siesa(genero):
-	return {"Masculino": "0", "Femenino": "1"}.get(_str(genero), "")
+	return _GENERO_SIESA_MAP.get(_str(genero).lower(), "")
 
 
 def _estado_civil_siesa(estado_civil):
@@ -436,7 +485,7 @@ def _build_employee_context(data):
 		"pais_expedicion": _str(data.pais_expedicion_siesa),
 		"departamento_expedicion": _str(data.departamento_expedicion_siesa),
 		"ciudad_expedicion": _str(data.ciudad_expedicion_siesa),
-		"nivel_educativo": _catalog_code(
+		"nivel_educativo": _catalog_description(
 			"Nivel Educativo Siesa",
 			_first(data.nivel_educativo_siesa, getattr(candidato, "nivel_educativo_siesa", None)),
 		),
@@ -525,7 +574,7 @@ def _build_contract_context(data):
 		"id_co": id_co,
 		"id_prorroga": "",
 		"id_banco": "07",
-		"id_tipo_cotizante": _catalog_code("Tipo Cotizante Siesa", contrato.tipo_cotizante_siesa),
+		"id_tipo_cotizante": _catalog_code("Tipo Cotizante Siesa", contrato.tipo_cotizante_siesa).lstrip("0") or "0",
 		"ind_comp_flexible": "",
 		"id_proyecto": "NM",
 		"id_unidad_negocio": _catalog_code("Unidad Negocio Siesa", contrato.unidad_negocio_siesa),
@@ -541,7 +590,7 @@ def _build_contract_context(data):
 		"id_entidad_eps": _catalog_code("Entidad EPS Siesa", contrato.entidad_eps_siesa),
 		"id_entidad_cesantias": _catalog_code("Entidad Cesantias Siesa", contrato.entidad_cesantias_siesa),
 		"id_entidad_ccf": _catalog_code("Entidad CCF Siesa", ccf_value),
-		"id_entidad_arl": "01",
+		"id_entidad_arl": "860002183",
 		"id_entidad_sena": "899999034",
 		"id_entidad_icbf": "899999239",
 		"fecha_ingreso": _safe_ymd(contrato.fecha_ingreso),
