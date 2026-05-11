@@ -71,12 +71,25 @@ def create_run(period_year: int, period_month: int) -> str:
 def attach_file(run_name: str, file_url: str, file_name: str | None = None) -> str:
 	if not frappe.db.exists("Payroll Run", run_name):
 		frappe.throw(_("Payroll Run no existe: {0}").format(run_name))
+
+	resolved_name = file_name or (file_url.rsplit("/", 1)[-1] if file_url else "")
+	lowered = (resolved_name or "").lower()
+	# openpyxl no soporta el formato .xls legacy. Pedimos resave a .xlsx
+	# antes de subir para no romper el flujo más adelante.
+	if lowered.endswith(".xls") and not lowered.endswith(".xlsx"):
+		frappe.throw(
+			_(
+				"El archivo {0} está en formato .xls antiguo. Abrílo y guardalo como "
+				".xlsx (Archivo → Guardar como → Libro de Excel) antes de subirlo."
+			).format(resolved_name)
+		)
+
 	doc = frappe.get_doc(
 		{
 			"doctype": "Payroll Run File",
 			"run": run_name,
 			"file_url": file_url,
-			"file_name": file_name or (file_url.rsplit("/", 1)[-1] if file_url else ""),
+			"file_name": resolved_name,
 			"detected_source": "unknown",
 			"parse_status": "pending",
 		}
@@ -89,7 +102,13 @@ def attach_file(run_name: str, file_url: str, file_name: str | None = None) -> s
 		doc.save(ignore_permissions=False)
 	except Exception as exc:
 		# No bloquear el upload por la detección; queda en "unknown".
-		frappe.log_error(f"Detection failed for {file_url}: {exc}", "PayrollRunFile.detection")
+		# El title del Error Log no puede pasar de 140 chars, así que lo
+		# acotamos a algo legible.
+		short = (resolved_name or "archivo")[:60]
+		frappe.log_error(
+			message=f"Detection failed for {file_url}: {exc}",
+			title=f"PayrollRunFile detect failed: {short}",
+		)
 	return doc.name
 
 

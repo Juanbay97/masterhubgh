@@ -16,13 +16,7 @@ Todo lo demás cae en `OTRO` y se trata como literal si trae `valor`.
 
 from __future__ import annotations
 
-from hubgh.hubgh.payroll.compute import (
-	ausentismos,
-	dias_remunerados,
-	induccion,
-	literal,
-	recargos,
-)
+from . import ausentismos, dias_remunerados, induccion, literal, recargos
 
 
 def compute_novedad(novedad, params) -> None:
