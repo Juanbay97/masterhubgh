@@ -45,12 +45,11 @@ BACKUP_TS="$(ls "$STAGING_DIR" | grep -oE '^[0-9]{8}_[0-9]{6}' | sort -u | tail 
 [[ -n "$BACKUP_TS" ]] || fail "No encontré archivos de backup con prefijo timestamp en $STAGING_DIR"
 log "Timestamp del backup a restaurar: $BACKUP_TS"
 
-# Validar los 4 archivos
-for suffix in database.sql.gz files.tar private-files.tar site_config_backup.json; do
-    if ! ls "$STAGING_DIR"/${BACKUP_TS}*-${suffix} >/dev/null 2>&1; then
-        fail "Falta *-${suffix} en $STAGING_DIR. Backup incompleto."
-    fi
-done
+# Validar los 4 archivos (acepta .tar o .tgz segun si Frappe comprimio)
+ls "$STAGING_DIR"/${BACKUP_TS}*-database.sql.gz        >/dev/null 2>&1 || fail "Falta *-database.sql.gz en $STAGING_DIR"
+ls "$STAGING_DIR"/${BACKUP_TS}*-site_config_backup.json >/dev/null 2>&1 || fail "Falta *-site_config_backup.json en $STAGING_DIR"
+ls "$STAGING_DIR"/${BACKUP_TS}*-files.t*               2>/dev/null | grep -v 'private-files' | grep -q . || fail "Falta *-files.{tar,tgz} en $STAGING_DIR"
+ls "$STAGING_DIR"/${BACKUP_TS}*-private-files.t*       >/dev/null 2>&1 || fail "Falta *-private-files.{tar,tgz} en $STAGING_DIR"
 
 # ───────────────────────────────────────────────────────────────────────────────
 # Cargar variables del .env (necesitamos MARIADB_ROOT_PASSWORD)
@@ -124,25 +123,20 @@ dc cp "$STAGING_DIR/." "backend:/home/frappe/frappe-bench/sites/$SITE_NAME/priva
 # Restaurar
 # ───────────────────────────────────────────────────────────────────────────────
 log "Restaurando DB + archivos + site_config (con encryption_key)..."
+# Detectar los archivos por glob (acepta .tar y .tgz, y maneja la normalizacion de '.' -> '_' que hace Frappe en el nombre)
+DB_FILE="$(ls "$STAGING_DIR"/${BACKUP_TS}*-database.sql.gz | xargs -n1 basename | head -1)"
+PUB_FILE="$(ls "$STAGING_DIR"/${BACKUP_TS}*-files.t* 2>/dev/null | grep -v 'private-files' | xargs -n1 basename | head -1)"
+PRV_FILE="$(ls "$STAGING_DIR"/${BACKUP_TS}*-private-files.t* | xargs -n1 basename | head -1)"
+log "  DB  : $DB_FILE"
+log "  PUB : $PUB_FILE"
+log "  PRV : $PRV_FILE"
 dc exec -T backend bash -c "
     cd /home/frappe/frappe-bench &&
     bench --site $SITE_NAME --force restore \
-        sites/$SITE_NAME/private/backups/${BACKUP_TS}-${SITE_NAME//./_}-database.sql.gz \
-        --with-public-files sites/$SITE_NAME/private/backups/${BACKUP_TS}-${SITE_NAME//./_}-files.tar \
-        --with-private-files sites/$SITE_NAME/private/backups/${BACKUP_TS}-${SITE_NAME//./_}-private-files.tar
-" || {
-    warn "Restore falló con nombre normalizado. Reintentando con nombre literal del archivo..."
-    DB_FILE="$(ls "$STAGING_DIR"/${BACKUP_TS}*-database.sql.gz | xargs -n1 basename | head -1)"
-    PUB_FILE="$(ls "$STAGING_DIR"/${BACKUP_TS}*-files.tar | grep -v 'private-files' | xargs -n1 basename | head -1)"
-    PRV_FILE="$(ls "$STAGING_DIR"/${BACKUP_TS}*-private-files.tar | xargs -n1 basename | head -1)"
-    dc exec -T backend bash -c "
-        cd /home/frappe/frappe-bench &&
-        bench --site $SITE_NAME --force restore \
-            sites/$SITE_NAME/private/backups/$DB_FILE \
-            --with-public-files sites/$SITE_NAME/private/backups/$PUB_FILE \
-            --with-private-files sites/$SITE_NAME/private/backups/$PRV_FILE
-    "
-}
+        sites/$SITE_NAME/private/backups/$DB_FILE \
+        --with-public-files sites/$SITE_NAME/private/backups/$PUB_FILE \
+        --with-private-files sites/$SITE_NAME/private/backups/$PRV_FILE
+"
 
 # ───────────────────────────────────────────────────────────────────────────────
 # Migrate + clear cache + bajar maintenance mode

@@ -49,7 +49,7 @@ if [[ -z "$SITE_NAME" ]]; then
     log "Auto-detectando nombre del sitio..."
     SITE_NAME="$(dc exec -T backend bash -c '
         ls /home/frappe/frappe-bench/sites \
-        | grep -vE "^(assets|common_site_config\.json|apps\.txt|apps\.json)$" \
+        | grep -vE "^(assets|common_site_config\.json|apps\.txt|apps\.json|currentsite\.txt|\..+)$" \
         | head -1
     ' | tr -d '\r')"
     [[ -n "$SITE_NAME" ]] || fail "No pude detectar el sitename. Setealo con SITE_NAME=<sitio> ./backup.sh"
@@ -91,14 +91,21 @@ log "Limpiando backups viejos del directorio local..."
 find "$DEST_DIR" -maxdepth 1 -type f ! -name "${LATEST_TS}*" -delete
 
 # ───────────────────────────────────────────────────────────────────────────────
-# Verificar los 4 archivos esperados
+# Verificar los 4 archivos esperados (acepta .tar o .tgz según si Frappe comprimio)
 # ───────────────────────────────────────────────────────────────────────────────
-expected=(database.sql.gz files.tar private-files.tar site_config_backup.json)
-for suffix in "${expected[@]}"; do
-    if ! ls "$DEST_DIR"/${LATEST_TS}*-${suffix} >/dev/null 2>&1; then
-        fail "Falta el archivo *-${suffix} en $DEST_DIR. Backup incompleto."
+check_one() {
+    local pattern="$1"
+    if ! ls $pattern >/dev/null 2>&1; then
+        fail "Falta archivo que matchee: $pattern. Backup incompleto."
     fi
-done
+}
+check_one "$DEST_DIR/${LATEST_TS}*-database.sql.gz"
+check_one "$DEST_DIR/${LATEST_TS}*-site_config_backup.json"
+# Public files: matchea cualquier sufijo *-files.t* PERO excluyendo private-files
+if ! ls "$DEST_DIR"/${LATEST_TS}*-files.t* 2>/dev/null | grep -v 'private-files' | grep -q .; then
+    fail "Falta archivo *-files.{tar,tgz} en $DEST_DIR. Backup incompleto."
+fi
+check_one "$DEST_DIR/${LATEST_TS}*-private-files.t*"
 
 log "✓ Backup OK en: $DEST_DIR"
 log "  $(ls -lh "$DEST_DIR" | tail -n +2 | awk '{print $9, "("$5")"}' | tr '\n' ' ')"

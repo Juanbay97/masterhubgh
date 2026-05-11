@@ -24,12 +24,11 @@ DST="$2"
 
 [[ -d "$SRC" ]] || fail "El directorio origen no existe: $SRC"
 
-# Validar que el origen tenga los 4 archivos clave
-for suffix in database.sql.gz files.tar private-files.tar site_config_backup.json; do
-    if ! ls "$SRC"/*-${suffix} >/dev/null 2>&1; then
-        fail "Falta archivo *-${suffix} en $SRC. Hacé un backup nuevo con ./backup.sh"
-    fi
-done
+# Validar que el origen tenga los 4 archivos clave (acepta .tar o .tgz)
+ls "$SRC"/*-database.sql.gz        >/dev/null 2>&1 || fail "Falta *-database.sql.gz en $SRC"
+ls "$SRC"/*-site_config_backup.json >/dev/null 2>&1 || fail "Falta *-site_config_backup.json en $SRC"
+ls "$SRC"/*-files.t*               2>/dev/null | grep -v 'private-files' | grep -q . || fail "Falta *-files.{tar,tgz} en $SRC"
+ls "$SRC"/*-private-files.t*       >/dev/null 2>&1 || fail "Falta *-private-files.{tar,tgz} en $SRC"
 
 log "Sincronizando $SRC → $DST"
 log "(rsync incremental — podés re-correrlo, solo manda los cambios)"
