@@ -1,0 +1,32 @@
+{
+ "content": null,
+ "creation": "2026-05-08 00:00:00",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-05-08 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "sst_seguimiento_examenes",
+ "owner": "Administrator",
+ "page_name": "sst_seguimiento_examenes",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "HR SST"
+  },
+  {
+   "role": "HR Selection"
+  },
+  {
+   "role": "Gestión Humana"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Bandeja SST – Seguimiento Exámenes"
+}

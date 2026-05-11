@@ -321,6 +321,7 @@ frappe.pages["sst_examenes_medicos"].on_page_load = function(wrapper) {
 				<button class='btn btn-sm btn-default go-selection-board'>Volver a selección</button>
 				<button class='btn btn-sm btn-default go-rejected-board'>Ver rechazados</button>
 				<button class='btn btn-sm btn-default go-sst-board'>Centro SST</button>
+				<button class='btn btn-sm btn-default go-seguimiento-examenes'>Seguimiento de exámenes</button>
 			</div>
 		</div>
 		<div class='hubgh-board-toolbar'>
@@ -349,6 +350,7 @@ frappe.pages["sst_examenes_medicos"].on_page_load = function(wrapper) {
 	$root.find(".go-selection-board").on("click", () => frappe.set_route("app", "seleccion_documentos"));
 	$root.find(".go-rejected-board").on("click", () => frappe.set_route("app", "candidatos_rechazados"));
 	$root.find(".go-sst-board").on("click", () => frappe.set_route("app", "sst_bandeja"));
+	$root.find(".go-seguimiento-examenes").on("click", () => frappe.set_route("app", "sst_seguimiento_examenes"));
 
 	$root.find(".action-export-xlsx").on("click", function() {
 		const $btn = $(this);

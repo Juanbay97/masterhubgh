@@ -177,12 +177,15 @@ class TestCitaExamenMedico(FrappeTestCase):
 		self.assertGreater(len(tokens_created), 0, "Debe crear un nuevo token")
 		self.assertGreater(len(emails_sent), 0, "Debe enviar email con nuevo link")
 
-	def test_sst_no_asistio_rebook_creates_new_cita_cancels_old(self):
-		"""REQ-15: No Asistió + rebook → cita vieja=Cancelada, nueva cita creada."""
+	def test_sst_no_asistio_rebook_persiste_literal(self):
+		"""REQ-15 (fix): No Asistió + rebook → cita vieja conserva estado 'No Asistió' (NO 'Cancelada').
+
+		El rebook ya no es automático: GH debe iniciar un nuevo envío a examen desde
+		Selección. La cita anterior queda registrada como 'No Asistió' para trazabilidad.
+		"""
 		svc = _get_cita_service()
 
 		set_calls = {}
-		new_docs = []
 
 		def capture_set(doctype, name, field_or_dict, val=None, **kw):
 			set_calls.setdefault(name, {}).update(
@@ -194,17 +197,19 @@ class TestCitaExamenMedico(FrappeTestCase):
 		     )), \
 		     patch.object(frappe.db, "set_value", side_effect=capture_set), \
 		     patch.object(frappe, "new_doc",
-		                  side_effect=lambda dt: new_docs.append(dt) or MagicMock(insert=lambda: None)), \
+		                  side_effect=lambda dt: MagicMock(insert=lambda: None)), \
 		     patch("hubgh.hubgh.examen_medico.token_manager.create_token", return_value="f" * 32), \
 		     patch("hubgh.hubgh.examen_medico.email_service.send_exam_email"):
 			svc.set_exam_outcome("CEM-005", "No Asistió", action="rebook")
 
 		old_estado = set_calls.get("CEM-005", {}).get("estado")
-		self.assertEqual(old_estado, "Cancelada")
-		self.assertGreater(len(new_docs), 0, "Nueva cita debe ser creada")
+		self.assertEqual(
+			old_estado, "No Asistió",
+			"Bug fix: 'No Asistió' debe persistir literal, NO mapearse a 'Cancelada'."
+		)
 
-	def test_sst_no_asistio_close_cancels_cita(self):
-		"""REQ-15: No Asistió + close → cita=Cancelada, sin nueva cita."""
+	def test_sst_no_asistio_close_persiste_literal(self):
+		"""REQ-15 (fix): No Asistió + close → cita conserva estado 'No Asistió' (NO 'Cancelada')."""
 		svc = _get_cita_service()
 
 		set_calls = {}
@@ -224,5 +229,47 @@ class TestCitaExamenMedico(FrappeTestCase):
 			svc.set_exam_outcome("CEM-006", "No Asistió", action="close")
 
 		old_estado = set_calls.get("CEM-006", {}).get("estado")
-		self.assertEqual(old_estado, "Cancelada")
+		self.assertEqual(
+			old_estado, "No Asistió",
+			"Bug fix: 'No Asistió' debe persistir literal, NO mapearse a 'Cancelada'."
+		)
 		self.assertEqual(len(new_docs), 0, "No debe crear nueva cita con action=close")
+
+	def test_no_asistio_persiste_literal(self):
+		"""Triangulación: set_exam_outcome sin action también persiste 'No Asistió' literal."""
+		svc = _get_cita_service()
+		set_calls = {}
+
+		def capture_set(doctype, name, field_or_dict, val=None, **kw):
+			set_calls.setdefault(name, {}).update(
+				field_or_dict if isinstance(field_or_dict, dict) else {field_or_dict: val}
+			)
+
+		with patch.object(frappe, "get_doc", return_value=_make_cita(
+		         name="CEM-007", estado="Agendada", candidato="CAND-001"
+		     )), \
+		     patch.object(frappe.db, "set_value", side_effect=capture_set):
+			svc.set_exam_outcome("CEM-007", "No Asistió")
+
+		estado = set_calls.get("CEM-007", {}).get("estado")
+		self.assertEqual(estado, "No Asistió", "Sin action: también persiste 'No Asistió'.")
+
+	def test_cancelada_con_motivo(self):
+		"""Triangulación: set_exam_outcome con estado='Cancelada' + motivo persiste correctamente."""
+		svc = _get_cita_service()
+		set_calls = {}
+
+		def capture_set(doctype, name, field_or_dict, val=None, **kw):
+			set_calls.setdefault(name, {}).update(
+				field_or_dict if isinstance(field_or_dict, dict) else {field_or_dict: val}
+			)
+
+		with patch.object(frappe, "get_doc", return_value=_make_cita(
+		         name="CEM-008", estado="Agendada", candidato="CAND-001"
+		     )), \
+		     patch.object(frappe.db, "set_value", side_effect=capture_set):
+			svc.set_exam_outcome("CEM-008", "Cancelada", motivo="Candidato desistió")
+
+		cita_vals = set_calls.get("CEM-008", {})
+		self.assertEqual(cita_vals.get("estado"), "Cancelada")
+		self.assertEqual(cita_vals.get("motivo_aplazamiento"), "Candidato desistió")

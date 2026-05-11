@@ -280,6 +280,80 @@ def _get_sedes_for_ciudad(ips_doc, candidato_ciudad: str) -> list[dict]:
 	return out
 
 
+def create_cita_manual(
+	candidato_name: str,
+	cargo: str,
+	sede: str | None = None,
+	fecha_cita: str | None = None,
+	hora_cita: str | None = None,
+) -> str:
+	"""Crea una Cita Examen Medico para flujo manual (agendada por GH).
+
+	Por defecto la cita queda en estado "Pendiente Agendamiento" con
+	fecha/hora/sede vacías — Selección Documentos sólo dispara el envío,
+	GH/SST completa los datos desde la bandeja de seguimiento.
+
+	Si los 3 datos vienen, la cita se crea ya en estado "Agendada".
+
+	Resuelve la IPS por ciudad del candidato. Captura cargo en
+	cargo_al_enviar.
+
+	Args:
+		candidato_name: Nombre del Candidato.
+		cargo: Cargo del candidato.
+		sede: Sede de IPS (opcional). Persistida via db.set_value
+			(bypass de read_only).
+		fecha_cita: Fecha YYYY-MM-DD (opcional).
+		hora_cita: Hora HH:MM o HH:MM:SS (opcional).
+
+	Returns:
+		Nombre de la cita creada.
+
+	Raises:
+		frappe.ValidationError: Si no hay IPS activa para la ciudad del
+		candidato.
+	"""
+	import frappe
+
+	candidato = frappe.get_doc("Candidato", candidato_name)
+	candidato_ciudad = getattr(candidato, "ciudad", None) or ""
+	ips_name = _resolve_active_ips_for_ciudad(candidato_ciudad)
+	if not ips_name:
+		frappe.throw(
+			f"No hay IPS activa configurada para la ciudad '{candidato_ciudad}'. "
+			"Contacte al administrador del sistema para configurar una IPS.",
+			frappe.ValidationError,
+		)
+
+	tiene_agendamiento = bool(fecha_cita and hora_cita)
+
+	cita = frappe.new_doc("Cita Examen Medico")
+	cita.candidato = candidato_name
+	cita.ips = ips_name
+	cita.estado = "Agendada" if tiene_agendamiento else "Pendiente Agendamiento"
+	cita.cargo_al_enviar = cargo or ""
+	if fecha_cita:
+		cita.fecha_cita = fecha_cita
+	if hora_cita:
+		cita.hora_cita = hora_cita
+	try:
+		cita.insert(ignore_permissions=True)
+	except TypeError:
+		cita.insert()
+
+	# sede_seleccionada es read_only=1 en el DocType. Bypass via db.set_value.
+	if sede:
+		frappe.db.set_value(
+			"Cita Examen Medico",
+			cita.name,
+			"sede_seleccionada",
+			sede,
+			update_modified=False,
+		)
+
+	return cita.name
+
+
 def create_cita_and_send_link(
 	candidato_name: str,
 	cargo: str | None = None,
@@ -462,14 +536,16 @@ def set_exam_outcome(
 
 	Args:
 		cita_name: Nombre del documento Cita Examen Medico.
-		estado: Estado final — "Realizada", "Aplazada", "No Asistió".
+		estado: Estado final — "Realizada", "Aplazada", "No Asistió", "Cancelada".
 		concepto: Concepto médico para Realizada — "Favorable" o "Desfavorable".
-		motivo: Motivo de aplazamiento (para Aplazada).
+		motivo: Motivo (para Aplazada / No Asistió / Cancelada).
 		instrucciones: Instrucciones de reagendamiento (para Aplazada).
-		action: Para "No Asistió" — "close" cancela la cita. (El reagendamiento
-		        ya no es automático: si GH quiere reagendar al candidato, vuelve
-		        a usar "Enviar a examen" desde Selección, lo que crea una nueva
-		        cita y envía un nuevo link desde cero.)
+		action: Parámetro de compatibilidad para callers legacy (sst_bandeja).
+		        Ya no tiene efecto en la lógica — la acción la determina `estado`.
+
+	Nota: "No Asistió" persiste el estado literal "No Asistió".
+	NO se mapea a "Cancelada". Para cancelar explícitamente una cita,
+	pasar estado="Cancelada".
 	"""
 	import frappe
 
@@ -503,7 +579,22 @@ def set_exam_outcome(
 		)
 
 	elif estado == "No Asistió":
-		# Cancela la cita. No reagenda automáticamente.
-		# El parámetro `action` se mantiene en la firma por compatibilidad
-		# pero ya no dispara la creación de una nueva cita.
-		frappe.db.set_value("Cita Examen Medico", cita_name, "estado", "Cancelada")
+		# Persiste literal "No Asistió" — no mapear a "Cancelada".
+		# El parámetro `action` se mantiene en la firma por compatibilidad hacia atrás
+		# (callers en sst_bandeja lo pasan) pero ya no dispara creación automática de cita.
+		# Si hay motivo (ej. desde la bandeja de seguimiento), se guarda en motivo_aplazamiento.
+		vals = {"estado": "No Asistió"}
+		if motivo:
+			vals["motivo_aplazamiento"] = motivo
+		frappe.db.set_value("Cita Examen Medico", cita_name, vals)
+
+	elif estado == "Cancelada":
+		# Cancelación explícita — persiste "Cancelada" y motivo opcional.
+		frappe.db.set_value(
+			"Cita Examen Medico",
+			cita_name,
+			{
+				"estado": "Cancelada",
+				"motivo_aplazamiento": motivo or "",
+			},
+		)

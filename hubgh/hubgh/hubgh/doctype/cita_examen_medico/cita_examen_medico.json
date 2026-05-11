@@ -24,6 +24,7 @@
   "concepto_resultado",
   "motivo_aplazamiento",
   "instrucciones_reagendamiento",
+  "observaciones_sst",
   "section_seguimiento",
   "enviado_confirmacion",
   "enviado_recordatorio",
@@ -143,6 +144,11 @@
    "fieldtype": "Small Text",
    "label": "Instrucciones Reagendamiento",
    "depends_on": "eval:doc.estado=='Aplazada'"
+  },
+  {
+   "fieldname": "observaciones_sst",
+   "fieldtype": "Long Text",
+   "label": "Observaciones SST"
   },
   {
    "fieldname": "section_seguimiento",

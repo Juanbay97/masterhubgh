@@ -479,6 +479,17 @@ def send_to_affiliation(candidate, pdv_destino=None, fecha_tentativa_ingreso=Non
 
 @frappe.whitelist()
 def send_to_medical_exam(candidate, cargo=None, modo="manual", fecha_limite=None):
+	"""Envía un candidato a examen médico.
+
+	En modo `manual`: cambia estado del candidato y crea una Cita Examen
+	Medico vacía (sin fecha/hora/sede) en estado "Pendiente Agendamiento".
+	GH/SST completa los datos de agendamiento desde la bandeja de
+	seguimiento.
+
+	En modo `autogestionado`: crea la cita en "Pendiente Agendamiento" y
+	envía link tokenizado al candidato para que él elija slot.
+	`fecha_limite` es opcional para acotar el rango de slots visibles.
+	"""
 	_validate_selection_access(candidate)
 	if not _can_manage_candidates():
 		frappe.throw("No autorizado")
@@ -497,6 +508,7 @@ def send_to_medical_exam(candidate, cargo=None, modo="manual", fecha_limite=None
 	# (puede que sólo estuviera en cargo_postulado).
 	frappe.db.set_value("Candidato", candidate, "cargo", cargo)
 	cand_cargo = cargo
+
 	frappe.db.set_value(
 		"Candidato",
 		candidate,
@@ -507,6 +519,7 @@ def send_to_medical_exam(candidate, cargo=None, modo="manual", fecha_limite=None
 			"modo_agendamiento_examen": "Autogestionado" if modo == "autogestionado" else "Manual",
 		},
 	)
+
 	if modo == "autogestionado":
 		if not frappe.conf.get("hubgh_agendamiento_autogestionado_enabled"):
 			frappe.throw(
@@ -517,7 +530,14 @@ def send_to_medical_exam(candidate, cargo=None, modo="manual", fecha_limite=None
 		fecha_lim = (str(fecha_limite).strip() if fecha_limite else "") or None
 		from hubgh.hubgh.examen_medico.cita_service import create_cita_and_send_link
 		create_cita_and_send_link(candidate, cand_cargo, fecha_limite=fecha_lim)
+	else:
+		# Modo manual: crear la cita vacía para que aparezca en la bandeja
+		# de seguimiento. GH/SST completa fecha/hora/sede desde ahí.
+		from hubgh.hubgh.examen_medico.cita_service import create_cita_manual
+		create_cita_manual(candidate, cand_cargo)
 	return {"ok": True, "status": STATE_EXAMEN_MEDICO, "modo": modo}
+
+
 
 
 @frappe.whitelist()
