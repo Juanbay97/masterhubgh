@@ -266,29 +266,37 @@ class ExportSingleSheetTests(unittest.TestCase):
 		self.assertGreater(len(blob), 1000)
 
 		wb = load_workbook(io.BytesIO(blob))
-		ws = wb.active
-		# 1 header + 2 empleados + 1 totales = 4 filas
-		self.assertEqual(ws.max_row, 4)
+		# El xlsx ahora tiene 2 hojas: "Hechos ..." y "Cálculos ...".
+		self.assertEqual(len(wb.sheetnames), 2)
+		hechos = wb.worksheets[0]
+		calc = wb.worksheets[1]
+		self.assertTrue(hechos.title.startswith("Hechos"))
+		self.assertTrue(calc.title.startswith("Cálculos"))
 
-		# Localiza la columna "$ HD" y la fila del empleado 1001
-		headers = [c.value for c in ws[1]]
-		col_hd_amt = headers.index("$ HD") + 1
-		col_cedula = headers.index("Cédula") + 1
+		# La hoja Hechos NO tiene importes: solo cantidades.
+		hechos_hdrs = [c.value for c in hechos[1]]
+		self.assertIn("HD h", hechos_hdrs)
+		self.assertNotIn("$ HD", hechos_hdrs)
+		# Trae los descuentos como valor literal (sí tienen $)
+		self.assertIn("Adelanto Payflow $", hechos_hdrs)
+
+		# La hoja Cálculos sí tiene los importes derivados y totales.
+		calc_hdrs = [c.value for c in calc[1]]
+		col_hd_amt = calc_hdrs.index("$ HD") + 1
+		col_cedula = calc_hdrs.index("Cédula") + 1
+		# 1 header + 2 empleados + 1 totales = 4 filas
+		self.assertEqual(calc.max_row, 4)
 		row_emp1 = next(
-			r for r in range(2, ws.max_row)
-			if ws.cell(row=r, column=col_cedula).value == "1001"
+			r for r in range(2, calc.max_row)
+			if calc.cell(row=r, column=col_cedula).value == "1001"
 		)
 		expected_amount = round(100 * (1_400_000 / 220) * 1.0, 2)
 		self.assertAlmostEqual(
-			ws.cell(row=row_emp1, column=col_hd_amt).value, expected_amount, places=1
+			calc.cell(row=row_emp1, column=col_hd_amt).value, expected_amount, places=1
 		)
-
-		# El total descontado del empleado 1 incluye la libranza
-		col_total_desc = headers.index("Total Descontado") + 1
-		self.assertEqual(ws.cell(row=row_emp1, column=col_total_desc).value, -50_000)
-
-		# Fila TOTAL final tiene fórmula SUM
-		total_cell = ws.cell(row=ws.max_row, column=col_hd_amt).value
+		col_total_desc = calc_hdrs.index("Total Descontado") + 1
+		self.assertEqual(calc.cell(row=row_emp1, column=col_total_desc).value, -50_000)
+		total_cell = calc.cell(row=calc.max_row, column=col_hd_amt).value
 		self.assertTrue(str(total_cell).startswith("=SUM("))
 
 

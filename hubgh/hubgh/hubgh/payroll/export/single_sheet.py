@@ -48,20 +48,20 @@ from openpyxl.utils import get_column_letter
 from hubgh.hubgh.payroll.compute import auxilio_transporte
 
 
-# Definición declarativa de columnas: cada tupla
-# (header, fuente, agregación, tipo_novedad_id)
-# - fuente: "id" | "h_qty" | "h_amt" | "d_qty" | "d_amt" | "amt" | "auxilio_t"
-# - agregación: "sum" | "first"
-COLUMN_SPEC: list[tuple[str, str, str]] = [
-	# Identificación (no calculadas, vienen del primer registro del empleado)
+_IDENT_COLUMNS = [
 	("Cédula", "id_cedula", "first"),
 	("Nombres", "id_nombres", "first"),
 	("Apellidos", "id_apellidos", "first"),
 	("Jornada", "id_jornada", "first"),
 	("Cargo", "id_cargo", "first"),
 	("Sucursal", "id_sucursal", "first"),
-	("Salario", "id_salario", "first"),
-	# Horas (cantidad)
+]
+
+
+# Hoja "Hechos": cantidades crudas del archivo, sin importes calculados.
+# Lo que el equipo de nómina necesita para correr su propio sistema oficial.
+COLUMN_SPEC_HECHOS: list[tuple[str, str, str]] = _IDENT_COLUMNS + [
+	# Horas (cantidad cruda del CLONK)
 	("HD h", "h_qty:HD", "sum"),
 	("HN h", "h_qty:HN", "sum"),
 	("HFD h", "h_qty:HFD", "sum"),
@@ -70,16 +70,7 @@ COLUMN_SPEC: list[tuple[str, str, str]] = [
 	("HEN h", "h_qty:HEN", "sum"),
 	("HEFD h", "h_qty:HEFD", "sum"),
 	("HEFN h", "h_qty:HEFN", "sum"),
-	# Horas (importe)
-	("$ HD", "h_amt:HD", "sum"),
-	("$ HN", "h_amt:HN", "sum"),
-	("$ HFD", "h_amt:HFD", "sum"),
-	("$ HFN", "h_amt:HFN", "sum"),
-	("$ HED", "h_amt:HED", "sum"),
-	("$ HEN", "h_amt:HEN", "sum"),
-	("$ HEFD", "h_amt:HEFD", "sum"),
-	("$ HEFN", "h_amt:HEFN", "sum"),
-	# Beneficios remunerados (días)
+	# Días remunerados (cantidad)
 	("Vacaciones d", "d_qty:VACACIONES", "sum"),
 	("Descanso d", "d_qty:DESCANSO", "sum"),
 	("Día Familia d", "d_qty:DIA_FAMILIA", "sum"),
@@ -88,26 +79,20 @@ COLUMN_SPEC: list[tuple[str, str, str]] = [
 	("L. Remunerada d", "d_qty:LICENCIA_REMUNERADA", "sum"),
 	("L. Luto d", "d_qty:LICENCIA_LUTO", "sum"),
 	("Permiso Calamidad d", "d_qty:PERMISO_CALAMIDAD", "sum"),
-	# Beneficios remunerados (importe agregado)
-	("Beneficios remunerados $", "d_amt_remunerados", "sum"),
-	# Ausentismos no pagados (días)
+	# Días no remunerados (cantidad)
 	("L. No Remunerada d", "d_qty:LICENCIA_NO_REMUNERADA", "sum"),
 	("Suspensión d", "d_qty:SUSPENSION_CONTRATO", "sum"),
 	("Ausencia Injust d", "d_qty:AUSENCIA_INJUSTIFICADA", "sum"),
-	("Ausencias descuento $", "d_amt_no_remunerados", "sum"),
-	# Incapacidades
+	# Incapacidades (cantidad)
 	("Incap. EG d", "d_qty:INCAPACIDAD_ENFERMEDAD_GENERAL", "sum"),
 	("Incap. AT d", "d_qty:INCAPACIDAD_ACCIDENTE_TRABAJO", "sum"),
 	("Incap. Empresa d", "d_qty:INCAPACIDAD_PAGADA_EMPRESA", "sum"),
 	("Incap. >180 d", "d_qty:INCAPACIDAD_MAYOR_180_DIAS", "sum"),
-	("Incapacidades $", "d_amt_incapacidades", "sum"),
-	# Otros pagos
-	("Inducción $", "amt:INDUCCION", "sum"),
-	("Auxilio Movilización $", "amt:AUXILIO_MOVILIZACION_DOM_FEST", "sum"),
-	("Auxilio Rodamiento $", "amt:AUXILIO_RODAMIENTO", "sum"),
-	("Bonificación CP $", "amt:BONIFICACION_CP", "sum"),
-	("Auxilio Transporte $", "auxilio_t", "first"),
-	# Descuentos
+	# Inducción (días)
+	("Inducción d", "d_qty:INDUCCION", "sum"),
+	# Días trabajados (CLONK Detalle, para auditoría del prorrateo aux. transporte)
+	("Días trabajados", "id_dias_trabajados", "first"),
+	# Valores literales de descuentos (del archivo, NO calculado)
 	("Adelanto Payflow $", "amt:ADELANTO_NOMINA_PAYFLOW", "sum"),
 	("Sanitas $", "amt:DESCUENTO_SANITAS_PREMIUM", "sum"),
 	("Gafas $", "amt:DESCUENTO_GAFAS", "sum"),
@@ -119,11 +104,58 @@ COLUMN_SPEC: list[tuple[str, str, str]] = [
 	("Préstamo Empresa $", "amt:PRESTAMO_EMPRESA", "sum"),
 	("Préstamo FONGIGA $", "amt:PRESTAMO_FONGIGA", "sum"),
 	("Pérdida Bonif. $", "amt:PERDIDA_BONIFICACION", "sum"),
+	# Auxilios y bonificaciones pactados (también valor literal del archivo)
+	("Auxilio Movilización $", "amt:AUXILIO_MOVILIZACION_DOM_FEST", "sum"),
+	("Auxilio Rodamiento $", "amt:AUXILIO_RODAMIENTO", "sum"),
+	("Bonificación CP $", "amt:BONIFICACION_CP", "sum"),
+]
+
+
+# Hoja "Cálculos": importes derivados + totales y neto.
+# Lo que el operador de payroll usa como guía / chequeo.
+COLUMN_SPEC_CALCULOS: list[tuple[str, str, str]] = _IDENT_COLUMNS + [
+	("Salario base", "id_salario", "first"),
+	# Importes por hora
+	("$ HD", "h_amt:HD", "sum"),
+	("$ HN", "h_amt:HN", "sum"),
+	("$ HFD", "h_amt:HFD", "sum"),
+	("$ HFN", "h_amt:HFN", "sum"),
+	("$ HED", "h_amt:HED", "sum"),
+	("$ HEN", "h_amt:HEN", "sum"),
+	("$ HEFD", "h_amt:HEFD", "sum"),
+	("$ HEFN", "h_amt:HEFN", "sum"),
+	# Beneficios y ausentismos agregados
+	("Beneficios remunerados $", "d_amt_remunerados", "sum"),
+	("Ausencias descuento $", "d_amt_no_remunerados", "sum"),
+	("Incapacidades $", "d_amt_incapacidades", "sum"),
+	# Otros pagos calculados
+	("Inducción $", "amt:INDUCCION", "sum"),
+	("Auxilio Transporte $", "auxilio_t", "first"),
+	# Descuentos literales (réplica con importe firmado para el neto)
+	("Adelanto Payflow $", "amt:ADELANTO_NOMINA_PAYFLOW", "sum"),
+	("Sanitas $", "amt:DESCUENTO_SANITAS_PREMIUM", "sum"),
+	("Gafas $", "amt:DESCUENTO_GAFAS", "sum"),
+	("FONGIGA Fondo $", "amt:FONDO_EMPLEADOS_FONGIGA", "sum"),
+	("Libranza Fincomercio $", "amt:LIBRANZA_FINCOMERCIO", "sum"),
+	("Libranza Davivienda $", "amt:LIBRANZA_DAVIVIENDA", "sum"),
+	("Libranza Compensar $", "amt:LIBRANZA_COMPENSAR", "sum"),
+	("Libranza Comfenalco $", "amt:LIBRANZA_COMFENALCO", "sum"),
+	("Préstamo Empresa $", "amt:PRESTAMO_EMPRESA", "sum"),
+	("Préstamo FONGIGA $", "amt:PRESTAMO_FONGIGA", "sum"),
+	("Pérdida Bonif. $", "amt:PERDIDA_BONIFICACION", "sum"),
+	# Auxilios y bonificaciones pactados (réplica)
+	("Auxilio Movilización $", "amt:AUXILIO_MOVILIZACION_DOM_FEST", "sum"),
+	("Auxilio Rodamiento $", "amt:AUXILIO_RODAMIENTO", "sum"),
+	("Bonificación CP $", "amt:BONIFICACION_CP", "sum"),
 	# Totales
 	("Total Devengado", "total_devengado", "sum"),
 	("Total Descontado", "total_descontado", "sum"),
 	("Neto a Pagar", "neto", "sum"),
 ]
+
+
+# Alias para compat con código viejo que aún importa COLUMN_SPEC.
+COLUMN_SPEC = COLUMN_SPEC_CALCULOS
 
 
 REMUNERADOS_DIAS = (
@@ -172,11 +204,30 @@ def build_single_sheet(
 	"""
 	by_employee = _aggregate(novedades, employees_meta or {})
 	wb = Workbook()
-	ws = wb.active
-	ws.title = "Prenómina"
+	# Hoja 1 — HECHOS (cantidades crudas del archivo, sin importes
+	# derivados). El operador de nómina la usa para alimentar su
+	# sistema oficial.
+	ws_hechos = wb.active
+	_write_sheet(ws_hechos, by_employee, params, COLUMN_SPEC_HECHOS,
+	             title=f"Hechos {period_label}" if period_label else "Hechos")
+	# Hoja 2 — CÁLCULOS (importes derivados + totales + neto). Vista
+	# de auditoría / guía para comparar contra el sistema oficial.
+	ws_calc = wb.create_sheet()
+	_write_sheet(ws_calc, by_employee, params, COLUMN_SPEC_CALCULOS,
+	             title=f"Cálculos {period_label}" if period_label else "Cálculos")
 
-	# Header
-	headers = [spec[0] for spec in COLUMN_SPEC]
+	buf = io.BytesIO()
+	wb.save(buf)
+	return buf.getvalue()
+
+
+def _write_sheet(ws, by_employee: dict, params, spec: list, title: str) -> None:
+	"""Escribe una hoja completa con la spec dada: header, filas por
+	empleado, fila TOTAL con fórmulas SUM y formatos de moneda / horas.
+	"""
+	ws.title = title[:31]
+
+	headers = [s[0] for s in spec]
 	ws.append(headers)
 	header_fill = PatternFill("solid", fgColor="305496")
 	header_font = Font(bold=True, color="FFFFFF")
@@ -186,18 +237,14 @@ def build_single_sheet(
 		cell.alignment = Alignment(horizontal="center", wrap_text=True)
 	ws.row_dimensions[1].height = 32
 
-	# Filas
 	for emp_id in sorted(by_employee.keys()):
-		row_data = by_employee[emp_id]
-		row = []
-		for header, source, _agg in COLUMN_SPEC:
-			row.append(_resolve_value(row_data, source, params))
+		rec = by_employee[emp_id]
+		row = [_resolve_value(rec, source, params) for _h, source, _agg in spec]
 		ws.append(row)
 
-	# Totales fila final
 	total_row_idx = ws.max_row + 1
 	ws.cell(row=total_row_idx, column=1, value="TOTAL")
-	for col_idx, (_h, source, agg) in enumerate(COLUMN_SPEC, start=1):
+	for col_idx, (_h, source, agg) in enumerate(spec, start=1):
 		if agg != "sum" or source.startswith("id_") or source == "auxilio_t":
 			continue
 		col_letter = get_column_letter(col_idx)
@@ -210,8 +257,7 @@ def build_single_sheet(
 		cell.font = Font(bold=True)
 		cell.fill = PatternFill("solid", fgColor="D9E1F2")
 
-	# Formato de columnas $: anchos y formato moneda
-	for col_idx, (header, _src, _agg) in enumerate(COLUMN_SPEC, start=1):
+	for col_idx, (header, _src, _agg) in enumerate(spec, start=1):
 		ws.column_dimensions[get_column_letter(col_idx)].width = max(
 			14, min(28, len(header) + 2)
 		)
@@ -221,13 +267,6 @@ def build_single_sheet(
 		elif " h" in header or " d" in header:
 			for row_idx in range(2, ws.max_row + 1):
 				ws.cell(row=row_idx, column=col_idx).number_format = "0.00"
-
-	if period_label:
-		ws.title = f"Prenómina {period_label}"[:31]
-
-	buf = io.BytesIO()
-	wb.save(buf)
-	return buf.getvalue()
 
 
 # ──────────────────────────────────────────────────────────────────────
