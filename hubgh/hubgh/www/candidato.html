@@ -136,6 +136,15 @@
                                 <input type="date" id="fecha_expedicion" class="w-full px-4 py-3 bg-gray-50 font-medium focus:bg-white">
                             </div>
                         </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Género</label>
+                            <select id="genero" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium focus:bg-white appearance-none cursor-pointer">
+                                <option value="">Selecciona...</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -566,6 +575,7 @@
             document.getElementById('tipo_documento').value = data.tipo_documento || 'Cedula';
             document.getElementById('fecha_nacimiento').value = data.fecha_nacimiento || '';
             document.getElementById('fecha_expedicion').value = data.fecha_expedicion || '';
+            document.getElementById('genero').value = data.genero || '';
         }
         if (step === 3) {
             document.getElementById('email').value = data.email || '';
@@ -795,6 +805,7 @@
             data.tipo_documento = (document.getElementById('tipo_documento').value || 'Cedula').trim();
             data.fecha_nacimiento = (document.getElementById('fecha_nacimiento').value || '').trim();
             data.fecha_expedicion = (document.getElementById('fecha_expedicion').value || '').trim();
+            data.genero = (document.getElementById('genero').value || '').trim();
         }
         if (step === 3) {
             data.email = (document.getElementById('email').value || '').trim();
@@ -850,6 +861,7 @@
             if (!checkVal('primer_apellido')) { isValid = false; errors.push('primer_apellido'); }
             if (!checkVal('cedula')) { isValid = false; errors.push('cedula'); }
             if (!checkVal('fecha_nacimiento')) { isValid = false; errors.push('fecha_nacimiento'); }
+            if (!checkVal('genero')) { isValid = false; errors.push('genero'); }
         }
         if (step === 3) {
             const email = document.getElementById('email');
