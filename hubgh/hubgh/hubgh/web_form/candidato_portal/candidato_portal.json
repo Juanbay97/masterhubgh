@@ -82,20 +82,6 @@
    },
   {
    "allow_read_on_all_link_options": 0,
-   "fieldname": "genero",
-   "fieldtype": "Select",
-   "hidden": 0,
-   "label": "Género",
-   "options": "Masculino\nFemenino\nOtro",
-   "max_length": 0,
-   "max_value": 0,
-   "precision": "",
-   "read_only": 0,
-   "reqd": 1,
-   "show_in_filter": 0
-   },
-  {
-   "allow_read_on_all_link_options": 0,
    "fieldname": "email",
    "fieldtype": "Data",
    "hidden": 0,
