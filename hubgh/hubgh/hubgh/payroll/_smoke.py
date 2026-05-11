@@ -90,20 +90,38 @@ def _ensure_seed_employees():
 	return created
 
 
+def run_april() -> dict:
+	"""Audit de la nómina de abril 2026 con los 6 archivos reales."""
+	return run_full(
+		clonk="/tmp/clonk_apr_2026.xlsx",
+		payflow="/tmp/payflow_apr.xlsx",
+		fincomercio="/tmp/fincomercio_apr.xlsx",
+		fongiga="/tmp/fongiga_apr.xlsx",
+		extras=["/tmp/davivienda_apr.xlsx", "/tmp/compensar_apr.xlsx"],
+		year=2026,
+		month=4,
+	)
+
+
 def run_full(clonk: str = "/tmp/clonk_feb_2026.xlsx",
              payflow: str = "/tmp/payflow_feb_2026.xlsx",
              fincomercio: str = "/tmp/fincomercio_feb_2026.xlsx",
-             fongiga: str = "/tmp/fongiga_feb_2026.xlsx") -> dict:
+             fongiga: str = "/tmp/fongiga_feb_2026.xlsx",
+             extras=None,
+             year: int = 2026,
+             month: int = 2) -> dict:
 	"""Audit run con TODOS los archivos del periodo."""
 	out = {}
 	files_to_attach = [(clonk, "clonk"), (payflow, "payflow"),
 	                   (fincomercio, "fincomercio"), (fongiga, "fongiga")]
+	for extra in (extras or []):
+		files_to_attach.append((extra, os.path.basename(extra).replace(".xlsx", "")))
 	missing = [f for f, _ in files_to_attach if not os.path.exists(f)]
 	if missing:
 		return {"error": f"Faltan archivos: {missing}"}
 
 	try:
-		run_name = service.create_run(2026, 2)
+		run_name = service.create_run(year, month)
 		print(f"[audit] run_name = {run_name}")
 		for path, label in files_to_attach:
 			with open(path, "rb") as fh:
