@@ -664,6 +664,31 @@ def delete_run_file(run_file_name: str) -> dict:
 	return {"ok": True}
 
 
+@frappe.whitelist(allow_guest=False)
+def list_manual_templates() -> list[dict]:
+	"""Lista las plantillas manuales disponibles para que la UI las muestre."""
+	from hubgh.hubgh.payroll.manual_templates import list_templates
+
+	return list_templates()
+
+
+@frappe.whitelist(allow_guest=False)
+def download_manual_template(template_id: str) -> None:
+	"""Genera el xlsx de la plantilla y lo entrega como descarga directa."""
+	from hubgh.hubgh.payroll.manual_templates import TEMPLATES, build_template
+
+	spec = TEMPLATES.get(template_id)
+	if not spec:
+		frappe.throw(_("Template '{0}' no existe.").format(template_id))
+	blob = build_template(template_id)
+	frappe.response.filename = f"plantilla_{template_id}.xlsx"
+	frappe.response.filecontent = blob
+	frappe.response.type = "binary"
+	frappe.response["Content-Type"] = (
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	)
+
+
 def get_global_param(key: str) -> float:
 	if frappe.db.exists("DocType", "Payroll Parametros Globales"):
 		try:

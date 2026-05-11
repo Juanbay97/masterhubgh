@@ -393,6 +393,7 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 		renderHero();
 		renderRunPicker();
 		if (state.current && state.summary) {
+			renderTemplatesCard();
 			renderUploadCard();
 			renderProcessCard();
 			renderReviewCard();
@@ -477,6 +478,35 @@ frappe.pages["payroll_workspace"].on_page_load = function (wrapper) {
 			.find("button:last").on("click", onCreateRun);
 		$row.append('<button class="btn btn-sm btn-default">Refrescar</button>')
 			.find("button:last").on("click", refresh);
+	};
+
+	const renderTemplatesCard = () => {
+		const $card = $('<div class="hubgh-card"></div>').appendTo($shell);
+		$card.append(`
+			<div class="hubgh-section-head">
+				<div>
+					<h4 class="hubgh-section-title">Plantillas manuales (datos en imagen/papel)</h4>
+					<p class="hubgh-section-copy">
+						Cuando los datos llegan en foto, PDF o papel (descuentos casuales,
+						pérdida de bonificación, ascensos, movimientos), descargá la
+						plantilla, llenala y subila al Run como un archivo más.
+					</p>
+				</div>
+			</div>
+		`);
+		const $row = $('<div class="hubgh-board-toolbar"></div>').appendTo($card);
+		const templates = [
+			{ id: "descuentos", label: "Descuentos" },
+			{ id: "perdida_bonificacion", label: "Pérdida bonif." },
+			{ id: "ascensos", label: "Ascensos" },
+			{ id: "movimientos", label: "Movimientos" },
+		];
+		templates.forEach((t) => {
+			const url = `/api/method/hubgh.hubgh.payroll.service.download_manual_template?template_id=${encodeURIComponent(t.id)}`;
+			$row.append(
+				`<a class="btn btn-sm btn-default" href="${url}" target="_blank" rel="noopener">⬇ ${esc(t.label)}</a>`
+			);
+		});
 	};
 
 	const renderUploadCard = () => {
