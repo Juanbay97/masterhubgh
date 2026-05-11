@@ -63,8 +63,9 @@ def parse(workbook) -> Iterator[NovedadCanonica]:
 			yield from _parse_perdida_bonificacion(ws)
 		elif template_id == "maestro_empleados":
 			yield from _parse_maestro_empleados(ws)
-		# `ascensos` y `movimientos` se omiten en v1 — son informativos
-		# y los procesa otro flujo (actualización de Contrato / PDV).
+		elif template_id == "movimientos":
+			yield from _parse_movimientos(ws)
+		# `ascensos` se omite en v1 — actualiza Contrato por otro flujo.
 
 
 def _parse_descuentos(ws) -> Iterator[NovedadCanonica]:
@@ -149,6 +150,38 @@ def _parse_maestro_empleados(ws) -> Iterator[NovedadCanonica]:
 				"sucursal": sucursal,
 				"tipo_cargo": tipo,
 				"sheet": "manual:maestro_empleados",
+			},
+		)
+
+
+def _parse_movimientos(ws) -> Iterator[NovedadCanonica]:
+	"""Headers en R2: Cédula | Nombre | Nueva sucursal | Fecha efectiva | Observación.
+
+	Emite una novedad informativa por traslado. NO afecta cálculo: la
+	hoja Movimientos del export la consume tal cual.
+	"""
+	for row in ws.iter_rows(min_row=3, values_only=True):
+		documento = _str_id(row[0] if len(row) > 0 else None)
+		if not documento:
+			continue
+		nombre = str(row[1]).strip() if len(row) > 1 and row[1] else ""
+		nueva_sucursal = str(row[2]).strip() if len(row) > 2 and row[2] else ""
+		fecha_efectiva = str(row[3]).strip() if len(row) > 3 and row[3] else ""
+		observacion = str(row[4]).strip() if len(row) > 4 and row[4] else ""
+		if not nueva_sucursal:
+			continue
+		yield NovedadCanonica(
+			documento_identidad=documento,
+			tipo_novedad="MOVIMIENTO_SUCURSAL",
+			valor=1.0,
+			unidad="unidades",
+			fecha_desde=fecha_efectiva or None,
+			raw_payload={
+				"empleado_nombre": nombre,
+				"nueva_sucursal": nueva_sucursal,
+				"fecha_efectiva": fecha_efectiva,
+				"observacion": observacion,
+				"sheet": "manual:movimientos",
 			},
 		)
 

@@ -352,6 +352,18 @@ NOVEDAD_TYPES: tuple[NovedadTypeSpec, ...] = (
 			"(típicamente administrativos)."
 		),
 	),
+	NovedadTypeSpec(
+		"MOVIMIENTO_SUCURSAL",
+		"Traslado entre sucursales / PDV",
+		"unidades",
+		JORNADA_BOTH,
+		porcentaje_default=0.0,
+		notas=(
+			"Informativo. Lo emite el adapter `manual` desde la plantilla "
+			"`movimientos`. No afecta cálculo; aparece en la hoja "
+			"Movimientos del export con fecha efectiva y observación."
+		),
+	),
 
 	# ── Inducción ────────────────────────────────────────────────────
 	NovedadTypeSpec(

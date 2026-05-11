@@ -206,20 +206,35 @@ def build_single_sheet(
 	`EnrichedNovedad` (computed_amount/quantity ya seteados).
 	`employees_meta` es un dict opcional `empleado_name -> {"nombres":..., "apellidos":..., "cedula":...}`
 	para enriquecer las filas. Si falta, se usa el `documento_identidad`.
+
+	El xlsx tiene 4 hojas:
+	  1. Hechos      — cantidades crudas + columnas dedicadas (flags)
+	  2. Cálculos    — importes derivados, totales, neto
+	  3. Maestro     — un row por empleado activo del periodo
+	  4. Movimientos — un row por traslado declarado en plantilla manual
 	"""
-	by_employee = _aggregate(novedades, employees_meta or {})
+	# Materializamos para poder iterar varias veces (agregado + listados
+	# independientes para Maestro/Movimientos).
+	novedades_list = list(novedades)
+	by_employee = _aggregate(novedades_list, employees_meta or {})
+
 	wb = Workbook()
-	# Hoja 1 — HECHOS (cantidades crudas del archivo, sin importes
-	# derivados). El operador de nómina la usa para alimentar su
-	# sistema oficial.
 	ws_hechos = wb.active
 	_write_sheet(ws_hechos, by_employee, params, COLUMN_SPEC_HECHOS,
 	             title=f"Hechos {period_label}" if period_label else "Hechos")
-	# Hoja 2 — CÁLCULOS (importes derivados + totales + neto). Vista
-	# de auditoría / guía para comparar contra el sistema oficial.
 	ws_calc = wb.create_sheet()
 	_write_sheet(ws_calc, by_employee, params, COLUMN_SPEC_CALCULOS,
 	             title=f"Cálculos {period_label}" if period_label else "Cálculos")
+
+	# Hoja 3 — MAESTRO: un row por empleado del periodo.
+	ws_maestro = wb.create_sheet()
+	_write_maestro_sheet(ws_maestro, by_employee,
+	                     title=f"Maestro {period_label}" if period_label else "Maestro")
+
+	# Hoja 4 — MOVIMIENTOS: un row por traslado (novedad MOVIMIENTO_SUCURSAL).
+	ws_mov = wb.create_sheet()
+	_write_movimientos_sheet(ws_mov, novedades_list, employees_meta or {},
+	                         title=f"Movimientos {period_label}" if period_label else "Movimientos")
 
 	buf = io.BytesIO()
 	wb.save(buf)
@@ -336,6 +351,9 @@ def _aggregate(novedades: Iterable, employees_meta: dict[str, dict]) -> dict[str
 			# Sólo registra al empleado como activo en el periodo.
 			# El _fill de identidad ya capturó cargo/sucursal/tipo.
 			continue
+		if tipo == "MOVIMIENTO_SUCURSAL":
+			# Va a su propia hoja (Movimientos). No afecta agregados.
+			continue
 
 		if nov.unidad == "horas":
 			rec["h_qty"][tipo] += qty
@@ -409,3 +427,107 @@ def _resolve_value(rec: dict, source: str, params):
 	if source == "neto":
 		return rec["total_devengado"] + _auxilio_for(rec, params) + rec["total_descontado"]
 	return ""
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Hojas adicionales: Maestro y Movimientos
+# ──────────────────────────────────────────────────────────────────────
+
+_MAESTRO_HEADERS = (
+	"Cédula", "Nombres", "Apellidos", "Cargo", "Tipo cargo",
+	"Jornada", "Sucursal", "Salario base", "Días trabajados",
+)
+
+
+def _write_maestro_sheet(ws, by_employee: dict, title: str) -> None:
+	"""Hoja Maestro: un row por empleado activo del periodo.
+
+	Incluye todos los empleados que aparecieron en cualquier novedad
+	(CLONK, descuentos, libranzas, maestro_empleados, etc.). El listado
+	ya está agregado en `by_employee`.
+	"""
+	ws.title = title[:31]
+	ws.append(list(_MAESTRO_HEADERS))
+	header_fill = PatternFill("solid", fgColor="305496")
+	header_font = Font(bold=True, color="FFFFFF")
+	for cell in ws[1]:
+		cell.fill = header_fill
+		cell.font = header_font
+		cell.alignment = Alignment(horizontal="center", wrap_text=True)
+	ws.row_dimensions[1].height = 28
+
+	for emp_id in sorted(by_employee.keys()):
+		rec = by_employee[emp_id]
+		ws.append([
+			rec.get("id_cedula", ""),
+			rec.get("id_nombres", ""),
+			rec.get("id_apellidos", ""),
+			rec.get("id_cargo", ""),
+			rec.get("id_cargo_tipo", ""),
+			rec.get("id_jornada", ""),
+			rec.get("id_sucursal", ""),
+			float(rec.get("id_salario", 0.0) or 0.0),
+			float(rec.get("id_dias_trabajados", 0.0) or 0.0),
+		])
+
+	# Formato monetario en columna Salario base; decimal en Días.
+	for row_idx in range(2, ws.max_row + 1):
+		ws.cell(row=row_idx, column=8).number_format = '"$"#,##0.00'
+		ws.cell(row=row_idx, column=9).number_format = "0.00"
+
+	for col_idx, header in enumerate(_MAESTRO_HEADERS, start=1):
+		ws.column_dimensions[get_column_letter(col_idx)].width = max(
+			14, min(28, len(header) + 4)
+		)
+
+
+_MOVIMIENTOS_HEADERS = (
+	"Cédula", "Nombre", "Nueva sucursal / PDV",
+	"Fecha efectiva", "Observación",
+)
+
+
+def _write_movimientos_sheet(
+	ws,
+	novedades: list,
+	employees_meta: dict[str, dict],
+	title: str,
+) -> None:
+	"""Hoja Movimientos: un row por traslado declarado en plantilla manual.
+
+	Se alimenta directamente de las novedades MOVIMIENTO_SUCURSAL que el
+	adapter `manual` emite desde la plantilla `movimientos`. Si no hay
+	traslados en el run, la hoja queda con sólo el header.
+	"""
+	ws.title = title[:31]
+	ws.append(list(_MOVIMIENTOS_HEADERS))
+	header_fill = PatternFill("solid", fgColor="305496")
+	header_font = Font(bold=True, color="FFFFFF")
+	for cell in ws[1]:
+		cell.fill = header_fill
+		cell.font = header_font
+		cell.alignment = Alignment(horizontal="center", wrap_text=True)
+	ws.row_dimensions[1].height = 28
+
+	for nov in novedades:
+		if getattr(nov, "tipo_novedad", "") != "MOVIMIENTO_SUCURSAL":
+			continue
+		payload = nov.raw_payload or {}
+		key = nov.empleado or nov.documento_identidad or ""
+		meta = employees_meta.get(key, {})
+		nombre = (
+			f"{meta.get('nombres', '')} {meta.get('apellidos', '')}".strip()
+			or payload.get("empleado_nombre", "")
+		)
+		ws.append([
+			meta.get("cedula") or nov.documento_identidad or "",
+			nombre,
+			payload.get("nueva_sucursal", ""),
+			payload.get("fecha_efectiva", "") or (nov.fecha_desde or ""),
+			payload.get("observacion", ""),
+		])
+
+	for col_idx, header in enumerate(_MOVIMIENTOS_HEADERS, start=1):
+		ws.column_dimensions[get_column_letter(col_idx)].width = max(
+			16, min(36, len(header) + 6)
+		)
