@@ -172,13 +172,31 @@ def clear_force_password_reset_flag(user_id):
 	frappe.cache.hdel(_FORCE_PASSWORD_RESET_CACHE_KEY, user_id)
 
 
+def _resolve_user_reset_method(user_doc):
+	"""Return the password-reset callable that returns the reset URL.
+
+	Frappe has shifted this method between versions: older v15 builds (e.g.
+	15.107) expose it as the private ``_reset_password``; newer builds promote
+	it to the public ``reset_password``. We pick whichever is available so the
+	onboarding works regardless of the Frappe sub-version installed.
+	"""
+	method = getattr(user_doc, "reset_password", None) or getattr(user_doc, "_reset_password", None)
+	if method is None:
+		frappe.throw(
+			_("El método de envío de email de activación no está disponible en esta versión de Frappe."),
+			frappe.ValidationError,
+		)
+	return method
+
+
 def send_user_activation_email(user_id):
 	if not user_id:
 		return None
 
 	user_doc = frappe.get_doc("User", user_id)
+	reset_method = _resolve_user_reset_method(user_doc)
 	with override_public_base_url_for_frappe():
-		reset_url = user_doc.reset_password(send_email=True)
+		reset_url = reset_method(send_email=True)
 
 	return build_public_url(reset_url)
 
@@ -199,5 +217,6 @@ def enforce_password_reset_on_login(login_manager=None):
 		return
 
 	user_doc = frappe.get_doc("User", user_id)
-	frappe.local.response["redirect_to"] = user_doc.reset_password(send_email=False, password_expired=True)
+	reset_method = _resolve_user_reset_method(user_doc)
+	frappe.local.response["redirect_to"] = reset_method(send_email=False, password_expired=True)
 	frappe.local.response["message"] = "Password Reset"
