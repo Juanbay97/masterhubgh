@@ -222,10 +222,37 @@ def _resolve_active_ips_for_ciudad(candidato_ciudad: str) -> str | None:
 	return None
 
 
+def _email_por_ciudad(ips_doc, ciudad: str) -> str:
+	"""Lookup email override en `IPS.emails_por_ciudad` para `ciudad`.
+
+	Match accent/case-tolerant para evitar que "Medellín" en la config no
+	matchee con "Medellin" guardado en el Candidato.
+	"""
+	if not ciudad:
+		return ""
+	target = _normalize_city_key(ciudad)
+	rows = (
+		ips_doc.get("emails_por_ciudad")
+		if isinstance(ips_doc, dict)
+		else getattr(ips_doc, "emails_por_ciudad", None)
+	) or []
+	for row in rows:
+		row_ciudad = row.get("ciudad") if isinstance(row, dict) else getattr(row, "ciudad", None)
+		row_email = row.get("email") if isinstance(row, dict) else getattr(row, "email", None)
+		if _normalize_city_key(row_ciudad or "") == target and row_email:
+			return str(row_email).strip()
+	return ""
+
+
 def _get_sedes_for_ciudad(ips_doc, candidato_ciudad: str) -> list[dict]:
 	"""Return active sedes of `ips_doc` whose ciudad matches `candidato_ciudad`
 	(accent/case-tolerant). Each entry is a dict with the sede fields plus the
 	resolved `email` and `requiere_orden_servicio` (with IPS-level fallbacks).
+
+	Email cascade per sede:
+	  1. `sede.email_notificacion` (más específico)
+	  2. `IPS.emails_por_ciudad` matched por ciudad de la sede
+	  3. `IPS.email_notificacion` (legacy fallback)
 
 	If the IPS has no sedes child rows at all, returns a single synthetic
 	entry built from the legacy IPS-level fields so existing single-sede IPS
@@ -255,7 +282,7 @@ def _get_sedes_for_ciudad(ips_doc, candidato_ciudad: str) -> list[dict]:
 				"ciudad": ips_ciudad or "",
 				"direccion": ips_direccion or "",
 				"telefono": ips_telefono or "",
-				"email": ips_email or "",
+				"email": (_email_por_ciudad(ips_doc, ips_ciudad) or ips_email or ""),
 				"requiere_orden_servicio": int(ips_requiere or 0),
 			}
 		]
@@ -273,7 +300,12 @@ def _get_sedes_for_ciudad(ips_doc, candidato_ciudad: str) -> list[dict]:
 				"ciudad": sede_ciudad,
 				"direccion": _row_get(row, "direccion", "") or "",
 				"telefono": _row_get(row, "telefono", "") or "",
-				"email": (_row_get(row, "email_notificacion", "") or ips_email or ""),
+				"email": (
+					_row_get(row, "email_notificacion", "")
+					or _email_por_ciudad(ips_doc, sede_ciudad)
+					or ips_email
+					or ""
+				),
 				"requiere_orden_servicio": int(_row_get(row, "requiere_orden_servicio", 0) or 0),
 			}
 		)
