@@ -69,11 +69,12 @@ frappe.pages["sst_seguimiento_examenes"].on_page_load = function (wrapper) {
 			.sst-seg-toolbar input, .sst-seg-toolbar select { font-size: 12px; }
 			.sst-seg-table-wrap { overflow-x: auto; }
 			.sst-seg-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-			.sst-seg-table th { background: #1d4ed8; color: #fff; padding: 8px 10px; text-align: left; white-space: nowrap; }
+			.sst-seg-table th { background: #111827; color: #fff; padding: 8px 10px; text-align: left; white-space: nowrap; }
 			.sst-seg-table td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
 			.sst-seg-table tr:hover td { background: #f9fafb; }
+			.sst-seg-table .indicator-pill { display: inline-flex; align-items: center; white-space: nowrap; padding: 2px 10px; border-radius: 10px; font-size: 11px; line-height: 1.4; }
 			.row-datos-faltantes { border-left: 3px solid #dc3545 !important; background: #fff5f5 !important; }
-			.badge-manual-sin-agendar { background: #dc3545; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 6px; }
+			.badge-manual-sin-agendar { background: #dc3545; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 6px; white-space: nowrap; }
 			.sst-seg-empty { text-align: center; padding: 32px; color: #6b7280; }
 			.sst-seg-pagination { display: flex; align-items: center; gap: 12px; margin-top: 12px; font-size: 13px; }
 			.sst-seg-spinner { text-align: center; padding: 24px; color: #6b7280; }
@@ -229,6 +230,23 @@ frappe.pages["sst_seguimiento_examenes"].on_page_load = function (wrapper) {
 			const badgeDatos = r.datos_faltantes
 				? `<span class="badge-manual-sin-agendar">Manual sin agendar</span>`
 				: "";
+			// Agendar: sólo si aún no tiene fecha (Pendiente Agendamiento o Manual sin datos).
+			const showAgendar = !r.fecha_cita;
+			// Reagendar: sólo cuando está Aplazada o No Asistió (la cita previa queda como historial).
+			const showReagendar = r.estado === "Aplazada" || r.estado === "No Asistió";
+			const btnAgendar = showAgendar
+				? `<button class="btn btn-xs btn-default btn-agendar" data-cita="${esc(r.name)}"
+						data-fecha="${esc(r.fecha_cita || "")}" data-hora="${esc(r.hora_cita || "")}"
+						data-sede="${esc(r.sede_seleccionada || "")}" data-nombre="${esc(r.nombre_completo)}">
+						Agendar
+					</button>`
+				: "";
+			const btnReagendar = showReagendar
+				? `<button class="btn btn-xs btn-primary btn-reagendar" data-cita="${esc(r.name)}"
+						data-nombre="${esc(r.nombre_completo)}" data-modo="${esc(r.modo || "")}">
+						Reagendar
+					</button>`
+				: "";
 			return `
 				<tr${clsDatos}>
 					<td>${estadoBadge(r.estado)}${badgeDatos}</td>
@@ -244,11 +262,8 @@ frappe.pages["sst_seguimiento_examenes"].on_page_load = function (wrapper) {
 					<td class="obs-preview" title="${esc(r.observaciones_sst)}">${esc(r.observaciones_preview)}</td>
 					<td>
 						<div style="display:flex;gap:4px;flex-wrap:wrap;">
-							<button class="btn btn-xs btn-default btn-agendar" data-cita="${esc(r.name)}"
-								data-fecha="${esc(r.fecha_cita || "")}" data-hora="${esc(r.hora_cita || "")}"
-								data-sede="${esc(r.sede_seleccionada || "")}" data-nombre="${esc(r.nombre_completo)}">
-								Agendar
-							</button>
+							${btnAgendar}
+							${btnReagendar}
 							<button class="btn btn-xs btn-default btn-outcome" data-cita="${esc(r.name)}"
 								data-nombre="${esc(r.nombre_completo)}" data-fecha="${esc(r.fecha_cita || "")}">
 								Estado
@@ -377,9 +392,10 @@ frappe.pages["sst_seguimiento_examenes"].on_page_load = function (wrapper) {
 			callback(r) {
 				const data = (r && r.message) || { ciudad: "", sedes: [] };
 				const opts = (data.sedes || []).map(s => s.nombre_sede).filter(Boolean);
+				const ciudadLabel = data.ciudad || "(sin ciudad)";
 				const help = opts.length
-					? `Sedes activas en ${data.ciudad}: ${opts.length}.`
-					: `Sin sedes activas para "${data.ciudad || "(sin ciudad)"}".`;
+					? `Sedes activas en ${ciudadLabel}: ${opts.length}.`
+					: `Sin sedes activas para "${ciudadLabel}". Pedile a GH que active una sede para esta ciudad antes de agendar, o registrá la sede manualmente acá.`;
 				const fld = d.fields_dict.sede_seleccionada;
 				if (fld) {
 					fld.df.options = opts;
@@ -460,6 +476,30 @@ frappe.pages["sst_seguimiento_examenes"].on_page_load = function (wrapper) {
 			},
 		});
 		d.show();
+	}
+
+	function reagendarCita(citaName, nombre, modo) {
+		const modoTxt = (modo || "").toLowerCase() === "autogestionado"
+			? __("Se enviará un nuevo link al candidato.")
+			: __("La nueva cita quedará pendiente de agendar.");
+		frappe.confirm(
+			__("¿Reagendar la cita de {0}? {1}", [nombre, modoTxt]),
+			() => {
+				frappe.call({
+					method: "hubgh.hubgh.page.sst_seguimiento_examenes.sst_seguimiento_examenes.reagendar_cita_desde_bandeja",
+					args: { cita_name: citaName },
+					callback(r) {
+						if (r && r.message && r.message.ok) {
+							const msg = r.message.modo === "Autogestionado"
+								? __("Cita reagendada. Link nuevo enviado al candidato.")
+								: __("Cita reagendada. Pendiente de agendar desde la bandeja.");
+							frappe.show_alert({ message: msg, indicator: "green" });
+							resetAndFetch();
+						}
+					},
+				});
+			}
+		);
 	}
 
 	function cancelarCita(citaName, nombre, fecha) {
@@ -629,6 +669,11 @@ frappe.pages["sst_seguimiento_examenes"].on_page_load = function (wrapper) {
 	$body.on("click", ".btn-cancelar", function () {
 		const $btn = $(this);
 		cancelarCita($btn.data("cita"), $btn.data("nombre"), $btn.data("fecha"));
+	});
+
+	$body.on("click", ".btn-reagendar", function () {
+		const $btn = $(this);
+		reagendarCita($btn.data("cita"), $btn.data("nombre"), $btn.data("modo"));
 	});
 
 	// ─── Carga inicial ────────────────────────────────────────────────────
