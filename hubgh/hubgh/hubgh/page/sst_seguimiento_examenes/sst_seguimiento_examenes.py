@@ -437,6 +437,50 @@ def set_cita_outcome(cita_name, estado, concepto=None, motivo=None, instruccione
 
 
 @frappe.whitelist()
+def reagendar_cita_desde_bandeja(cita_name):
+    """Reagenda una cita Aplazada o No Asistió creando una nueva ligada por `cita_anterior`.
+
+    Modo Manual: nueva cita queda en "Pendiente Agendamiento" (GH la agenda desde la bandeja).
+    Modo Autogestionado: nueva cita + token nuevo + link enviado al candidato.
+
+    La cita previa NO se modifica.
+
+    Args:
+        cita_name: Nombre de la cita previa.
+
+    Returns:
+        {"ok": True, "cita_anterior": cita_name, "cita_nueva": <name>, "modo": "Manual"|"Autogestionado"}
+    """
+    _require_access()
+
+    if not cita_name:
+        frappe.throw(_("Falta cita_name"), frappe.ValidationError)
+    if not frappe.db.exists("Cita Examen Medico", cita_name):
+        frappe.throw(_("Cita no encontrada: {0}").format(cita_name), frappe.ValidationError)
+
+    estado_prev = frappe.db.get_value("Cita Examen Medico", cita_name, "estado") or ""
+    if estado_prev not in ("Aplazada", "No Asistió"):
+        frappe.throw(
+            _("Solo se pueden reagendar citas Aplazada o No Asistió (estado actual: {0}).").format(estado_prev),
+            frappe.ValidationError,
+        )
+
+    candidato = frappe.db.get_value("Cita Examen Medico", cita_name, "candidato")
+    modo = frappe.db.get_value("Candidato", candidato, "modo_agendamiento_examen") or "Manual"
+
+    from hubgh.hubgh.examen_medico.cita_service import reagendar_cita
+
+    nueva = reagendar_cita(cita_name)
+
+    return {
+        "ok": True,
+        "cita_anterior": cita_name,
+        "cita_nueva": nueva,
+        "modo": modo,
+    }
+
+
+@frappe.whitelist()
 def export_seguimiento_examenes_xlsx(filters=None):
     """Exporta las citas activas de seguimiento a un archivo Excel (xlsx).
 

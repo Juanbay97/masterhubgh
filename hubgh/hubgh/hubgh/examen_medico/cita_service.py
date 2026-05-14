@@ -318,6 +318,7 @@ def create_cita_manual(
 	sede: str | None = None,
 	fecha_cita: str | None = None,
 	hora_cita: str | None = None,
+	cita_anterior: str | None = None,
 ) -> str:
 	"""Crea una Cita Examen Medico para flujo manual (agendada por GH).
 
@@ -368,6 +369,8 @@ def create_cita_manual(
 		cita.fecha_cita = fecha_cita
 	if hora_cita:
 		cita.hora_cita = hora_cita
+	if cita_anterior:
+		cita.cita_anterior = cita_anterior
 	try:
 		cita.insert(ignore_permissions=True)
 	except TypeError:
@@ -390,6 +393,7 @@ def create_cita_and_send_link(
 	candidato_name: str,
 	cargo: str | None = None,
 	fecha_limite: str | None = None,
+	cita_anterior: str | None = None,
 ) -> str:
 	"""
 	Crea una Cita Examen Medico y envía el link de agendamiento al candidato.
@@ -438,6 +442,8 @@ def create_cita_and_send_link(
 	cita.cargo_al_enviar = cargo_al_enviar
 	if fecha_limite:
 		cita.fecha_limite_agendamiento = fecha_limite
+	if cita_anterior:
+		cita.cita_anterior = cita_anterior
 	# Use insert() without kwargs — tests may mock insert as a simple callable
 	try:
 		cita.insert(ignore_permissions=True)
@@ -564,42 +570,76 @@ def set_exam_outcome(
 	action: str | None = None,
 ) -> None:
 	"""
-	Registra el resultado del examen médico.
+	Registra el resultado del examen médico y cierra el ciclo del candidato.
 
 	Args:
 		cita_name: Nombre del documento Cita Examen Medico.
 		estado: Estado final — "Realizada", "Aplazada", "No Asistió", "Cancelada".
-		concepto: Concepto médico para Realizada — "Favorable" o "Desfavorable".
-		motivo: Motivo (para Aplazada / No Asistió / Cancelada).
+		concepto: Concepto médico para Realizada — "Favorable", "Desfavorable" o "Aplazado".
+		motivo: Motivo (para Aplazada / No Asistió / Cancelada / Desfavorable).
 		instrucciones: Instrucciones de reagendamiento (para Aplazada).
 		action: Parámetro de compatibilidad para callers legacy (sst_bandeja).
 		        Ya no tiene efecto en la lógica — la acción la determina `estado`.
 
-	Nota: "No Asistió" persiste el estado literal "No Asistió".
-	NO se mapea a "Cancelada". Para cancelar explícitamente una cita,
-	pasar estado="Cancelada".
+	Efectos sobre el Candidato:
+	  - Realizada + Favorable → concepto_medico="Favorable". estado_proceso no se mueve
+	    (Selección Documentos decide el avance a RRLL respetando el gate SAGRILAFT).
+	  - Realizada + Desfavorable → concepto_medico="Desfavorable", estado_proceso=Rechazado,
+	    motivo_rechazo poblado.
+	  - Realizada + Aplazado → la cita se persiste como Aplazada (no Realizada) para
+	    seguir visible en bandeja. concepto_medico="Aplazado". estado_proceso permanece.
+	  - Cancelada → estado_proceso=En documentación, concepto_medico vacío,
+	    fecha_envio_examen_medico vacío. El candidato vuelve a la bandeja de Selección.
+	  - Aplazada / No Asistió → la cita queda visible en bandeja para reagendar.
+	    El candidato permanece en examen médico.
+
+	Nota: "No Asistió" persiste el estado literal "No Asistió". NO se mapea a "Cancelada".
 	"""
 	import frappe
+	from hubgh.hubgh.candidate_states import STATE_DOCUMENTACION, STATE_RECHAZADO
 
 	cita = frappe.get_doc("Cita Examen Medico", cita_name)
 
 	if estado == "Realizada":
+		# Concepto=Aplazado mapea a estado Aplazada (cita sigue abierta para reagendar).
+		if concepto == "Aplazado":
+			frappe.db.set_value(
+				"Cita Examen Medico",
+				cita_name,
+				{
+					"estado": "Aplazada",
+					"motivo_aplazamiento": motivo or "",
+					"instrucciones_reagendamiento": instrucciones or "",
+				},
+			)
+			# concepto_medico se actualiza para trazabilidad — estado_proceso permanece.
+			frappe.db.set_value("Candidato", cita.candidato, "concepto_medico", "Aplazado")
+			return
+
 		frappe.db.set_value("Cita Examen Medico", cita_name, "estado", "Realizada")
 		if concepto in ("Favorable", "Desfavorable"):
 			frappe.db.set_value("Cita Examen Medico", cita_name, "concepto_resultado", concepto)
-			# Write to Candidato
+
+		if concepto == "Favorable":
+			# Solo concepto_medico — el avance a RRLL queda en manos de Selección
+			# por el gate SAGRILAFT.
+			frappe.db.set_value("Candidato", cita.candidato, "concepto_medico", "Favorable")
+
+		elif concepto == "Desfavorable":
+			# Auto-rechazo: cierra el ciclo del candidato sin requerir paso por Selección.
 			frappe.db.set_value(
 				"Candidato",
 				cita.candidato,
-				"concepto_medico",
-				concepto,
+				{
+					"concepto_medico": "Desfavorable",
+					"estado_proceso": STATE_RECHAZADO,
+					"motivo_rechazo": (motivo or "").strip() or "Examen médico Desfavorable",
+				},
 			)
 
 	elif estado == "Aplazada":
-		# Marca la cita como Aplazada y registra motivo/instrucciones para que
-		# SST tenga la trazabilidad. NO envía correo automático ni regenera
-		# link — si hay que reagendar, GH lo hace desde Selección con un
-		# nuevo "Enviar a examen".
+		# Marca la cita como Aplazada y registra motivo/instrucciones. La cita sigue
+		# visible en bandeja para que SST/GH la reagende vía endpoint `reagendar_cita`.
 		frappe.db.set_value(
 			"Cita Examen Medico",
 			cita_name,
@@ -614,14 +654,13 @@ def set_exam_outcome(
 		# Persiste literal "No Asistió" — no mapear a "Cancelada".
 		# El parámetro `action` se mantiene en la firma por compatibilidad hacia atrás
 		# (callers en sst_bandeja lo pasan) pero ya no dispara creación automática de cita.
-		# Si hay motivo (ej. desde la bandeja de seguimiento), se guarda en motivo_aplazamiento.
 		vals = {"estado": "No Asistió"}
 		if motivo:
 			vals["motivo_aplazamiento"] = motivo
 		frappe.db.set_value("Cita Examen Medico", cita_name, vals)
 
 	elif estado == "Cancelada":
-		# Cancelación explícita — persiste "Cancelada" y motivo opcional.
+		# Cancelación explícita: cita Cancelada + candidato vuelve a Selección Documentos.
 		frappe.db.set_value(
 			"Cita Examen Medico",
 			cita_name,
@@ -630,3 +669,53 @@ def set_exam_outcome(
 				"motivo_aplazamiento": motivo or "",
 			},
 		)
+		frappe.db.set_value(
+			"Candidato",
+			cita.candidato,
+			{
+				"estado_proceso": STATE_DOCUMENTACION,
+				"concepto_medico": "Pendiente",
+				"fecha_envio_examen_medico": None,
+			},
+		)
+
+
+def reagendar_cita(cita_name: str) -> str:
+	"""Reagenda una cita Aplazada/No Asistió creando una nueva ligada por `cita_anterior`.
+
+	Reproduce el flujo según `Candidato.modo_agendamiento_examen`:
+	  - Manual → `create_cita_manual` (queda en "Pendiente Agendamiento"; GH la agenda
+	    desde la bandeja).
+	  - Autogestionado → `create_cita_and_send_link` (genera token nuevo y envía link
+	    al candidato).
+
+	La cita previa NO se modifica — queda con su estado (Aplazada / No Asistió) para
+	trazabilidad. Selección puede ver el encadenamiento siguiendo `cita_anterior` hacia
+	atrás.
+
+	Args:
+		cita_name: Nombre de la cita previa a reagendar.
+
+	Returns:
+		Nombre de la nueva cita creada.
+	"""
+	import frappe
+
+	cita_prev = frappe.get_doc("Cita Examen Medico", cita_name)
+	candidato_name = cita_prev.candidato
+	cargo = cita_prev.cargo_al_enviar or ""
+
+	modo = frappe.db.get_value("Candidato", candidato_name, "modo_agendamiento_examen") or "Manual"
+
+	if modo == "Autogestionado":
+		return create_cita_and_send_link(
+			candidato_name=candidato_name,
+			cargo=cargo,
+			cita_anterior=cita_name,
+		)
+
+	return create_cita_manual(
+		candidato_name=candidato_name,
+		cargo=cargo,
+		cita_anterior=cita_name,
+	)
