@@ -417,7 +417,7 @@ def _genero_siesa(genero):
 
 def _estado_civil_siesa(estado_civil):
 	return {
-		"": "0",
+		"": "",
 		"Soltero": "1",
 		"Casado": "2",
 		"Viudo": "3",
@@ -570,7 +570,7 @@ def _build_contract_context(data):
 	ctx = {
 		"id_cia": "4",
 		"id_tercero": _str(contrato.numero_documento),
-		"numero_contrato": _str(contrato.numero_contrato or data.numero_contrato or 1),
+		"numero_contrato": "1",
 		"id_co": id_co,
 		"id_prorroga": "",
 		"id_banco": "07",

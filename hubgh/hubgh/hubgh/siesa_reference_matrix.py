@@ -111,6 +111,7 @@ SOCIAL_SECURITY_REFERENCE_CATALOGS = {
 		("901037916", "Fosyga Regimen de Excepcion"),
 		("890102044", "EPS CAJACOPI"),
 		("900226715", "COOSALUD ENTIDAD PROMOTORA DE SALUD S A"),
+		("999999999", "SIN EPS"),
 	],
 	"Entidad AFP Siesa": [
 		("800229739", "AFP PROTECCION (ING + PROTECCION)"),
@@ -413,7 +414,7 @@ def ensure_official_eps_catalog(strict_disable_others=True):
 			("Datos Contratacion", "eps_siesa"),
 			("Ficha Empleado", "eps_siesa"),
 		],
-		fallback_code=None,
+		fallback_code="999999999",
 	)
 
 	if not strict_disable_others:
@@ -744,3 +745,86 @@ def sync_reference_masters():
 	ensure_banco_reference_catalog()
 	ensure_official_cargo_matrix()
 	frappe.db.commit()
+
+
+def audit_siesa_export_inputs():
+	"""Audit read-only de campos exportados a SIESA con problemas conocidos.
+
+	Reporta:
+	  - Distribución de genero / estado_civil en Candidato y Datos Contratacion.
+	  - Contratos con CCF o EPS apuntando a códigos NO oficiales.
+	  - Distribución de Contrato.numero_contrato.
+
+	Uso: bench --site <site> execute hubgh.hubgh.siesa_reference_matrix.audit_siesa_export_inputs
+	"""
+
+	def _distribution(doctype, field):
+		rows = frappe.db.sql(
+			f"SELECT COALESCE(`{field}`, '') AS value, COUNT(*) AS total "
+			f"FROM `tab{doctype}` GROUP BY `{field}` ORDER BY total DESC",
+			as_dict=True,
+		)
+		return [{"value": r["value"], "total": r["total"]} for r in rows]
+
+	def _legacy_link_values(ref_doctype, ref_field, official_codes):
+		rows = frappe.get_all(
+			ref_doctype,
+			fields=["name", ref_field],
+			filters={ref_field: ["!=", ""]},
+		)
+		offenders = []
+		for row in rows:
+			value = (row.get(ref_field) or "").strip()
+			if not value:
+				continue
+			catalog_doctype = "Entidad CCF Siesa" if "ccf" in ref_field else "Entidad EPS Siesa"
+			code = frappe.db.get_value(catalog_doctype, value, "code") or value
+			if code not in official_codes:
+				offenders.append({"record": row["name"], "field": ref_field, "value": value, "resolved_code": code})
+		return offenders
+
+	ccf_official = _get_official_codes_for_doctype("Entidad CCF Siesa")
+	eps_official = _get_official_codes_for_doctype("Entidad EPS Siesa")
+
+	report = {
+		"genero": {
+			"Candidato": _distribution("Candidato", "genero"),
+			"Datos Contratacion": _distribution("Datos Contratacion", "genero"),
+		},
+		"estado_civil": {
+			"Candidato": _distribution("Candidato", "estado_civil"),
+			"Datos Contratacion": _distribution("Datos Contratacion", "estado_civil"),
+		},
+		"numero_contrato": _distribution("Contrato", "numero_contrato"),
+		"ccf_legacy": (
+			_legacy_link_values("Contrato", "entidad_ccf_siesa", ccf_official)
+			+ _legacy_link_values("Datos Contratacion", "ccf_siesa", ccf_official)
+		),
+		"eps_legacy": (
+			_legacy_link_values("Contrato", "entidad_eps_siesa", eps_official)
+			+ _legacy_link_values("Datos Contratacion", "eps_siesa", eps_official)
+		),
+	}
+
+	print("=" * 72)
+	print("AUDIT SIESA EXPORT INPUTS")
+	print("=" * 72)
+	for field in ("genero", "estado_civil"):
+		print(f"\n[{field}]")
+		for src, dist in report[field].items():
+			print(f"  {src}:")
+			for entry in dist:
+				print(f"    {entry['value']!r:30s} -> {entry['total']}")
+	print("\n[numero_contrato] (Contrato)")
+	for entry in report["numero_contrato"][:20]:
+		print(f"  {entry['value']!r:30s} -> {entry['total']}")
+
+	print(f"\n[ccf_legacy] {len(report['ccf_legacy'])} record(s) con CCF NO oficial")
+	for off in report["ccf_legacy"][:30]:
+		print(f"  {off['record']} ({off['field']}) -> {off['value']!r} resolved={off['resolved_code']!r}")
+
+	print(f"\n[eps_legacy] {len(report['eps_legacy'])} record(s) con EPS NO oficial")
+	for off in report["eps_legacy"][:30]:
+		print(f"  {off['record']} ({off['field']}) -> {off['value']!r} resolved={off['resolved_code']!r}")
+
+	return report
