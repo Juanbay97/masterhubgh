@@ -131,7 +131,7 @@
    "fieldname": "concepto_resultado",
    "fieldtype": "Select",
    "label": "Concepto Resultado",
-   "options": "Favorable\nDesfavorable\nAplazado"
+   "options": "\nFavorable\nDesfavorable\nAplazado"
   },
   {
    "fieldname": "motivo_aplazamiento",
