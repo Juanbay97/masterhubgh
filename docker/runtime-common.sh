@@ -92,6 +92,27 @@ sync_site_runtime_mode() {
   bench --site "$current_site" set-config developer_mode "$developer_mode_value"
 }
 
+sync_site_behind_proxy_flag() {
+  # Frappe's `frappe.utils.get_url` apenda `:webserver_port` (8000) a las URLs
+  # absolutas a menos que detecte `restart_supervisor_on_update` o
+  # `restart_systemd_on_update` como true (heurística para "estoy en
+  # producción detrás de un reverse proxy"). Ver
+  # `apps/frappe/frappe/utils/data.py:get_url`.
+  #
+  # Acá corremos detrás de Caddy: el frontend recibe 443 y proxea al backend
+  # en 8000. Para que los reset URLs (y cualquier otra URL generada por
+  # Frappe) salgan sin puerto, marcamos este flag para el sitio actual.
+  local current_site=""
+
+  current_site="$(current_site_name)"
+  if [ -z "$current_site" ]; then
+    return
+  fi
+
+  echo "==> Asegurando restart_supervisor_on_update=true para $current_site (URLs sin :8000)"
+  bench --site "$current_site" set-config restart_supervisor_on_update true
+}
+
 ensure_asset_link() {
   local app="$1"
   local public_dir="$BENCH_DIR/apps/$app/$app/public"

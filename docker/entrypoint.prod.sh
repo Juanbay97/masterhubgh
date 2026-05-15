@@ -31,6 +31,7 @@ trap cleanup EXIT INT TERM
 initialize_bench_if_needed
 configure_bench_runtime
 sync_site_runtime_mode 0
+sync_site_behind_proxy_flag
 
 cd "$BENCH_DIR"
 export SITES_PATH="$BENCH_DIR/sites"
