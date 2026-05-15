@@ -27,6 +27,15 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 	const esc = value => frappe.utils.escape_html(value == null ? "" : String(value));
 	let state = { rows: [], search: "", status: "idle", error: "" };
 
+	const ensureCorreccionDialogLoaded = () => {
+		if (window.hubgh && typeof window.hubgh.openCorreccionDatosDialog === "function") {
+			return Promise.resolve();
+		}
+		return new Promise(resolve => {
+			frappe.require("/assets/hubgh/js/correccion_datos_candidato_dialog.js", resolve);
+		});
+	};
+
 	const formatTentativeDate = value => {
 		if (!value) return "-";
 		try {
@@ -131,6 +140,7 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 				</div>
 				<div class='hubgh-actions'>
 					<button class='btn btn-xs btn-primary btn-create' data-c='${esc(r.name)}'>Crear contrato</button>
+					<button class='btn btn-xs btn-link btn-correccion' data-c='${esc(r.name)}' data-label='${esc(r.full_name || r.name)}'>Corregir datos</button>
 					<button class='btn btn-xs btn-link text-danger btn-reject' data-c='${esc(r.name)}'>Rechazar</button>
 					<button class='btn btn-xs btn-link go-siesa'>Reportes SIESA</button>
 				</div>
@@ -154,6 +164,22 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 		$root.find(".btn-clear-filters").off("click").on("click", function() {
 			state.search = "";
 			render();
+		});
+
+		$root.find(".btn-correccion").off("click").on("click", function() {
+			const candidato_name = $(this).data("c");
+			const candidato_label = $(this).data("label") || candidato_name;
+			ensureCorreccionDialogLoaded().then(() => {
+				if (!window.hubgh || typeof window.hubgh.openCorreccionDatosDialog !== "function") {
+					frappe.msgprint("No fue posible cargar el componente de corrección.");
+					return;
+				}
+				window.hubgh.openCorreccionDatosDialog({
+					candidato_name,
+					candidato_label,
+					on_success: () => load(),
+				});
+			});
 		});
 
 		$root.find(".btn-reject").off("click").on("click", function() {
@@ -258,10 +284,19 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 					});
 
 					d.fields_dict.ccf_siesa.get_query = () => ({
-						filters: {
-							enabled: 1,
-							code: ["in", ["001", "002"]],
-						},
+						filters: { enabled: 1 },
+					});
+
+					d.fields_dict.eps_siesa.get_query = () => ({
+						filters: { enabled: 1 },
+					});
+
+					d.fields_dict.afp_siesa.get_query = () => ({
+						filters: { enabled: 1 },
+					});
+
+					d.fields_dict.cesantias_siesa.get_query = () => ({
+						filters: { enabled: 1 },
 					});
 
 					d.fields_dict.unidad_negocio_siesa.get_query = () => ({

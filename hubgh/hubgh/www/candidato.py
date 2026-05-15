@@ -462,6 +462,7 @@ def create_candidate(payload):
 		"fecha_nacimiento",
 		"fecha_expedicion",
 		"genero",
+		"estado_civil",
 		"banco_siesa",
 		"tipo_cuenta_bancaria",
 		"numero_cuenta_bancaria",

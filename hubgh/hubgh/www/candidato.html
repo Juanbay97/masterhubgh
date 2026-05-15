@@ -145,6 +145,17 @@
                                 <option value="Otro">Otro</option>
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Estado Civil</label>
+                            <select id="estado_civil" class="w-full px-4 py-3 bg-gray-50 text-lg font-medium focus:bg-white appearance-none cursor-pointer">
+                                <option value="">Selecciona...</option>
+                                <option value="Soltero">Soltero</option>
+                                <option value="Casado">Casado</option>
+                                <option value="Unión Libre">Unión Libre</option>
+                                <option value="Divorciado">Divorciado</option>
+                                <option value="Viudo">Viudo</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -576,6 +587,7 @@
             document.getElementById('fecha_nacimiento').value = data.fecha_nacimiento || '';
             document.getElementById('fecha_expedicion').value = data.fecha_expedicion || '';
             document.getElementById('genero').value = data.genero || '';
+            document.getElementById('estado_civil').value = data.estado_civil || '';
         }
         if (step === 3) {
             document.getElementById('email').value = data.email || '';
@@ -806,6 +818,7 @@
             data.fecha_nacimiento = (document.getElementById('fecha_nacimiento').value || '').trim();
             data.fecha_expedicion = (document.getElementById('fecha_expedicion').value || '').trim();
             data.genero = (document.getElementById('genero').value || '').trim();
+            data.estado_civil = (document.getElementById('estado_civil').value || '').trim();
         }
         if (step === 3) {
             data.email = (document.getElementById('email').value || '').trim();
@@ -862,6 +875,7 @@
             if (!checkVal('cedula')) { isValid = false; errors.push('cedula'); }
             if (!checkVal('fecha_nacimiento')) { isValid = false; errors.push('fecha_nacimiento'); }
             if (!checkVal('genero')) { isValid = false; errors.push('genero'); }
+            if (!checkVal('estado_civil')) { isValid = false; errors.push('estado_civil'); }
         }
         if (step === 3) {
             const email = document.getElementById('email');

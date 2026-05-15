@@ -321,6 +321,12 @@ def normalize_code_for_doctype(doctype, raw_code):
 	return value
 
 
+def _doctype_uses_code_as_name(doctype):
+	"""True si el doctype tiene autoname='field:code' (name == code)."""
+	autoname = frappe.db.get_value("DocType", doctype, "autoname") or ""
+	return autoname.strip().lower() == "field:code"
+
+
 def _upsert_reference_row(doctype, code, description):
 	code = normalize_code_for_doctype(doctype, code)
 	description = str(description or "").strip()
@@ -332,9 +338,27 @@ def _upsert_reference_row(doctype, code, description):
 		name = frappe.db.get_value(doctype, {"description": description}, "name")
 
 	if name:
+		uses_code_as_name = _doctype_uses_code_as_name(doctype)
+		# Si el doctype usa autoname=field:code y necesitamos cambiar el code,
+		# hay que renombrar el doc (no basta con doc.save()).
+		if uses_code_as_name and str(name) != code:
+			# Si ya existe una fila con el name destino (la oficial), repuntamos
+			# refs hacia ella y deshabilitamos la legacy en vez de renombrar.
+			if frappe.db.exists(doctype, code):
+				if int(frappe.db.get_value(doctype, name, "enabled") or 0) == 1:
+					frappe.db.set_value(doctype, name, "enabled", 0, update_modified=False)
+				frappe.db.set_value(doctype, code, "enabled", 1, update_modified=False)
+				frappe.db.set_value(doctype, code, "description", description, update_modified=False)
+				return code
+			# Si la oficial no existe, renombramos la legacy -> code oficial.
+			frappe.rename_doc(doctype, name, code, force=True, merge=False)
+			name = code
+
 		doc = frappe.get_doc(doctype, name)
 		changed = False
-		if str(doc.get("code") or "") != code:
+		# Sólo intentamos actualizar `code` cuando NO es autoname=field:code,
+		# porque en esos doctypes el code se sincroniza vía rename.
+		if not uses_code_as_name and str(doc.get("code") or "") != code:
 			doc.code = code
 			changed = True
 		if str(doc.get("description") or "") != description:
