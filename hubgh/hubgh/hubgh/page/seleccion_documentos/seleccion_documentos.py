@@ -74,6 +74,14 @@ def _has_selection_access(user=None):
 	return user_has_any_role(user, "HR Selection", "Gestión Humana", "GH - Bandeja General", "Gerente GH")
 
 
+def _can_delete_candidate_document(user=None):
+	"""Rol gate para borrado físico de documentos del candidato (pre-contrato)."""
+	user = user or frappe.session.user
+	if user == "Administrator":
+		return True
+	return user_has_any_role(user, "Gestión Humana", "GH - Bandeja General")
+
+
 def _has_medical_exam_access(user=None):
 	user = user or frappe.session.user
 	return user_has_any_role(user, "HR SST", "SST", "HR Selection", "Gestión Humana", "GH - Bandeja General", "Gerente GH")
@@ -356,6 +364,10 @@ def candidate_detail(candidate):
 	selection_doc_status = _selection_docs_status(candidate)
 	selection_docs_complete = all((not row["required"]) or row["uploaded_ok"] for row in selection_doc_status)
 	upload_doc_types = _active_candidate_document_types()
+	# Borrado físico de documentos: gateado por rol Y por fase pre_contrato.
+	from hubgh.hubgh.candidate_correction_service import get_correction_phase
+	is_pre_contract = get_correction_phase(candidate) == "pre_contrato"
+	can_delete_document = _can_delete_candidate_document() and is_pre_contract
 	location_labels = resolve_candidate_location_labels(
 		pais=cand.procedencia_pais,
 		departamento=cand.procedencia_departamento,
@@ -397,6 +409,8 @@ def candidate_detail(candidate):
 		"selection_doc_status": selection_doc_status,
 		"selection_docs_complete": selection_docs_complete,
 		"upload_doc_types": upload_doc_types,
+		"can_delete_document": can_delete_document,
+		"is_pre_contract": is_pre_contract,
 	}
 
 

@@ -20,6 +20,8 @@ def setup_permissions():
 		("HR Training & Wellbeing", 1),
 		("Jefe_PDV", 1),
 		("Candidato", 0),
+		("Gerente GH", 1),
+		("Auditoría", 1),
 	):
 		ensure_role(role_name, desk_access=desk_access)
 
@@ -42,6 +44,16 @@ def setup_permissions():
 		"operacion_punto_lite",
 		get_transitional_roles(unique_roles(JEFE_ROLES + BASE_GH_ROLES + TRIAGE_GH_ROLES)),
 	)
+
+	# 3.b) Lectura de Candidato para roles aprobadores (necesario para
+	# get_bank_cert_url y para aprobar correcciones post_contrato).
+	# Sin esto, Gerente GH ve "No tiene permisos para ver este candidato" en el
+	# panel de Corrección de Datos. Se ejecuta temprano para no depender de
+	# que pasos posteriores (read_only_doctypes, demo grants) terminen sin
+	# violar reglas de DocPerm preexistentes.
+	for role in ("Gerente GH", "System Manager"):
+		if frappe.db.exists("Role", role):
+			ensure_docperm("Candidato", role, read=1, select=1, report=1)
 
 	# 4) Existing DocType grants (preserved).
 	read_only_doctypes = [

@@ -1,0 +1,187 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:CORR-CDC-{YYYY}-{#####}",
+ "creation": "2026-05-14 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "candidato",
+  "campo_corregido",
+  "fase",
+  "valor_anterior",
+  "valor_nuevo",
+  "motivo",
+  "solicitante",
+  "aprobador",
+  "fecha_aplicacion",
+  "afectados_resumen",
+  "workflow_state",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "candidato",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Candidato",
+   "options": "Candidato",
+   "reqd": 1
+  },
+  {
+   "fieldname": "campo_corregido",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Campo Corregido",
+   "options": "email\ncedula\ncuenta_bancaria\ndatos_personales",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fase",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Fase",
+   "options": "pre_contrato\npost_contrato",
+   "read_only": 1
+  },
+  {
+   "fieldname": "valor_anterior",
+   "fieldtype": "Long Text",
+   "label": "Valor Anterior",
+   "read_only": 1
+  },
+  {
+   "fieldname": "valor_nuevo",
+   "fieldtype": "Long Text",
+   "label": "Valor Nuevo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "motivo",
+   "fieldtype": "Long Text",
+   "label": "Motivo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "solicitante",
+   "fieldtype": "Link",
+   "label": "Solicitante",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "aprobador",
+   "fieldtype": "Link",
+   "label": "Aprobador",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fecha_aplicacion",
+   "fieldtype": "Datetime",
+   "label": "Fecha Aplicación",
+   "read_only": 1
+  },
+  {
+   "fieldname": "afectados_resumen",
+   "fieldtype": "Long Text",
+   "label": "Afectados (Resumen JSON)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "workflow_state",
+   "fieldtype": "Link",
+   "label": "Workflow State",
+   "options": "Workflow State",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Correccion Datos Candidato",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-05-14 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Correccion Datos Candidato",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gerente GH",
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Selection",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - Bandeja General",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "candidato"
+}

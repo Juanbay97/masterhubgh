@@ -49,6 +49,7 @@ app_include_js = [
 	"/assets/hubgh/js/hubgh_toolbar.js",
 	"/assets/hubgh/js/bandejas_ui_base.js",
 	"/assets/hubgh/js/svg_nan_guard.js",
+	"/assets/hubgh/js/correccion_datos_candidato_dialog.js",
 ]
 
 # include js, css files in header of web template

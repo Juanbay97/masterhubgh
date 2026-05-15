@@ -113,6 +113,15 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		return { type: "upload", label: "Cargar soporte", tone: "btn-default", copy: "Completá lo pendiente sin salir" };
 	};
 
+	const ensureCorreccionDialogLoaded = () => {
+		if (window.hubgh && typeof window.hubgh.openCorreccionDatosDialog === "function") {
+			return Promise.resolve();
+		}
+		return new Promise(resolve => {
+			frappe.require("/assets/hubgh/js/correccion_datos_candidato_dialog.js", resolve);
+		});
+	};
+
 	const openSimpleDialog = (title, fields, primaryLabel, onPrimary) => {
 		const dialog = new frappe.ui.Dialog({ title, fields });
 		dialog.set_primary_action(primaryLabel, () => {
@@ -204,15 +213,22 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 					`;
 				}).join("");
 
-				const docsHtml = (data.documents || []).map(d => `
+				const canDeleteDoc = !!data.can_delete_document;
+				const docsHtml = (data.documents || []).map(d => {
+					const deleteBtn = (canDeleteDoc && d.name)
+						? `<button class='btn btn-xs btn-link text-danger action-delete-pdoc' data-pd='${esc(d.name)}' data-dtype='${esc(d.document_type || "")}' data-file='${esc(d.file || "")}' title='Eliminar permanentemente'><i class='fa fa-trash'></i></button>`
+						: "";
+					return `
 					<tr>
 						<td>${esc(d.document_type || "")}</td>
 						<td>${esc(d.status || "Pendiente")}</td>
 						<td>${esc(d.uploaded_by || "")}</td>
 						<td>${frappe.datetime.str_to_user(d.uploaded_on || "") || ""}</td>
 						<td>${d.file ? `<a href='${d.file}' target='_blank'>Ver</a>` : ""}</td>
+						<td>${deleteBtn}</td>
 					</tr>
-				`).join("");
+				`;
+				}).join("");
 
 				const candidateInfoHtml = [
 					["Documento", candidateData.numero_documento],
@@ -262,8 +278,8 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 					</div>
 					<div class='sel-docs-table-wrap'>
 						<table class='table table-sm'>
-							<thead><tr><th>Tipo</th><th>Estado</th><th>Subido por</th><th>Fecha</th><th>Archivo</th></tr></thead>
-							<tbody>${docsHtml || "<tr><td colspan='5' class='text-muted'>Sin documentos</td></tr>"}</tbody>
+							<thead><tr><th>Tipo</th><th>Estado</th><th>Subido por</th><th>Fecha</th><th>Archivo</th><th></th></tr></thead>
+							<tbody>${docsHtml || "<tr><td colspan='6' class='text-muted'>Sin documentos</td></tr>"}</tbody>
 						</table>
 					</div>
 				`);
@@ -274,9 +290,68 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 					});
 				});
 				dialog.fields_dict.content.$wrapper.find(".btn-upload-selection-doc").on("click", () => openSelectionDocsUploadDialog(candidate, uploadDocTypes));
+				dialog.fields_dict.content.$wrapper.find(".action-delete-pdoc").on("click", function() {
+					const pdocName = $(this).data("pd");
+					const dtype = $(this).data("dtype") || "";
+					const fileUrl = $(this).data("file") || "";
+					openDeletePersonDocumentDialog({ pdocName, documentType: dtype, fileUrl, onSuccess: () => {
+						dialog.hide();
+						openDetail(candidate);
+					}});
+				});
 				dialog.show();
 				cleanupModal(dialog);
 			});
+	};
+
+	const openDeletePersonDocumentDialog = ({ pdocName, documentType, fileUrl, onSuccess }) => {
+		const fileLabel = fileUrl ? (fileUrl.split("/").pop() || fileUrl) : "(sin archivo)";
+		const d = new frappe.ui.Dialog({
+			title: "Eliminar documento permanentemente",
+			fields: [
+				{ fieldtype: "HTML", fieldname: "warning" },
+				{ fieldtype: "Long Text", fieldname: "motivo", label: "Motivo (obligatorio para auditoría)", reqd: 1 },
+			],
+			primary_action_label: "Eliminar permanentemente",
+			primary_action: values => {
+				const motivo = (values.motivo || "").trim();
+				if (!motivo) {
+					frappe.msgprint({ title: "Motivo requerido", message: "Ingrese el motivo del borrado.", indicator: "red" });
+					return;
+				}
+				d.set_primary_action(__("Eliminando..."), null);
+				d.disable_primary_action();
+				frappe.call({
+					method: "hubgh.hubgh.api.correcciones.delete_person_document",
+					args: { person_document_name: pdocName, motivo },
+				}).then(r => {
+					if (r && r.message && r.message.deleted) {
+						frappe.show_alert({ message: "Documento eliminado permanentemente", indicator: "red" });
+						d.hide();
+						if (typeof onSuccess === "function") onSuccess();
+					} else {
+						d.enable_primary_action();
+						d.set_primary_action("Eliminar permanentemente", d.primary_action);
+					}
+				}).catch(() => {
+					d.enable_primary_action();
+					d.set_primary_action("Eliminar permanentemente", d.primary_action);
+				});
+			},
+		});
+		d.fields_dict.warning.$wrapper.html(`
+			<div style='background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:6px;font-size:13px;line-height:1.4;'>
+				<strong>Esta acción ELIMINA PERMANENTEMENTE el archivo del disco.</strong>
+				No se puede deshacer. Se registra en los comentarios del candidato para auditoría.
+				<div style='margin-top:8px;font-size:12px;'>
+					<div><b>Tipo:</b> ${frappe.utils.escape_html(documentType || "—")}</div>
+					<div><b>Archivo:</b> ${frappe.utils.escape_html(fileLabel)}</div>
+				</div>
+			</div>
+		`);
+		d.get_primary_btn().removeClass("btn-primary").addClass("btn-danger");
+		d.show();
+		cleanupModal(d);
 	};
 
 	const getFilteredRows = () => {
@@ -364,6 +439,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 							<button class='btn btn-xs btn-link action-detail' data-c='${esc(row.name)}'>Detalle</button>
 							${primary.type === "upload" ? "" : `<button class='btn btn-xs btn-link action-upload-selection' data-c='${esc(row.name)}'>Subir soporte</button>`}
 							${canSendToAffiliation ? `<button class='btn btn-xs btn-link text-info action-send-affiliation' data-c='${esc(row.name)}'>Enviar a Afiliación</button>` : ""}
+							${manageEnabled ? `<button class='btn btn-xs btn-link action-correccion' data-c='${esc(row.name)}' data-label='${esc(row.full_name || row.name)}'>Corregir datos</button>` : ""}
 							${manageEnabled ? `<button class='btn btn-xs btn-link text-danger action-reject' data-c='${esc(row.name)}'>Rechazar</button>` : ""}
 						</div>
 						<button class='d-none action-medical' data-c='${esc(row.name)}'></button>
@@ -399,6 +475,21 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		});
 
 		$root.find(".action-detail").off("click").on("click", function() { openDetail($(this).data("c")); });
+		$root.find(".action-correccion").off("click").on("click", function() {
+			const candidato_name = $(this).data("c");
+			const candidato_label = $(this).data("label") || candidato_name;
+			ensureCorreccionDialogLoaded().then(() => {
+				if (!window.hubgh || typeof window.hubgh.openCorreccionDatosDialog !== "function") {
+					frappe.msgprint("No fue posible cargar el componente de corrección.");
+					return;
+				}
+				window.hubgh.openCorreccionDatosDialog({
+					candidato_name,
+					candidato_label,
+					on_success: () => loadBoard(),
+				});
+			});
+		});
 		$root.find(".action-upload-selection").off("click").on("click", function() { openSelectionDocsUploadDialog($(this).data("c")); });
 		$root.find(".action-primary").off("click").on("click", function() {
 			const candidate = $(this).data("c");
