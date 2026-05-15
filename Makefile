@@ -9,6 +9,12 @@ export
 FRAPPE_SITE_NAME ?= hubgh.local
 SITE             := $(FRAPPE_SITE_NAME)
 
+# Site para los targets prod-*. Por defecto se resuelve dinámicamente leyendo
+# `sites/currentsite.txt` dentro del container (sirve para cualquier dominio
+# sin tocar .env). Override: `make prod-migrate PROD_SITE=otro.dominio.com`.
+PROD_SITE ?=
+PROD_ENV  = $(if $(PROD_SITE),-e PROD_SITE=$(PROD_SITE))
+
 DOCKER_COMPOSE := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
 COMPOSE_DEV = $(DOCKER_COMPOSE) -f docker/docker-compose.dev.yml --env-file .env
 COMPOSE_PROD = $(DOCKER_COMPOSE) -f docker/docker-compose.prod.yml --env-file .env
@@ -133,8 +139,8 @@ shell-deploy: prod-shell
 
 ## Correr migraciones de DB en PRODUCCION
 prod-migrate:
-	$(COMPOSE_PROD) exec backend bash -c \
-		"cd /home/frappe/frappe-bench && bench --site $(SITE) migrate"
+	$(COMPOSE_PROD) exec $(PROD_ENV) backend bash -c \
+		'cd /home/frappe/frappe-bench && bench --site $${PROD_SITE:-$$(cat sites/currentsite.txt)} migrate'
 
 ## Alias legacy: stack publico
 migrate-deploy: prod-migrate
@@ -161,9 +167,10 @@ ps-deploy: prod-ps
 #   make prod-feature-status          # ver el estado actual
 #   make dev-feature-on               # idem en desarrollo
 #
-# El target lee SITE de la variable FRAPPE_SITE_NAME del .env (default
-# hubgh.local). Para apuntar a otro site:
-#   make prod-feature-on SITE=intranet.comidasvarpel.com
+# Los targets dev-feature-* usan SITE (de FRAPPE_SITE_NAME, default hubgh.local).
+# Los targets prod-feature-* leen sites/currentsite.txt del container; override
+# explícito con PROD_SITE=:
+#   make prod-feature-on PROD_SITE=intranet.comidasvarpel.com
 # ───────────────────────────────────────────────────────────────────────────────
 
 ## Encender el flujo autogestionado de examen médico en DESARROLLO
@@ -185,20 +192,18 @@ dev-feature-status:
 
 ## Encender el flujo autogestionado de examen médico en PRODUCCION
 prod-feature-on:
-	$(COMPOSE_PROD) exec backend bash -c \
-		"cd /home/frappe/frappe-bench && bench --site $(SITE) set-config -p hubgh_agendamiento_autogestionado_enabled 1 && bench --site $(SITE) clear-cache"
-	@echo "  OK autogestionado ENCENDIDO en $(SITE)"
+	$(COMPOSE_PROD) exec $(PROD_ENV) backend bash -c \
+		'cd /home/frappe/frappe-bench && SITE=$${PROD_SITE:-$$(cat sites/currentsite.txt)} && bench --site $$SITE set-config -p hubgh_agendamiento_autogestionado_enabled 1 && bench --site $$SITE clear-cache && echo "  OK autogestionado ENCENDIDO en $$SITE"'
 
 ## Apagar el flujo autogestionado de examen médico en PRODUCCION
 prod-feature-off:
-	$(COMPOSE_PROD) exec backend bash -c \
-		"cd /home/frappe/frappe-bench && bench --site $(SITE) set-config -p hubgh_agendamiento_autogestionado_enabled 0 && bench --site $(SITE) clear-cache"
-	@echo "  OK autogestionado APAGADO en $(SITE)"
+	$(COMPOSE_PROD) exec $(PROD_ENV) backend bash -c \
+		'cd /home/frappe/frappe-bench && SITE=$${PROD_SITE:-$$(cat sites/currentsite.txt)} && bench --site $$SITE set-config -p hubgh_agendamiento_autogestionado_enabled 0 && bench --site $$SITE clear-cache && echo "  OK autogestionado APAGADO en $$SITE"'
 
 ## Mostrar el estado del flag en PRODUCCION (1=ON, 0/null=OFF)
 prod-feature-status:
-	@$(COMPOSE_PROD) exec backend bash -c \
-		"cat /home/frappe/frappe-bench/sites/$(SITE)/site_config.json | grep -E 'hubgh_agendamiento_autogestionado_enabled|host_name' || echo '  (flag ausente — equivale a OFF)'"
+	@$(COMPOSE_PROD) exec $(PROD_ENV) backend bash -c \
+		'SITE=$${PROD_SITE:-$$(cat /home/frappe/frappe-bench/sites/currentsite.txt)} && cat /home/frappe/frappe-bench/sites/$$SITE/site_config.json | grep -E "hubgh_agendamiento_autogestionado_enabled|host_name" || echo "  (flag ausente — equivale a OFF)"'
 
 ## Instalar navegador Firefox para Playwright E2E
 e2e-install:
