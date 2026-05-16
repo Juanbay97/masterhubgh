@@ -22,8 +22,8 @@ COMPOSE_PROD = $(DOCKER_COMPOSE) -f docker/docker-compose.prod.yml --env-file .e
 .PHONY: \
 	up down restart logs shell init-site migrate build ps destroy \
 	e2e-install e2e-candidato \
-	dev-up dev-down dev-restart dev-logs dev-shell dev-init-site dev-migrate dev-build dev-ps dev-destroy \
-	prod-up prod-down prod-restart prod-logs prod-shell prod-migrate prod-ps \
+	dev-up dev-down dev-restart dev-logs dev-shell dev-init-site dev-migrate dev-build dev-ps dev-destroy dev-refresh \
+	prod-up prod-down prod-restart prod-logs prod-shell prod-migrate prod-ps prod-refresh \
 	up-deploy down-deploy restart-deploy logs-deploy shell-deploy migrate-deploy ps-deploy \
 	migrate-help migrate-check-origen migrate-check-destino \
 	migrate-backup migrate-backup-cutover migrate-transfer migrate-restore migrate-test \
@@ -102,6 +102,30 @@ dev-migrate:
 dev-destroy:
 	$(COMPOSE_DEV) down -v
 
+## Refresco completo post-`git pull` en DESARROLLO.
+## Hace: migrate + sync de roles/permisos + build assets + clear cache + restart.
+## Útil cuando tras pulear cambios del repo no se ven los nuevos botones/JS en el browser.
+## NO destructivo: idempotente, no toca datos.
+## El sync de permisos es best-effort: si hay duplicados preexistentes en otros
+## DocTypes no bloquea el resto del flow (los permisos del feature corrección
+## se aplican primero, antes de que el script preexistente peté).
+dev-refresh:
+	$(COMPOSE_DEV) exec backend bash -c '\
+		set -e; \
+		cd /home/frappe/frappe-bench; \
+		echo "==> migrate"; \
+		bench --site $(SITE) migrate; \
+		echo "==> sync roles/permisos (best-effort)"; \
+		bench --site $(SITE) execute hubgh.setup_gh_permissions.setup_permissions || echo "  (warning: setup_permissions parcial, no bloquea — usualmente por duplicados preexistentes en otros DocTypes)"; \
+		echo "==> build assets"; \
+		bench build --app hubgh; \
+		echo "==> clear cache"; \
+		bench --site $(SITE) clear-cache; \
+		bench --site $(SITE) clear-website-cache; \
+		echo "OK refresh completo en $(SITE) — recargá el browser con Ctrl+Shift+R o usá modo incógnito"'
+	$(COMPOSE_DEV) restart backend
+	@echo "  OK backend reiniciado"
+
 ## Levantar stack de PRODUCCION (Gunicorn + workers + Caddy)
 prod-up:
 	$(COMPOSE_PROD) up -d
@@ -144,6 +168,32 @@ prod-migrate:
 
 ## Alias legacy: stack publico
 migrate-deploy: prod-migrate
+
+## Refresco completo post-`git pull` en PRODUCCION.
+## Hace: migrate + sync de roles/permisos + build assets + clear cache + restart.
+## Útil cuando tras pulear cambios del repo no se ven los nuevos botones/JS en el browser.
+## NO destructivo: idempotente, no toca datos.
+## El sync de permisos es best-effort: si hay duplicados preexistentes en otros
+## DocTypes no bloquea el resto del flow (los permisos del feature corrección
+## se aplican primero, antes de que el script preexistente peté).
+prod-refresh:
+	$(COMPOSE_PROD) exec $(PROD_ENV) backend bash -c '\
+		set -e; \
+		cd /home/frappe/frappe-bench; \
+		SITE=$${PROD_SITE:-$$(cat sites/currentsite.txt)}; \
+		echo "==> sitio detectado: $$SITE"; \
+		echo "==> migrate"; \
+		bench --site "$$SITE" migrate; \
+		echo "==> sync roles/permisos (best-effort)"; \
+		bench --site "$$SITE" execute hubgh.setup_gh_permissions.setup_permissions || echo "  (warning: setup_permissions parcial, no bloquea — usualmente por duplicados preexistentes en otros DocTypes)"; \
+		echo "==> build assets"; \
+		bench build --app hubgh; \
+		echo "==> clear cache"; \
+		bench --site "$$SITE" clear-cache; \
+		bench --site "$$SITE" clear-website-cache; \
+		echo "OK refresh completo en $$SITE — recargá el browser con Ctrl+Shift+R o usá modo incógnito"'
+	$(COMPOSE_PROD) restart backend caddy
+	@echo "  OK backend + caddy reiniciados"
 
 ## Estado de contenedores de PRODUCCION
 prod-ps:
