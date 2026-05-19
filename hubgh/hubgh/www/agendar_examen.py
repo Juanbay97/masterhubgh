@@ -268,6 +268,7 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 			"fecha_cita": fecha,
 			"hora_cita": hora,
 			"sede_seleccionada": sede_elegida or None,
+			"fecha_agendamiento": frappe.utils.now_datetime(),
 		},
 	)
 

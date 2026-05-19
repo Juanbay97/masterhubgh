@@ -275,6 +275,7 @@ scheduler_events = {
 	"cron": {
 		"0 17 * * *": [
 			"hubgh.hubgh.examen_medico.tasks.enviar_recordatorios_examen_medico",
+			"hubgh.hubgh.examen_medico.digest.enviar_digest_diario_examenes",
 		],
 	},
 }

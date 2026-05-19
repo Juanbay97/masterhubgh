@@ -364,6 +364,8 @@ def create_cita_manual(
 	cita.candidato = candidato_name
 	cita.ips = ips_name
 	cita.estado = "Agendada" if tiene_agendamiento else "Pendiente Agendamiento"
+	if tiene_agendamiento:
+		cita.fecha_agendamiento = frappe.utils.now_datetime()
 	cita.cargo_al_enviar = cargo or ""
 	if fecha_cita:
 		cita.fecha_cita = fecha_cita

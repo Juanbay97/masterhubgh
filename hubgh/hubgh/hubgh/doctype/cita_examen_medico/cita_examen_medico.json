@@ -26,6 +26,7 @@
   "instrucciones_reagendamiento",
   "observaciones_sst",
   "section_seguimiento",
+  "fecha_agendamiento",
   "enviado_confirmacion",
   "enviado_recordatorio",
   "enviado_ips",
@@ -154,6 +155,13 @@
    "fieldname": "section_seguimiento",
    "fieldtype": "Section Break",
    "label": "Seguimiento"
+  },
+  {
+   "fieldname": "fecha_agendamiento",
+   "fieldtype": "Datetime",
+   "label": "Fecha de Agendamiento",
+   "read_only": 1,
+   "description": "Timestamp en que el candidato confirmó fecha y hora. Usado por el digest diario."
   },
   {
    "fieldname": "enviado_confirmacion",
