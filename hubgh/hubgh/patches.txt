@@ -9,6 +9,7 @@ hubgh.patches.update_system_settings_email_validation
 hubgh.patches.document_model_refactor
 hubgh.patches.document_phase4_unification
 hubgh.patches.phase8_role_normalization
+hubgh.patches.phase9_workspace_role_unification
 hubgh.patches.candidate_upload_document_types
 hubgh.patches.affiliation_document_types
 hubgh.patches.backfill_contratacion_legacy_data

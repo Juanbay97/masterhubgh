@@ -22,25 +22,13 @@
  "quick_lists": [],
  "roles": [
   {
+   "role": "Coordinador Zona"
+  },
+  {
+   "role": "Gerente GH"
+  },
+  {
    "role": "Jefe_PDV"
-  },
-  {
-   "role": "Jefe de tienda"
-  },
-  {
-   "role": "Gesti\u00f3n Humana"
-  },
-  {
-   "role": "GH_Central"
-  },
-  {
-   "role": "GH - Bandeja General"
-  },
-  {
-   "role": "GH - SST"
-  },
-  {
-   "role": "GH - RRLL"
   },
   {
    "role": "System Manager"

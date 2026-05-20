@@ -21,13 +21,22 @@
  "quick_lists": [],
  "roles": [
   {
-   "role": "HR Labor Relations"
+   "role": "GH - RRLL"
   },
   {
-   "role": "Relaciones Laborales"
+   "role": "Gerente GH"
   },
   {
    "role": "Gestión Humana"
+  },
+  {
+   "role": "HR Labor Relations"
+  },
+  {
+   "role": "Relaciones Laborales Jefe"
+  },
+  {
+   "role": "System Manager"
   }
  ],
  "sequence_id": 12.0,

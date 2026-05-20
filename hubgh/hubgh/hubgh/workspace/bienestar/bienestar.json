@@ -13,16 +13,16 @@
  "public": 1,
  "roles": [
   {
-   "role": "HR Training & Wellbeing"
+   "role": "Gerente GH"
   },
   {
    "role": "Gestión Humana"
   },
   {
-   "role": "System Manager"
+   "role": "HR Training & Wellbeing"
   },
   {
-   "role": "GH Gerente"
+   "role": "System Manager"
   }
  ],
  "sequence_id": 16,

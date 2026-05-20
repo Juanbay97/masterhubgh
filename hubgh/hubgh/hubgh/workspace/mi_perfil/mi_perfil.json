@@ -22,19 +22,25 @@
  "quick_lists": [],
  "roles": [
   {
+   "role": "Coordinador Zona"
+  },
+  {
    "role": "Empleado"
+  },
+  {
+   "role": "Employee"
+  },
+  {
+   "role": "Gestión Humana"
   },
   {
    "role": "Jefe_PDV"
   },
   {
-   "role": "Jefe de tienda"
-  },
-  {
    "role": "LMS Student"
   },
   {
-   "role": "Employee"
+   "role": "System Manager"
   }
  ],
  "sequence_id": 1.0,

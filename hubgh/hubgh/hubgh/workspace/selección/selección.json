@@ -22,7 +22,19 @@
  "quick_lists": [],
  "roles": [
   {
-   "role": "Selecci\u00f3n"
+   "role": "GH - Bandeja General"
+  },
+  {
+   "role": "Gerente GH"
+  },
+  {
+   "role": "Gesti\u00f3n Humana"
+  },
+  {
+   "role": "HR Selection"
+  },
+  {
+   "role": "System Manager"
   }
  ],
  "sequence_id": 11.0,
