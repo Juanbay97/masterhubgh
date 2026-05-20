@@ -143,13 +143,20 @@ PRV_FILE="$(ls "$STAGING_DIR"/${BACKUP_TS}*-private-files.t* | xargs -n1 basenam
 log "  DB  : $DB_FILE"
 log "  PUB : $PUB_FILE"
 log "  PRV : $PRV_FILE"
-dc exec -T backend bash -c "
+dc exec -T \
+    -e MARIADB_ROOT_PASSWORD="$MARIADB_ROOT_PASSWORD" \
+    -e SITE_NAME="$SITE_NAME" \
+    -e DB_FILE="$DB_FILE" \
+    -e PUB_FILE="$PUB_FILE" \
+    -e PRV_FILE="$PRV_FILE" \
+    backend bash -c '
     cd /home/frappe/frappe-bench &&
-    bench --site $SITE_NAME --force restore \
-        sites/$SITE_NAME/private/backups/$DB_FILE \
-        --with-public-files sites/$SITE_NAME/private/backups/$PUB_FILE \
-        --with-private-files sites/$SITE_NAME/private/backups/$PRV_FILE
-"
+    bench --site "$SITE_NAME" --force restore \
+        --mariadb-root-password "$MARIADB_ROOT_PASSWORD" \
+        "sites/$SITE_NAME/private/backups/$DB_FILE" \
+        --with-public-files "sites/$SITE_NAME/private/backups/$PUB_FILE" \
+        --with-private-files "sites/$SITE_NAME/private/backups/$PRV_FILE"
+'
 
 # ───────────────────────────────────────────────────────────────────────────────
 # Migrate + clear cache + bajar maintenance mode
