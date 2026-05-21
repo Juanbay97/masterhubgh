@@ -15,7 +15,9 @@
   "fecha_aplicacion",
   "sb_pdv",
   "pdv_origen",
+  "pdv_origen_nombre",
   "pdv_destino",
+  "pdv_destino_nombre",
   "cargo_destino",
   "sb_motivo",
   "motivo",
@@ -94,18 +96,32 @@
   {
    "fieldname": "pdv_origen",
    "fieldtype": "Link",
+   "label": "PDV origen (código)",
+   "options": "Punto de Venta",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "pdv_origen.nombre_pdv",
+   "fieldname": "pdv_origen_nombre",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "PDV origen",
-   "options": "Punto de Venta",
    "read_only": 1
   },
   {
    "fieldname": "pdv_destino",
    "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "PDV destino",
+   "label": "PDV destino (código)",
    "options": "Punto de Venta",
    "reqd": 1
+  },
+  {
+   "fetch_from": "pdv_destino.nombre_pdv",
+   "fieldname": "pdv_destino_nombre",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "PDV destino",
+   "read_only": 1
   },
   {
    "depends_on": "eval:doc.motivo && cur_frm && cur_frm.doc.__motivo_requiere_cargo",
