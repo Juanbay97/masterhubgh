@@ -1,0 +1,47 @@
+[
+ {
+  "doctype": "Motivo Traslado",
+  "name": "necesidad_operativa",
+  "codigo": "necesidad_operativa",
+  "label": "Necesidad operativa",
+  "requiere_cambio_cargo": 0,
+  "activo": 1,
+  "descripcion": "El traslado responde a una necesidad operativa del negocio."
+ },
+ {
+  "doctype": "Motivo Traslado",
+  "name": "solicitud_empleado",
+  "codigo": "solicitud_empleado",
+  "label": "Solicitud del empleado",
+  "requiere_cambio_cargo": 0,
+  "activo": 1,
+  "descripcion": "El empleado solicitó el traslado voluntariamente."
+ },
+ {
+  "doctype": "Motivo Traslado",
+  "name": "cierre_pdv",
+  "codigo": "cierre_pdv",
+  "label": "Cierre de PDV",
+  "requiere_cambio_cargo": 0,
+  "activo": 1,
+  "descripcion": "El PDV de origen está siendo cerrado o restructurado."
+ },
+ {
+  "doctype": "Motivo Traslado",
+  "name": "reorganizacion",
+  "codigo": "reorganizacion",
+  "label": "Reorganización / promoción",
+  "requiere_cambio_cargo": 1,
+  "activo": 1,
+  "descripcion": "Reorganización estructural o promoción del empleado. Requiere especificar el cargo destino."
+ },
+ {
+  "doctype": "Motivo Traslado",
+  "name": "otro",
+  "codigo": "otro",
+  "label": "Otro",
+  "requiere_cambio_cargo": 0,
+  "activo": 1,
+  "descripcion": "Motivo no categorizado. Incluir detalle en la justificación."
+ }
+]

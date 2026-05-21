@@ -16,6 +16,8 @@ La notificación a SST/generalistas ahora se hace vía digest diario
 
 from __future__ import annotations
 
+from hubgh.hubgh.services.email_dispatcher import dispatch_email
+
 
 def send_exam_email(
 	template_name: str,
@@ -36,27 +38,17 @@ def send_exam_email(
 
 	Note:
 		Loguea en fallo mediante frappe.log_error; no relanza excepciones.
+		Wrapper de compatibilidad que delega a dispatch_email.
+		El contrato externo (firma + side effect void) es idéntico al original.
 	"""
-	import frappe
-	from frappe.utils.jinja import render_template
-
-	try:
-		template_doc = frappe.get_doc("Email Template", template_name)
-		subject = render_template(template_doc.subject or "", context)
-		message = render_template(template_doc.response or template_doc.message or "", context)
-
-		frappe.sendmail(
-			recipients=recipients,
-			cc=cc or [],
-			subject=subject,
-			message=message,
-			attachments=attachments or [],
-		)
-	except Exception as exc:
-		frappe.log_error(
-			message=str(exc),
-			title=f"send_exam_email error: {template_name}",
-		)
+	dispatch_email(
+		template_name=template_name,
+		recipients=recipients,
+		context=context,
+		attachments=attachments,
+		cc=cc,
+	)
+	# Retorna None explícitamente para mantener contrato void
 
 
 def get_ips_email(ips: dict, candidato_ciudad: str) -> str:

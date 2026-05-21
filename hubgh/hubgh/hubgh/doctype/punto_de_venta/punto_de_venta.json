@@ -13,7 +13,8 @@
   "departamento",
   "zona",
   "planta_autorizada",
-  "activo"
+  "activo",
+  "jefe_responsable"
  ],
  "fields": [
   {
@@ -59,12 +60,19 @@
    "fieldname": "activo",
    "fieldtype": "Check",
    "label": "Activo"
+  },
+  {
+   "description": "Usuario con rol Jefe_PDV responsable de este PDV. Usado para fan-out de notificaciones de traslado y eventos operativos.",
+   "fieldname": "jefe_responsable",
+   "fieldtype": "Link",
+   "label": "Jefe responsable (User)",
+   "options": "User"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-19 16:15:31.714935",
+ "modified": "2026-05-20 22:00:00.000000",
  "modified_by": "Administrator",
  "module": "Hubgh",
  "name": "Punto de Venta",

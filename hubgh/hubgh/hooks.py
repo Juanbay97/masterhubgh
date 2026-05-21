@@ -18,7 +18,12 @@ fixtures = [
 		"examen_medico_ips_notificacion",
 		"examen_medico_aplazado",
 		"examen_medico_recordatorio",
+		"traslado_pdv_empleado_programado",
+		"traslado_pdv_jefe_origen_programado",
+		"traslado_pdv_jefe_destino_programado",
+		"traslado_pdv_aplicado_confirmacion",
 	]]]},
+	{"dt": "Motivo Traslado"},
 ]
 
 # Apps
