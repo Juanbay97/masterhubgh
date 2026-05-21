@@ -35,3 +35,4 @@ hubgh.patches.rename_legacy_siesa_catalogs_to_nits
 hubgh.patches.load_initial_motivo_traslado_fixture
 hubgh.patches.create_traslado_email_templates
 hubgh.patches.setup_traslado_pdv_permissions
+hubgh.patches.cleanup_retiro_legacy_v1

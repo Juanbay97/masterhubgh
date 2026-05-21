@@ -32,7 +32,10 @@
    "eps_siesa",
    "afp_siesa",
    "cesantias_siesa",
-   "ccf_siesa"
+   "ccf_siesa",
+   "trazabilidad_section",
+   "last_retirement_attempt_at",
+   "last_retirement_attempt_source"
   ],
  "fields": [
   {
@@ -188,12 +191,31 @@
    "fieldtype": "Link",
    "label": "Caja Compensación",
    "options": "Entidad CCF Siesa"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "trazabilidad_section",
+   "fieldtype": "Section Break",
+   "label": "Auditoría"
+  },
+  {
+   "fieldname": "last_retirement_attempt_at",
+   "fieldtype": "Datetime",
+   "label": "Último intento de retiro (GAP C3)",
+   "read_only": 1
+  },
+  {
+   "description": "Formato: <DocType>:<name>",
+   "fieldname": "last_retirement_attempt_source",
+   "fieldtype": "Data",
+   "label": "Fuente del intento",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-19 16:15:30.331139",
+ "modified": "2026-05-21 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Hubgh",
  "name": "Ficha Empleado",
