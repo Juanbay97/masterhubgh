@@ -152,7 +152,6 @@ def _build_contextual_actions(user, employee_id, is_gh, is_jefe, is_emp, can_vie
     can_create_disciplinary = bool(can_manage_disciplinary and can_view_sensitive)
     can_create_wellbeing = bool(is_gh or is_jefe)
     can_view_documents = bool(is_gh or is_jefe or is_emp)
-    can_manage_retirement = bool(user_has_any_role(user, "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe"))
 
     return {
         "can_create_novedad": can_create_novedad,
@@ -191,13 +190,6 @@ def _build_contextual_actions(user, employee_id, is_gh, is_jefe, is_emp, can_vie
                 "doctype": "Bienestar Alerta",
                 "route": "/app/bienestar-alerta/new",
                 "prefill": {"ficha_empleado": employee_id},
-            },
-            {
-                "key": "manage_retirement",
-                "label": "Gestionar Retiro",
-                "visible": can_manage_retirement,
-                "route": "/app/bandeja-retiros-empleados",
-                "prefill": {"employee": employee_id},
             },
             {
                 "key": "view_documents",

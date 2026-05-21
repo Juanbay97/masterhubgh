@@ -6,7 +6,6 @@ from hubgh.hubgh.bienestar_automation import (
 	mark_bienestar_followups_overdue,
 )
 from hubgh.hubgh.disciplinary_case_service import process_closed_disciplinary_cases
-from hubgh.hubgh.employee_retirement_service import process_pending_employee_retirements
 
 
 def revertir_novedades_expiradas():
@@ -82,10 +81,6 @@ def bienestar_generar_seguimientos_ingreso_diarios():
 def bienestar_marcar_vencidos_diario():
     """Workstream 2: mark overdue follow-ups without touching closed/cancelled ones."""
     return mark_bienestar_followups_overdue()
-
-
-def procesar_retiros_empleados_programados():
-	return process_pending_employee_retirements()
 
 
 def procesar_casos_disciplinarios_rrll():

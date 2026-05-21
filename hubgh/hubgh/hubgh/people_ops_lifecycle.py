@@ -3,15 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 import frappe
-from frappe.utils import cstr, getdate, nowdate
+from frappe.utils import getdate, nowdate
 
 from hubgh.access_profiles import ensure_roles_and_profiles
 from hubgh.person_identity import reconcile_person_identity, resolve_user_for_employee
 from hubgh.user_groups import ensure_contextual_groups, sync_all_user_groups
 from hubgh.hubgh.bienestar_automation import ensure_ingreso_followups_for_employee
-
-
-RRLL_RETIREMENT_ROLES = {"System Manager", "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe", "Gerente GH"}
 
 
 def finalize_hiring(contract_doc) -> dict[str, Any]:
@@ -89,79 +86,6 @@ def finalize_hiring(contract_doc) -> dict[str, Any]:
 	}
 
 
-def apply_retirement(*, employee, source_doctype, source_name, retirement_date=None, reason=None, contract_status="Retirado") -> dict[str, Any]:
-	if not employee:
-		return {}
-
-	retirement_date = str(retirement_date or nowdate())
-	frappe.db.set_value("Ficha Empleado", employee, "estado", "Retirado", update_modified=False)
-	_sync_ficha_retirement_metadata(
-		employee=employee,
-		retirement_date=retirement_date,
-		reason=reason,
-		source_doctype=source_doctype,
-		source_name=source_name,
-		flow_status="Ejecutado",
-	)
-	identity = resolve_user_for_employee(employee)
-	user_name = identity.user if identity else None
-	if user_name:
-		frappe.db.set_value("User", user_name, {"enabled": 0, "user_type": "System User", "employee": employee}, update_modified=False)
-
-	_deactivate_tarjeta_empleado_if_exists(employee)
-	_sync_contract_retirement(employee, contract_status=contract_status)
-	payroll_case = _ensure_payroll_liquidation_case(employee, retirement_date)
-	_emit_trace_event(
-		employee=employee,
-		source_doctype=source_doctype,
-		source_name=source_name,
-		retirement_date=retirement_date,
-		reason=reason,
-		action="retiro",
-	)
-
-	return {
-		"employee": employee,
-		"source_doctype": source_doctype,
-		"source_name": source_name,
-		"retirement_date": retirement_date,
-		"contract_status": contract_status,
-		"user_enabled": 0 if user_name else None,
-		"card_active": 0,
-		"payroll_case": payroll_case,
-	}
-
-
-def reverse_retirement_if_clear(*, employee, source_doctype, source_name) -> dict[str, Any]:
-	if not employee:
-		return {"reversed": False, "reason": "missing_employee"}
-	if _has_other_active_retirement_sources(employee, source_doctype=source_doctype, source_name=source_name):
-		return {"reversed": False, "reason": "other_sources_active"}
-
-	frappe.db.set_value("Ficha Empleado", employee, "estado", "Activo", update_modified=False)
-	_sync_ficha_retirement_metadata(
-		employee=employee,
-		retirement_date=nowdate(),
-		source_doctype=source_doctype,
-		source_name=source_name,
-		flow_status="Revertido",
-	)
-	identity = resolve_user_for_employee(employee)
-	user_name = identity.user if identity else None
-	if user_name:
-		frappe.db.set_value("User", user_name, {"enabled": 1, "user_type": "System User", "employee": employee}, update_modified=False)
-	_reactivate_tarjeta_empleado_if_exists(employee)
-	_sync_contract_retirement(employee, contract_status="Activo")
-	_emit_trace_event(
-		employee=employee,
-		source_doctype=source_doctype,
-		source_name=source_name,
-		retirement_date=nowdate(),
-		action="reintegro",
-	)
-	return {"reversed": True, "employee": employee, "user": user_name}
-
-
 def _promote_user_to_employee(user_name, employee, contract_doc) -> None:
 	user_doc = frappe.get_doc("User", user_name)
 	user_doc.user_type = "System User"
@@ -205,117 +129,3 @@ def _sync_contract_retirement(employee, contract_status):
 		frappe.db.set_value("Contrato", row.name, "estado_contrato", contract_status, update_modified=False)
 
 
-def _ensure_payroll_liquidation_case(employee, retirement_date):
-	if not frappe.db.exists("DocType", "Payroll Liquidation Case"):
-		return None
-	from hubgh.hubgh.doctype.payroll_liquidation_case.payroll_liquidation_case import create_liquidation_case
-
-	case_doc = create_liquidation_case(employee, retirement_date=retirement_date)
-	return getattr(case_doc, "name", None)
-
-
-def _deactivate_tarjeta_empleado_if_exists(employee):
-	if not frappe.db.exists("DocType", "Tarjeta Empleado"):
-		return
-	meta = frappe.get_meta("Tarjeta Empleado")
-	fields = {field.fieldname for field in meta.fields}
-	updates = {}
-	if "activo" in fields:
-		updates["activo"] = 0
-	if "estado" in fields:
-		updates["estado"] = "Inactivo"
-	if updates:
-		frappe.db.set_value("Tarjeta Empleado", {"empleado": employee}, updates, update_modified=False)
-
-
-def _reactivate_tarjeta_empleado_if_exists(employee):
-	if not frappe.db.exists("DocType", "Tarjeta Empleado"):
-		return
-	meta = frappe.get_meta("Tarjeta Empleado")
-	fields = {field.fieldname for field in meta.fields}
-	updates = {}
-	if "activo" in fields:
-		updates["activo"] = 1
-	if "estado" in fields:
-		updates["estado"] = "Activa"
-	if updates:
-		frappe.db.set_value("Tarjeta Empleado", {"empleado": employee}, updates, update_modified=False)
-
-
-def _has_other_active_retirement_sources(employee, *, source_doctype, source_name):
-	for row in frappe.get_all(
-		"Novedad SST",
-		filters={"empleado": employee, "estado_destino": "Retirado", "estado": ["in", ["Cerrada", "Cerrado"]]},
-		fields=["name"],
-		limit_page_length=0,
-	):
-		if source_doctype == "Novedad SST" and row.name == source_name:
-			continue
-		return True
-	for row in frappe.get_all(
-		"Caso Disciplinario",
-		filters={"empleado": employee, "estado": "Cerrado", "decision_final": "Terminación"},
-		fields=["name"],
-		limit_page_length=0,
-	):
-		if source_doctype == "Caso Disciplinario" and row.name == source_name:
-			continue
-		return True
-	return False
-
-
-def _emit_trace_event(*, employee, source_doctype, source_name, retirement_date, action, reason=None):
-	if not frappe.db.exists("DocType", "GH Novedad"):
-		return
-	description = _build_trace_description(action, source_doctype, source_name, reason=reason)
-	if frappe.db.exists(
-		"GH Novedad",
-		{"persona": employee, "tipo": "Otro", "descripcion": ["like", f"%{source_doctype} {source_name}%"]},
-	):
-		return
-	frappe.get_doc(
-		{
-			"doctype": "GH Novedad",
-			"persona": employee,
-			"tipo": "Otro",
-			"cola_origen": "GH-RRLL",
-			"cola_destino": "GH-RRLL",
-			"estado": "Cerrada",
-			"fecha_inicio": retirement_date,
-			"fecha_fin": retirement_date,
-			"descripcion": description,
-		}
-	).insert(ignore_permissions=True)
-
-
-def _build_trace_description(action, source_doctype, source_name, reason=None):
-	action_label = "Retiro controlado" if action == "retiro" else "Reintegro compensado"
-	base = f"{action_label} desde {source_doctype} {source_name}"
-	if cstr(reason).strip():
-		return f"{base}. {cstr(reason).strip()}"
-	return base
-
-
-def _sync_ficha_retirement_metadata(*, employee, retirement_date, source_doctype, source_name, flow_status, reason=None):
-	try:
-		meta = frappe.get_meta("Ficha Empleado")
-	except Exception:
-		return
-	fields = {field.fieldname for field in getattr(meta, "fields", [])}
-	updates = {}
-	if "fecha_retiro_efectiva" in fields:
-		updates["fecha_retiro_efectiva"] = retirement_date
-	if "fecha_ultimo_dia_laborado" in fields:
-		updates["fecha_ultimo_dia_laborado"] = retirement_date
-	if "estado_retiro_operacion" in fields:
-		updates["estado_retiro_operacion"] = flow_status
-	if "motivo_retiro" in fields and cstr(reason).strip():
-		updates["motivo_retiro"] = cstr(reason).strip().split(".")[0].strip()
-	if "detalle_retiro" in fields and cstr(reason).strip():
-		updates["detalle_retiro"] = cstr(reason).strip()
-	if "retiro_fuente_doctype" in fields:
-		updates["retiro_fuente_doctype"] = source_doctype
-	if "retiro_fuente_name" in fields:
-		updates["retiro_fuente_name"] = source_name
-	if updates:
-		frappe.db.set_value("Ficha Empleado", employee, updates, update_modified=False)

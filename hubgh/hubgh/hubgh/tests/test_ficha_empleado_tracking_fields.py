@@ -72,30 +72,31 @@ class TestFichaEmpleadoTrackingFields(FrappeTestCase):
         self.assertEqual(field.read_only, 1)
 
     # -------------------------------------------------------------------------
-    # T-1.4-c: Legacy fields STILL exist (Phase 3 removes them — not now)
+    # T-1.4-c: Legacy fields REMOVED in Phase 3 (updated from Batch A guards)
+    # Phase 1 guards said "STILL exist — Phase 3 removes them". Phase 3 is done.
     # -------------------------------------------------------------------------
-    def test_legacy_estado_retiro_operacion_sigue_existiendo(self):
+    def test_legacy_estado_retiro_operacion_removido_en_fase3(self):
         """
-        Phase 1 es ADITIVA. estado_retiro_operacion NO debe ser removido todavía.
+        Phase 3 completada. estado_retiro_operacion debe estar AUSENTE del schema.
         """
         field = frappe.get_meta("Ficha Empleado").get_field("estado_retiro_operacion")
-        self.assertIsNotNone(
+        self.assertIsNone(
             field,
-            "estado_retiro_operacion debe seguir existiendo en Fase 1 (se borra en Fase 3)",
+            "estado_retiro_operacion fue removido en Fase 3 — no debe existir en el schema",
         )
 
-    def test_legacy_motivo_retiro_sigue_existiendo(self):
-        """Phase 1 es ADITIVA. motivo_retiro NO debe ser removido todavía."""
+    def test_legacy_motivo_retiro_removido_en_fase3(self):
+        """Phase 3 completada. motivo_retiro debe estar AUSENTE del schema."""
         field = frappe.get_meta("Ficha Empleado").get_field("motivo_retiro")
-        self.assertIsNotNone(
+        self.assertIsNone(
             field,
-            "motivo_retiro debe seguir existiendo en Fase 1 (se borra en Fase 3)",
+            "motivo_retiro fue removido en Fase 3 — no debe existir en el schema",
         )
 
-    def test_legacy_fecha_ultimo_dia_laborado_sigue_existiendo(self):
-        """Phase 1 es ADITIVA. fecha_ultimo_dia_laborado NO debe ser removido todavía."""
+    def test_legacy_fecha_ultimo_dia_laborado_removido_en_fase3(self):
+        """Phase 3 completada. fecha_ultimo_dia_laborado debe estar AUSENTE del schema."""
         field = frappe.get_meta("Ficha Empleado").get_field("fecha_ultimo_dia_laborado")
-        self.assertIsNotNone(
+        self.assertIsNone(
             field,
-            "fecha_ultimo_dia_laborado debe seguir existiendo en Fase 1",
+            "fecha_ultimo_dia_laborado fue removido en Fase 3 — no debe existir en el schema",
         )
