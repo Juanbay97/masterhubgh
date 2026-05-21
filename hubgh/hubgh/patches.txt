@@ -32,3 +32,4 @@ hubgh.patches.remove_candidato_portal_webform
 hubgh.patches.dedupe_banco_siesa
 hubgh.patches.cleanup_ccf_eps_legacy_v2
 hubgh.patches.rename_legacy_siesa_catalogs_to_nits
+hubgh.patches.load_initial_motivo_traslado_fixture

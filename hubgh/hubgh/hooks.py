@@ -235,6 +235,10 @@ doc_events = {
 		"after_insert": "hubgh.lifecycle.on_ficha_empleado_insert",
 		"on_update": "hubgh.lifecycle.on_ficha_empleado_update",
 	},
+	"Traslado PDV": {
+		"before_insert": "hubgh.hubgh.services.traslado_service.before_insert_traslado",
+		"on_update": "hubgh.hubgh.services.traslado_service.on_update_traslado",
+	},
 	"GH Novedad": {
 		"after_insert": "hubgh.hubgh.people_ops_event_publishers.publish_from_gh_novedad",
 		"on_update": "hubgh.hubgh.people_ops_event_publishers.publish_from_gh_novedad",
@@ -276,6 +280,7 @@ scheduler_events = {
 		"hubgh.tasks.bienestar_marcar_vencidos_diario",
 		"hubgh.hubgh.people_ops_event_publishers.reconcile_people_ops_events_warn",
 		"hubgh.user_groups.sync_all_user_groups",
+		"hubgh.tasks.procesar_traslados_pdv_programados",
 	],
 	"cron": {
 		"0 17 * * *": [

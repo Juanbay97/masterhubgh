@@ -90,3 +90,8 @@ def procesar_retiros_empleados_programados():
 
 def procesar_casos_disciplinarios_rrll():
 	return process_closed_disciplinary_cases()
+
+
+def procesar_traslados_pdv_programados():
+	from hubgh.hubgh.services.traslado_service import process_scheduled_traslados
+	return process_scheduled_traslados()

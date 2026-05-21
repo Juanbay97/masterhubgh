@@ -9,6 +9,7 @@
   "naming_series",
   "empleado",
   "empleado_nombre",
+  "solicitado_por",
   "sb_estado",
   "estado",
   "fecha_aplicacion",
@@ -52,6 +53,13 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Nombre",
+   "read_only": 1
+  },
+  {
+   "fieldname": "solicitado_por",
+   "fieldtype": "Link",
+   "label": "Solicitado por",
+   "options": "User",
    "read_only": 1
   },
   {
