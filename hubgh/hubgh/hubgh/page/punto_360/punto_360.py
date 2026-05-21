@@ -831,7 +831,61 @@ def get_punto_stats(pdv_id):
         "personas": personas,
         "navigation_context": navigation_context,
 		"actionable_hub": actionable_hub,
+        "traslados_activos": get_traslados_activos(pdv_id),
     }
+
+
+def get_traslados_activos_count(pdv: str) -> int:
+    """
+    Retorna el conteo de traslados con estado='Programado' donde el PDV es
+    origen O destino. Usado por el tile en Punto 360.
+    """
+    if not pdv:
+        return 0
+    result = frappe.db.sql("""
+        SELECT COUNT(*) as cnt
+        FROM `tabTraslado PDV`
+        WHERE estado = 'Programado'
+          AND (pdv_origen = %s OR pdv_destino = %s)
+    """, (pdv, pdv), as_dict=True)
+    return int((result[0].get("cnt") or 0) if result else 0)
+
+
+def get_traslados_activos(pdv: str) -> dict:
+    """
+    Retorna datos de traslados activos (Programados) para el tile de Punto 360.
+
+    Incluye:
+    - total: count de Programados (origen + destino)
+    - salientes: count donde PDV es origen
+    - entrantes: count donde PDV es destino
+    - proximos: hasta 5 traslados ordenados por fecha_aplicacion asc
+    - route: URL de la bandeja filtrada por este PDV
+    """
+    if not pdv:
+        return {"total": 0, "salientes": 0, "entrantes": 0, "proximos": [], "route": "/app/bandeja-traslados-pdv"}
+
+    salientes = frappe.db.count("Traslado PDV", {"pdv_origen": pdv, "estado": "Programado"})
+    entrantes = frappe.db.count("Traslado PDV", {"pdv_destino": pdv, "estado": "Programado"})
+    total = salientes + entrantes
+
+    proximos = frappe.get_all(
+        "Traslado PDV",
+        filters={"estado": "Programado"},
+        or_filters=[{"pdv_origen": pdv}, {"pdv_destino": pdv}],
+        fields=["name", "empleado", "empleado_nombre", "pdv_origen", "pdv_destino", "fecha_aplicacion"],
+        order_by="fecha_aplicacion asc",
+        limit=5,
+    )
+
+    return {
+        "total": total,
+        "salientes": salientes,
+        "entrantes": entrantes,
+        "proximos": proximos,
+        "route": f"/app/bandeja-traslados-pdv?pdv={pdv}",
+    }
+
 
 @frappe.whitelist()
 def get_all_puntos_overview():

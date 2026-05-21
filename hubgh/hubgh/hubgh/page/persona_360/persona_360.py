@@ -712,7 +712,38 @@ def get_persona_stats(
             for row in bienestar_compromisos
         ],
         "payroll_block": payroll_block,
+        "traslados_pdv": get_traslados_history(employee_id),
     }
+
+
+def get_traslados_history(empleado: str) -> list:
+    """
+    Retorna el historial completo de traslados de un empleado, ordenado por
+    fecha_aplicacion descendente.
+
+    Usado en:
+    - Bloque "Traslados de PDV" en la sección Historial Laboral de Persona 360.
+    - Integración en la respuesta principal de get_persona_stats().
+    """
+    if not empleado:
+        return []
+    return frappe.get_all(
+        "Traslado PDV",
+        filters={"empleado": empleado},
+        fields=[
+            "name",
+            "empleado",
+            "pdv_origen",
+            "pdv_destino",
+            "fecha_aplicacion",
+            "estado",
+            "motivo",
+            "aplicado_en",
+            "aplicado_por",
+            "modified",
+        ],
+        order_by="fecha_aplicacion desc",
+    )
 
 
 @frappe.whitelist()

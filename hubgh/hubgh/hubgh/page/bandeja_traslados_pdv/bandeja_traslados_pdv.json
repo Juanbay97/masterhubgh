@@ -1,0 +1,35 @@
+{
+ "content": null,
+ "creation": "2026-05-21 00:00:00",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-05-21 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "bandeja_traslados_pdv",
+ "owner": "Administrator",
+ "page_name": "bandeja_traslados_pdv",
+ "roles": [
+  {
+   "role": "HR Labor Relations"
+  },
+  {
+   "role": "GH - RRLL"
+  },
+  {
+   "role": "Gestión Humana"
+  },
+  {
+   "role": "Gerente GH"
+  },
+  {
+   "role": "Jefe_PDV"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Bandeja Traslados PDV"
+}
