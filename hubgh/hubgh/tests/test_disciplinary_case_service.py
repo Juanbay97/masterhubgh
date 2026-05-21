@@ -7,7 +7,7 @@ from hubgh.hubgh import disciplinary_case_service
 
 
 class TestDisciplinaryCaseService(FrappeTestCase):
-	def test_sync_disciplinary_case_effects_uses_retirement_service_for_termination(self):
+	def test_sync_disciplinary_case_effects_uses_stub_for_termination(self):
 		case_doc = SimpleNamespace(
 			name="DIS-001",
 			empleado="EMP-001",
@@ -18,18 +18,22 @@ class TestDisciplinaryCaseService(FrappeTestCase):
 			resumen_cierre="Incumplimiento grave",
 		)
 
+		stub_return = {"status": "skipped_gap", "reason": "awaiting_c3"}
+
 		with patch(
 			"hubgh.hubgh.disciplinary_case_service._clear_disciplinary_suspension_if_possible",
 			return_value={"status": "noop"},
 		), patch(
-			"hubgh.hubgh.disciplinary_case_service.employee_retirement_service.submit_employee_retirement",
-			return_value={"status": "retired"},
+			"hubgh.hubgh.disciplinary_case_service.apply_retirement_stub",
+			return_value=stub_return,
 		) as retirement_mock:
 			result = disciplinary_case_service.sync_disciplinary_case_effects(case_doc)
 
-		self.assertEqual(result["status"], "retired")
+		self.assertEqual(result["status"], "skipped_gap")
+		self.assertEqual(result["reason"], "awaiting_c3")
 		self.assertEqual(retirement_mock.call_args.kwargs["source_doctype"], "Caso Disciplinario")
 		self.assertEqual(retirement_mock.call_args.kwargs["source_name"], "DIS-001")
+		self.assertEqual(retirement_mock.call_args.kwargs["empleado"], "EMP-001")
 
 	def test_sync_disciplinary_case_effects_applies_active_suspension_state(self):
 		case_doc = SimpleNamespace(
@@ -42,7 +46,7 @@ class TestDisciplinaryCaseService(FrappeTestCase):
 		)
 
 		with patch("hubgh.hubgh.disciplinary_case_service.nowdate", return_value="2026-04-13"), patch(
-			"hubgh.hubgh.disciplinary_case_service.reverse_retirement_if_clear",
+			"hubgh.hubgh.disciplinary_case_service.reverse_retirement_if_clear_stub",
 		), patch(
 			"hubgh.hubgh.disciplinary_case_service.frappe.db.get_value",
 			return_value="Activo",

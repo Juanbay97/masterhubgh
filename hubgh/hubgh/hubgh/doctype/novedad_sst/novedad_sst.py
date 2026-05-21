@@ -7,7 +7,7 @@ from frappe.model.document import Document
 from frappe.utils import add_days, add_months, cstr, getdate, nowdate
 
 from hubgh.hubgh.document_service import move_file_to_employee_subfolder
-from hubgh.hubgh.people_ops_lifecycle import apply_retirement, reverse_retirement_if_clear
+from hubgh.hubgh.services.retiro_legacy_stub import apply_retirement_stub, reverse_retirement_if_clear_stub
 
 
 RADAR_CATEGORIAS = {
@@ -421,15 +421,15 @@ class NovedadSST(Document):
 
 		if estado_target == "Retirado":
 			if is_cerrado:
-				apply_retirement(
-					employee=self.empleado,
+				apply_retirement_stub(
+					empleado=self.empleado,
 					source_doctype="Novedad SST",
 					source_name=self.name,
 					retirement_date=self.fecha_fin or self.fecha_inicio or nowdate(),
 					reason=self.descripcion_resumen or self.descripcion or self.tipo_novedad,
 				)
 			else:
-				reverse_retirement_if_clear(employee=self.empleado, source_doctype="Novedad SST", source_name=self.name)
+				reverse_retirement_if_clear_stub(empleado=self.empleado, source_doctype="Novedad SST", source_name=self.name)
 			return
 
 		if estado_target and not is_cerrado and not is_expired:

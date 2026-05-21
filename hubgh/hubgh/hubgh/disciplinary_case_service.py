@@ -6,9 +6,8 @@ import frappe
 from frappe import _
 from frappe.utils import cstr, getdate, nowdate
 
-from hubgh.hubgh import employee_retirement_service
-from hubgh.hubgh.people_ops_lifecycle import reverse_retirement_if_clear
 from hubgh.hubgh.role_matrix import user_has_any_role
+from hubgh.hubgh.services.retiro_legacy_stub import apply_retirement_stub, reverse_retirement_if_clear_stub
 
 
 DISCIPLINARY_OPERATOR_ROLES = {"System Manager", "HR Labor Relations", "GH - RRLL", "Relaciones Laborales Jefe", "Gerente GH"}
@@ -194,23 +193,20 @@ def sync_disciplinary_case_effects(case_doc) -> dict[str, Any]:
 	decision = _normalize_outcome(getattr(case_doc, "decision_final", None))
 	status = cstr(getattr(case_doc, "estado", None)).strip()
 	if status != "Cerrado":
-		reverse_retirement_if_clear(employee=case_doc.empleado, source_doctype="Caso Disciplinario", source_name=case_doc.name)
+		reverse_retirement_if_clear_stub(empleado=case_doc.empleado, source_doctype="Caso Disciplinario", source_name=case_doc.name)
 		return _clear_disciplinary_suspension_if_possible(case_doc.empleado, current_case=case_doc.name)
 
 	if decision == "Terminación":
 		_clear_disciplinary_suspension_if_possible(case_doc.empleado, current_case=case_doc.name)
-		return employee_retirement_service.submit_employee_retirement(
-			employee=case_doc.empleado,
-			last_worked_date=case_doc.fecha_cierre or case_doc.fecha_incidente or nowdate(),
-			reason=DISCIPLINARY_TERMINATION_REASON,
-			closure_date=case_doc.fecha_cierre or nowdate(),
-			closure_summary=cstr(getattr(case_doc, "resumen_cierre", None)).strip(),
+		return apply_retirement_stub(
+			empleado=case_doc.empleado,
 			source_doctype="Caso Disciplinario",
 			source_name=case_doc.name,
-			enforce_access=False,
+			retirement_date=case_doc.fecha_cierre or case_doc.fecha_incidente or nowdate(),
+			reason=DISCIPLINARY_TERMINATION_REASON,
 		)
 
-	reverse_retirement_if_clear(employee=case_doc.empleado, source_doctype="Caso Disciplinario", source_name=case_doc.name)
+	reverse_retirement_if_clear_stub(empleado=case_doc.empleado, source_doctype="Caso Disciplinario", source_name=case_doc.name)
 	if decision == "Suspensión":
 		return _sync_case_suspension(case_doc)
 

@@ -329,14 +329,14 @@ class TestPersonIdentityBatchDContract(TestCase):
 		doc.get_estado_destino = lambda: "Retirado"
 		doc.get_estado_actual = lambda: "Activo"
 
-		with patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.apply_retirement") as retirement_mock, patch(
+		with patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.apply_retirement_stub") as retirement_mock, patch(
 			"hubgh.hubgh.doctype.novedad_sst.novedad_sst.getdate",
 			side_effect=lambda value=None: value or "2026-03-03",
 		), patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.nowdate", return_value="2026-03-03"):
 			doc.apply_estado_empleado()
 
 		retirement_mock.assert_called_once_with(
-			employee="EMP-11",
+			empleado="EMP-11",
 			source_doctype="Novedad SST",
 			source_name="NOV-001",
 			retirement_date="2026-03-03",

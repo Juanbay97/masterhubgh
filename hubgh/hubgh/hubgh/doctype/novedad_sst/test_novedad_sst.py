@@ -163,7 +163,7 @@ class TestNovedadSST(FrappeTestCase):
 		with patch(
 			"hubgh.hubgh.doctype.novedad_sst.novedad_sst.frappe.db.get_value",
 			side_effect=scoped_get_value,
-		), patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.apply_retirement") as retirement_mock:
+		), patch("hubgh.hubgh.doctype.novedad_sst.novedad_sst.apply_retirement_stub") as retirement_mock:
 			doc.apply_estado_empleado()
 
 		retirement_mock.assert_called_once()
