@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "naming_series:",
- "creation": "2026-05-20 22:00:00.000000",
+ "creation": "2026-05-20 22:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -83,7 +83,7 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Fecha de aplicación",
+   "label": "Fecha de aplicaci\u00f3n",
    "reqd": 1
   },
   {
@@ -129,14 +129,14 @@
   {
    "fieldname": "justificacion",
    "fieldtype": "Small Text",
-   "label": "Justificación",
+   "label": "Justificaci\u00f3n",
    "reqd": 1
   },
   {
    "collapsible": 1,
    "fieldname": "sb_auditoria",
    "fieldtype": "Section Break",
-   "label": "Auditoría"
+   "label": "Auditor\u00eda"
   },
   {
    "fieldname": "aplicado_en",
@@ -168,7 +168,7 @@
    "depends_on": "eval:doc.estado=='Anulado'",
    "fieldname": "motivo_anulacion",
    "fieldtype": "Small Text",
-   "label": "Motivo anulación",
+   "label": "Motivo anulaci\u00f3n",
    "read_only": 1
   },
   {
@@ -186,11 +186,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-20 22:00:00.000000",
+ "modified": "2026-05-21 21:39:28.716532",
  "modified_by": "Administrator",
  "module": "Hubgh",
  "name": "Traslado PDV",
- "naming_rule": "Naming Series",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
@@ -202,6 +202,122 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - Bandeja General",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - RRLL",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GH - SST",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gesti\u00f3n Humana",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Labor Relations",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "RRLL",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Relaciones Laborales",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Jefe_PDV",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Empleado",
+   "select": 1,
    "share": 1,
    "write": 1
   }

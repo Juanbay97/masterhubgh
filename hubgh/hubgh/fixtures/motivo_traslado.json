@@ -1,0 +1,57 @@
+[
+ {
+  "activo": 1,
+  "codigo": "necesidad_operativa",
+  "descripcion": "El traslado responde a una necesidad operativa del negocio.",
+  "docstatus": 0,
+  "doctype": "Motivo Traslado",
+  "label": "Necesidad operativa",
+  "modified": "2026-05-21 18:40:26.272400",
+  "name": "necesidad_operativa",
+  "requiere_cambio_cargo": 0
+ },
+ {
+  "activo": 1,
+  "codigo": "solicitud_empleado",
+  "descripcion": "El empleado solicitó el traslado voluntariamente.",
+  "docstatus": 0,
+  "doctype": "Motivo Traslado",
+  "label": "Solicitud del empleado",
+  "modified": "2026-05-21 18:40:26.959752",
+  "name": "solicitud_empleado",
+  "requiere_cambio_cargo": 0
+ },
+ {
+  "activo": 1,
+  "codigo": "cierre_pdv",
+  "descripcion": "El PDV de origen está siendo cerrado o restructurado.",
+  "docstatus": 0,
+  "doctype": "Motivo Traslado",
+  "label": "Cierre de PDV",
+  "modified": "2026-05-21 18:40:26.962935",
+  "name": "cierre_pdv",
+  "requiere_cambio_cargo": 0
+ },
+ {
+  "activo": 1,
+  "codigo": "reorganizacion",
+  "descripcion": "Reorganización estructural o promoción del empleado. Requiere especificar el cargo destino.",
+  "docstatus": 0,
+  "doctype": "Motivo Traslado",
+  "label": "Reorganización / promoción",
+  "modified": "2026-05-21 18:40:27.004386",
+  "name": "reorganizacion",
+  "requiere_cambio_cargo": 1
+ },
+ {
+  "activo": 1,
+  "codigo": "otro",
+  "descripcion": "Motivo no categorizado. Incluir detalle en la justificación.",
+  "docstatus": 0,
+  "doctype": "Motivo Traslado",
+  "label": "Otro",
+  "modified": "2026-05-21 18:40:27.007852",
+  "name": "otro",
+  "requiere_cambio_cargo": 0
+ }
+]

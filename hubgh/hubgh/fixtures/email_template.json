@@ -1,0 +1,92 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-05-08 18:12:42.164593",
+  "name": "examen_medico_link_agendar",
+  "response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Has sido seleccionado para continuar con tu proceso de vinculación. El siguiente paso es agendar tu <strong>examen médico de ingreso</strong>.</p>\n<p>Hacé clic en el botón a continuación para elegir el día y la hora que mejor te queden dentro de los horarios disponibles.</p>\n<p style=\"text-align:center;margin:24px 0;\">\n  <a href=\"{{ portal_url }}\" style=\"background:#1d4ed8;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;\">Agendar mi examen médico</a>\n</p>\n{% if examenes %}\n<p style=\"margin-top:18px;\"><strong>Exámenes que se realizarán:</strong></p>\n<ul>\n  {% for examen in examenes %}<li>{{ examen.nombre_examen }}</li>{% endfor %}\n</ul>\n{% endif %}\n<p style=\"margin-top:18px;\"><strong>Recomendaciones importantes:</strong></p>\n<ul>\n  <li>Uso obligatorio de tapabocas.</li>\n  <li>Llevar muestra coprológica.</li>\n  <li>Presentar documento de identidad en la recepción.</li>\n  <li>Informar que los exámenes fueron agendados por <strong>Comidas Varpel S.A.S.</strong></li>\n  <li>Si usas gafas, debes llevarlas.</li>\n  <li>No es necesario asistir en ayunas.</li>\n  <li>Llevar uñas limpias, cortas y sin esmalte.</li>\n  <li>Llegar con 15 minutos de anticipación.</li>\n  <li>Algunos exámenes se realizan en dos tiempos. No te ausentes del lugar durante el proceso. Si eres llamado y no estás presente, se cancelará la valoración.</li>\n</ul>\n<p>Agradecemos tu puntualidad y compromiso.</p>\n<p>Si tenés alguna duda, podés escribirnos a <a href=\"mailto:SST@homeburgers.com\">SST@homeburgers.com</a>.</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+  "response_html": null,
+  "subject": "Agenda tu examen médico — Home Burgers",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-05-08 18:12:42.710661",
+  "name": "examen_medico_confirmacion",
+  "response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Tu examen médico ha quedado <strong>confirmado</strong> con los siguientes datos:</p>\n<ul>\n  <li><strong>Fecha:</strong> {{ cita.fecha_cita }}</li>\n  <li><strong>Hora:</strong> {{ cita.hora_cita }}</li>\n  <li><strong>IPS:</strong> {{ ips.nombre }}</li>\n  {% if ips.sede %}<li><strong>Sede:</strong> {{ ips.sede }}</li>{% endif %}\n  <li><strong>Dirección:</strong> {{ ips.direccion }}</li>\n  {% if ips.telefono %}<li><strong>Teléfono:</strong> {{ ips.telefono }}</li>{% endif %}\n</ul>\n{% if examenes %}\n<p style=\"margin-top:18px;\"><strong>Exámenes que se realizarán:</strong></p>\n<ul>\n  {% for examen in examenes %}<li>{{ examen.nombre_examen }}</li>{% endfor %}\n</ul>\n{% endif %}\n<p style=\"margin-top:18px;\"><strong>Recomendaciones importantes:</strong></p>\n<ul>\n  <li>Uso obligatorio de tapabocas.</li>\n  <li>Llevar muestra coprológica.</li>\n  <li>Presentar documento de identidad en la recepción.</li>\n  <li>Informar que los exámenes fueron agendados por <strong>Comidas Varpel S.A.S.</strong></li>\n  <li>Si usas gafas, debes llevarlas.</li>\n  <li>No es necesario asistir en ayunas.</li>\n  <li>Llevar uñas limpias, cortas y sin esmalte.</li>\n  <li>Llegar con 15 minutos de anticipación.</li>\n  <li>Algunos exámenes se realizan en dos tiempos. No te ausentes del lugar durante el proceso. Si eres llamado y no estás presente, se cancelará la valoración.</li>\n</ul>\n<p>Agradecemos tu puntualidad y compromiso.</p>\n<p>Si tenés alguna duda, podés escribirnos a <a href=\"mailto:SST@homeburgers.com\">SST@homeburgers.com</a>.</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+  "response_html": null,
+  "subject": "Confirmación de cita — examen médico",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-05-08 18:12:42.739091",
+  "name": "examen_medico_ips_notificacion",
+  "response": "<p>Buenas tardes.</p>\n<p>Me ayudan por favor agendando a esta persona para el día <strong>{{ cita.fecha_cita }}</strong> a las <strong>{{ cita.hora_cita }}</strong>.</p>\n<p><strong>Datos del candidato:</strong></p>\n<ul>\n  <li><strong>CC:</strong> {{ candidato.cedula }}</li>\n  <li><strong>Nombre:</strong> {{ candidato.nombre }}</li>\n  <li><strong>Cargo:</strong> {{ candidato.cargo }}</li>\n  <li><strong>Ciudad de residencia:</strong> {{ candidato.ciudad }}</li>\n</ul>\n<p><strong>Sede donde se prestará el servicio:</strong></p>\n<ul>\n  <li><strong>Sede:</strong> {{ cita.sede or '—' }}</li>\n  <li><strong>Ciudad:</strong> {{ cita.sede_ciudad or candidato.ciudad or '—' }}</li>\n  <li><strong>Dirección:</strong> {{ cita.sede_direccion or '—' }}</li>\n</ul>\n<p><strong>Exámenes a realizar:</strong></p>\n<ul>\n  {% for examen in examenes %}<li>{{ examen.nombre_examen }}</li>{% endfor %}\n</ul>\n<p><strong>Empresa que remite:</strong> Comidas Varpel S.A.S.</p>\n<p>Muchas gracias.</p>\n<p><em>SST — Home Burgers<br>SST@homeburgers.com</em></p>",
+  "response_html": null,
+  "subject": "Programación de examen médico — {{ candidato.nombre }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-05-08 18:12:42.753630",
+  "name": "examen_medico_aplazado",
+  "response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Tu examen médico del <strong>{{ cita.fecha_cita }}</strong> fue aplazado.</p>\n<p><strong>Motivo:</strong> {{ motivo_aplazamiento }}</p>\n{% if instrucciones_reagendamiento %}\n<p><strong>Instrucciones:</strong> {{ instrucciones_reagendamiento }}</p>\n{% endif %}\n<p>Si tenés preguntas, escribinos a <a href=\"mailto:SST@homeburgers.com\">SST@homeburgers.com</a>.</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+  "response_html": null,
+  "subject": "Tu examen médico fue aplazado",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-05-08 18:12:42.759480",
+  "name": "examen_medico_recordatorio",
+  "response": "<p>Hola {{ candidato.nombre }},</p>\n<p>Te recordamos que <strong>mañana {{ cita.fecha_cita }}</strong> a las <strong>{{ cita.hora_cita }}</strong> tenés tu examen médico en:</p>\n<ul>\n  <li><strong>{{ ips.nombre }}</strong></li>\n  <li>{{ ips.direccion }}</li>\n</ul>\n<p>Por favor llegá puntual con tu documento de identidad.</p>\n<p><em>Equipo de Gestión Humana — Home Burgers</em></p>",
+  "response_html": null,
+  "subject": "Recordatorio — examen médico mañana",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-05-21 21:19:58.323565",
+  "name": "traslado_pdv_empleado_programado",
+  "response": "<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">\n  <div style=\"background:#111;padding:20px;text-align:center;\">\n    <img src=\"/assets/hubgh/images/logo-circular-black.png\" alt=\"HubGH\" style=\"height:40px;filter:invert(1);\">\n  </div>\n  <div style=\"padding:32px 24px;background:#ffffff;\">\n    <p>Hola <strong>{{ empleado.nombres }}</strong>,</p>\n    <p>Tu traslado de PDV ha sido <strong>programado</strong> exitosamente. Aquí está el detalle:</p>\n    \n      {% if traslado.cargo_destino %}\n      \n      {% endif %}\n    <table style=\"width:100%;border-collapse:collapse;margin:20px 0;\">\n      <tbody><tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;width:40%;\">PDV actual (origen)</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ traslado.pdv_origen }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">PDV destino</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\"><strong>{{ traslado.pdv_destino }}</strong></td>\n      </tr>\n      <tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Fecha de aplicación</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\"><strong>{{ traslado.fecha_aplicacion }}</strong></td>\n      </tr>\n      <tr>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Motivo</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ traslado.motivo_label }}</td>\n      </tr><tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Cargo en destino</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ traslado.cargo_destino }}</td>\n      </tr></tbody></table>\n    <p><strong>¿Qué pasa el día de aplicación?</strong></p>\n    <ul>\n      <li>Tu punto de venta en el sistema se actualizará automáticamente.</li>\n      <li>Serás asignado/a al equipo del nuevo PDV.</li>\n      <li>Tu jefe actual será notificado con anticipación para coordinar la entrega.</li>\n    </ul>\n    <p>Si tenés alguna duda, podés consultar con el equipo de Relaciones Laborales.</p>\n  </div>\n  <div style=\"padding:16px 24px;background:#f9fafb;text-align:center;color:#6b7280;font-size:12px;\">\n    <p><em>Equipo de Relaciones Laborales — HubGH</em></p>\n  </div>\n</div>",
+  "response_html": null,
+  "subject": "Tu traslado a {{ traslado.pdv_destino }} está programado — {{ traslado.fecha_aplicacion }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-05-21 21:19:58.376464",
+  "name": "traslado_pdv_jefe_origen_programado",
+  "response": "<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">\n  <div style=\"background:#111;padding:20px;text-align:center;\">\n    <img src=\"/assets/hubgh/images/logo-circular-black.png\" alt=\"HubGH\" style=\"height:40px;filter:invert(1);\">\n  </div>\n  <div style=\"padding:32px 24px;background:#ffffff;\">\n    <p>Estimado/a {% if jefe_origen %}{{ jefe_origen.full_name }}{% else %}Jefe/a de PDV{% endif %},</p>\n    <p>Le informamos que <strong>{{ empleado.nombres }} {{ empleado.apellidos }}</strong>\n    ha sido programado/a para un traslado desde su PDV.</p>\n    <table style=\"width:100%;border-collapse:collapse;margin:20px 0;\">\n      <tbody><tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;width:40%;\">Colaborador</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ empleado.nombres }} {{ empleado.apellidos }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">PDV origen</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ traslado.pdv_origen }}</td>\n      </tr>\n      <tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">PDV destino</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ traslado.pdv_destino }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Fecha de aplicación</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\"><strong>{{ traslado.fecha_aplicacion }}</strong></td>\n      </tr>\n      <tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Motivo</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ traslado.motivo_label }}</td>\n      </tr>\n    </tbody></table>\n    <p><strong>Acción requerida:</strong> Por favor coordine con el/la colaborador/a la entrega de turno\n    y cualquier documentación pendiente antes de la fecha de aplicación.</p>\n    <p style=\"color:#6b7280;font-size:13px;\">Nota: El motivo detallado del traslado es confidencial\n    y no se comparte en esta notificación.</p>\n  </div>\n  <div style=\"padding:16px 24px;background:#f9fafb;text-align:center;color:#6b7280;font-size:12px;\">\n    <p><em>Equipo de Relaciones Laborales — HubGH</em></p>\n  </div>\n</div>",
+  "response_html": null,
+  "subject": "Salida de {{ empleado.nombres }} {{ empleado.apellidos }} desde {{ traslado.pdv_origen }} — {{ traslado.fecha_aplicacion }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-05-21 21:19:58.474661",
+  "name": "traslado_pdv_jefe_destino_programado",
+  "response": "<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">\n  <div style=\"background:#111;padding:20px;text-align:center;\">\n    <img src=\"/assets/hubgh/images/logo-circular-black.png\" alt=\"HubGH\" style=\"height:40px;filter:invert(1);\">\n  </div>\n  <div style=\"padding:32px 24px;background:#ffffff;\">\n    <p>Estimado/a {% if jefe_destino %}{{ jefe_destino.full_name }}{% else %}Jefe/a de PDV{% endif %},</p>\n    <p>Le informamos que <strong>{{ empleado.nombres }} {{ empleado.apellidos }}</strong>\n    se incorporará a su PDV próximamente.</p>\n    \n      {% if traslado.cargo_destino %}\n      \n      {% endif %}\n    <table style=\"width:100%;border-collapse:collapse;margin:20px 0;\">\n      <tbody><tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;width:40%;\">Colaborador</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ empleado.nombres }} {{ empleado.apellidos }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Viene desde</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ traslado.pdv_origen }}</td>\n      </tr>\n      <tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">PDV destino (su PDV)</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\"><strong>{{ traslado.pdv_destino }}</strong></td>\n      </tr>\n      <tr>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Fecha de incorporación</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\"><strong>{{ traslado.fecha_aplicacion }}</strong></td>\n      </tr><tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Cargo asignado</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ traslado.cargo_destino }}</td>\n      </tr></tbody></table>\n    <p><strong>Acción requerida:</strong> Por favor prepare el puesto de trabajo y los accesos\n    necesarios antes de la fecha de incorporación.</p>\n  </div>\n  <div style=\"padding:16px 24px;background:#f9fafb;text-align:center;color:#6b7280;font-size:12px;\">\n    <p><em>Equipo de Relaciones Laborales — HubGH</em></p>\n  </div>\n</div>",
+  "response_html": null,
+  "subject": "Llegada de {{ empleado.nombres }} {{ empleado.apellidos }} a {{ traslado.pdv_destino }} — {{ traslado.fecha_aplicacion }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-05-21 21:19:58.490907",
+  "name": "traslado_pdv_aplicado_confirmacion",
+  "response": "<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">\n  <div style=\"background:#111;padding:20px;text-align:center;\">\n    <img src=\"/assets/hubgh/images/logo-circular-black.png\" alt=\"HubGH\" style=\"height:40px;filter:invert(1);\">\n  </div>\n  <div style=\"padding:32px 24px;background:#ffffff;\">\n    <div style=\"background:#d1fae5;border-left:4px solid #059669;padding:12px 16px;margin-bottom:24px;border-radius:4px;\">\n      <strong style=\"color:#065f46;\">Traslado aplicado exitosamente</strong>\n    </div>\n    <p>El traslado de <strong>{{ empleado.nombres }} {{ empleado.apellidos }}</strong>\n    ha sido <strong>ejecutado</strong>. El sistema ha sido actualizado.</p>\n    <table style=\"width:100%;border-collapse:collapse;margin:20px 0;\">\n      <tbody><tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;width:40%;\">Colaborador</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ empleado.nombres }} {{ empleado.apellidos }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">PDV anterior</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ traslado.pdv_origen }}</td>\n      </tr>\n      <tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Nuevo PDV</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\"><strong>{{ traslado.pdv_destino }}</strong></td>\n      </tr>\n      <tr>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Fecha de aplicación</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ traslado.fecha_aplicacion }}</td>\n      </tr>\n      <tr style=\"background:#f3f4f6;\">\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Aplicado por</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ aplicado_por }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;font-weight:bold;\">Referencia</td>\n        <td style=\"padding:10px;border:1px solid #e5e7eb;\">{{ traslado.name }}</td>\n      </tr>\n    </tbody></table>\n    <p style=\"color:#6b7280;font-size:13px;\">Este es un correo automático de confirmación.\n    El cambio ya está reflejado en el sistema.</p>\n  </div>\n  <div style=\"padding:16px 24px;background:#f9fafb;text-align:center;color:#6b7280;font-size:12px;\">\n    <p><em>Equipo de Relaciones Laborales — HubGH</em></p>\n  </div>\n</div>",
+  "response_html": null,
+  "subject": "Traslado aplicado: {{ empleado.nombres }} {{ empleado.apellidos }} ahora en {{ traslado.pdv_destino }}",
+  "use_html": 1
+ }
+]

@@ -113,6 +113,9 @@ def setup_permissions():
 	# 5) New DocType RBAC grants.
 	setup_demo_doctype_permissions()
 
+	# 6) Traslado PDV RBAC (Fase 4).
+	setup_traslado_pdv_permissions()
+
 	frappe.db.commit()
 
 
@@ -188,6 +191,65 @@ def cint_or_zero(value):
 		return int(value or 0)
 	except Exception:
 		return 0
+
+
+def setup_traslado_pdv_permissions():
+	"""
+	Capa 1 RBAC para Traslado PDV y Motivo Traslado.
+	Invocado desde setup_permissions() → setup_demo_doctype_permissions().
+	"""
+	gh_manage_roles = unique_roles(BASE_GH_ROLES + TRIAGE_GH_ROLES + ["HR Labor Relations"])
+	gh_manage_transitional = get_transitional_roles(gh_manage_roles)
+	jefe_transitional = get_transitional_roles(JEFE_ROLES)
+	employee_transitional = get_transitional_roles(EMPLOYEE_ROLES)
+
+	# ---- Traslado PDV ----
+	# GH manage (Gestión Humana, GH-*, HR Labor Relations): read/write/create + report/export/print
+	for role in gh_manage_transitional:
+		ensure_docperm(
+			"Traslado PDV", role,
+			read=1, write=1, create=1, delete=0, cancel=0,
+			report=1, export=1, print=1, select=1,
+		)
+
+	# Gerente GH: full delete (no cancel — DocType no es submittable)
+	ensure_docperm(
+		"Traslado PDV", "Gerente GH",
+		read=1, write=1, create=1, delete=1,
+		report=1, export=1, print=1, select=1,
+	)
+
+	# Jefe_PDV: solo lectura (sin write, sin create)
+	for role in jefe_transitional:
+		ensure_docperm(
+			"Traslado PDV", role,
+			read=1, write=0, create=0, delete=0, cancel=0,
+			report=1, export=0, print=1, select=1,
+		)
+
+	# Empleado: solo read (sin print, sin export)
+	for role in employee_transitional:
+		ensure_docperm(
+			"Traslado PDV", role,
+			read=1, write=0, create=0, delete=0, cancel=0,
+			report=0, export=0, print=0, select=1,
+		)
+
+	# ---- Motivo Traslado ----
+	# GH manage + Gerente GH: CRUD
+	for role in gh_manage_transitional:
+		ensure_docperm(
+			"Motivo Traslado", role,
+			read=1, write=1, create=1, delete=1, report=1,
+		)
+	ensure_docperm(
+		"Motivo Traslado", "Gerente GH",
+		read=1, write=1, create=1, delete=1, report=1,
+	)
+
+	# Jefe_PDV + Empleado: solo read
+	for role in jefe_transitional + employee_transitional:
+		ensure_docperm("Motivo Traslado", role, read=1, select=1)
 
 
 def setup_demo_doctype_permissions():

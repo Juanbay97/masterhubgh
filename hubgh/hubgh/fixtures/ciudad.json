@@ -1,0 +1,42 @@
+[
+ {
+  "codigo": null,
+  "docstatus": 0,
+  "doctype": "Ciudad",
+  "modified": "2026-05-06 17:46:30.828833",
+  "name": "Chía",
+  "nombre": "Chía"
+ },
+ {
+  "codigo": null,
+  "docstatus": 0,
+  "doctype": "Ciudad",
+  "modified": "2026-05-06 17:46:30.833899",
+  "name": "Barranquilla",
+  "nombre": "Barranquilla"
+ },
+ {
+  "codigo": null,
+  "docstatus": 0,
+  "doctype": "Ciudad",
+  "modified": "2026-05-06 17:46:30.830518",
+  "name": "Medellín",
+  "nombre": "Medellín"
+ },
+ {
+  "codigo": null,
+  "docstatus": 0,
+  "doctype": "Ciudad",
+  "modified": "2026-05-06 17:46:30.832211",
+  "name": "Cartagena",
+  "nombre": "Cartagena"
+ },
+ {
+  "codigo": null,
+  "docstatus": 0,
+  "doctype": "Ciudad",
+  "modified": "2026-05-06 17:46:30.827087",
+  "name": "Bogotá",
+  "nombre": "Bogotá"
+ }
+]

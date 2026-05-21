@@ -207,6 +207,104 @@ def gh_novedad_has_permission(doc, user=None):
 	return bool(emp.get("pdv") and doc.punto == emp.get("pdv"))
 
 
+def _get_jefe_pdvs(user):
+	"""
+	Retorna la lista de PDVs para los que el user es responsable.
+	Capa 1: Punto de Venta.jefe_responsable == user.
+	Capa 2: Ficha Empleado del user donde tiene rol Jefe_PDV (vía pdv).
+	"""
+	# Capa 1: PDVs donde el user está explícitamente como jefe_responsable
+	direct = frappe.get_all(
+		"Punto de Venta",
+		filters={"jefe_responsable": user, "activo": 1},
+		pluck="name",
+	)
+	pdvs = set(direct or [])
+
+	# Capa 2: PDV de la Ficha Empleado del user (por email match)
+	own_pdv = _get_employee_by_user(user)
+	if own_pdv and own_pdv.get("pdv"):
+		pdvs.add(own_pdv.get("pdv"))
+
+	return list(pdvs)
+
+
+def get_traslado_pdv_permission_query(user=None):
+	"""
+	Capa 2: permission_query_conditions para 'Traslado PDV'.
+	- Administrator / System Manager / GH Admin / HR Labor Relations: sin filtro.
+	- Jefe_PDV: filtrado por pdv_origen IN (sus PDVs) OR pdv_destino IN (sus PDVs).
+	- Empleado: filtrado por empleado = (su Ficha Empleado).
+	- Otros: bloqueado (1=0).
+	"""
+	user = user or frappe.session.user
+	if user == "Administrator":
+		return ""
+
+	roles = set(frappe.get_roles(user))
+
+	if "System Manager" in roles:
+		return ""
+
+	if roles_have_any(roles, GH_ADMIN_ROLES) or roles_have_any(
+		roles, {"HR Labor Relations", "Relaciones Laborales Jefe"}
+	):
+		return ""
+
+	if roles_have_any(roles, {"Jefe_PDV", "Jefe de tienda", "Jefe de Punto"}):
+		pdvs = _get_jefe_pdvs(user)
+		if not pdvs:
+			return "1=0"
+		escaped = ", ".join(frappe.db.escape(p) for p in pdvs)
+		return (
+			f"(`tabTraslado PDV`.pdv_origen in ({escaped}) "
+			f"OR `tabTraslado PDV`.pdv_destino in ({escaped}))"
+		)
+
+	if roles_have_any(roles, {"Empleado"}):
+		emp = _get_employee_by_user(user)
+		if emp and emp.get("name"):
+			return f"`tabTraslado PDV`.empleado = {frappe.db.escape(emp.get('name'))}"
+		return "1=0"
+
+	return "1=0"
+
+
+def traslado_pdv_has_permission(doc, user=None, ptype=None):
+	"""
+	Capa 3: has_permission para 'Traslado PDV'.
+	Sigue el mismo patrón de capa 2 pero a nivel de documento individual.
+	"""
+	user = user or frappe.session.user
+	if user == "Administrator":
+		return True
+
+	roles = set(frappe.get_roles(user))
+
+	if "System Manager" in roles:
+		return True
+
+	if roles_have_any(roles, GH_ADMIN_ROLES) or roles_have_any(
+		roles, {"HR Labor Relations", "Relaciones Laborales Jefe"}
+	):
+		return True
+
+	if roles_have_any(roles, {"Jefe_PDV", "Jefe de tienda", "Jefe de Punto"}):
+		pdvs = set(_get_jefe_pdvs(user))
+		doc_origen = doc.get("pdv_origen") if hasattr(doc, "get") else getattr(doc, "pdv_origen", None)
+		doc_destino = doc.get("pdv_destino") if hasattr(doc, "get") else getattr(doc, "pdv_destino", None)
+		return bool(doc_origen in pdvs or doc_destino in pdvs)
+
+	if roles_have_any(roles, {"Empleado"}):
+		emp = _get_employee_by_user(user)
+		if not emp:
+			return False
+		doc_emp = doc.get("empleado") if hasattr(doc, "get") else getattr(doc, "empleado", None)
+		return doc_emp == emp.get("name")
+
+	return False
+
+
 def get_caso_disciplinario_permission_query(user=None):
 	user = user or frappe.session.user
 	if user == "Administrator" or user_has_any_role(user, *DISCIPLINARY_MANAGER_ROLES):

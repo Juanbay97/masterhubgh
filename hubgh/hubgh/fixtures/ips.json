@@ -1,0 +1,334 @@
+[
+ {
+  "activa": 1,
+  "ciudad": "Bogotá",
+  "contacto_responsable": null,
+  "dias_bloqueados": [],
+  "direccion": "Calle 40 # 26 A 50 Barrio La Soledad",
+  "docstatus": 0,
+  "doctype": "IPS",
+  "email_notificacion": "recepcion@zonamedicaips.com",
+  "emails_por_ciudad": [
+   {
+    "ciudad": "Cartagena",
+    "email": "ejecutivocuenta@zonamedicaips.com",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "emails_por_ciudad",
+    "parenttype": "IPS"
+   },
+   {
+    "ciudad": "Medellín",
+    "email": "ejecutivocuenta@zonamedicaips.com",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "emails_por_ciudad",
+    "parenttype": "IPS"
+   },
+   {
+    "ciudad": "Chía",
+    "email": "ejecutivocuenta@zonamedicaips.com",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "emails_por_ciudad",
+    "parenttype": "IPS"
+   }
+  ],
+  "examenes_estandar": [
+   {
+    "cargo": "416",
+    "cargo_nombre": "AUXILIAR DE COCINA PUNTO DE VENTA",
+    "celda_excel": "A27",
+    "codigo_examen": "EXM-INGRESO",
+    "nombre_examen": "Examen médico con énfasis osteomuscular",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": null
+   },
+   {
+    "cargo": "416",
+    "cargo_nombre": "AUXILIAR DE COCINA PUNTO DE VENTA",
+    "celda_excel": "A31",
+    "codigo_examen": "EXM-OPTO",
+    "nombre_examen": "Optometría",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": null
+   },
+   {
+    "cargo": "416",
+    "cargo_nombre": "AUXILIAR DE COCINA PUNTO DE VENTA",
+    "celda_excel": "A43",
+    "codigo_examen": "EXM-KOH",
+    "nombre_examen": "KOH",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": null
+   },
+   {
+    "cargo": "416",
+    "cargo_nombre": "AUXILIAR DE COCINA PUNTO DE VENTA",
+    "celda_excel": "A45",
+    "codigo_examen": "EXM-COPRO",
+    "nombre_examen": "Coprológico",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": null
+   },
+   {
+    "cargo": "416",
+    "cargo_nombre": "AUXILIAR DE COCINA PUNTO DE VENTA",
+    "celda_excel": "A47",
+    "codigo_examen": "EXM-FROTIS-G",
+    "nombre_examen": "Frotis de garganta",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": null
+   },
+   {
+    "cargo": null,
+    "cargo_nombre": null,
+    "celda_excel": "",
+    "codigo_examen": "EXM-HC-INGRESO",
+    "nombre_examen": "Historia clínica digital INGRESO",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": "Administrativo"
+   },
+   {
+    "cargo": null,
+    "cargo_nombre": null,
+    "celda_excel": "",
+    "codigo_examen": "EXM-OPTO-ADM",
+    "nombre_examen": "Consulta Optometría",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": "Administrativo"
+   },
+   {
+    "cargo": null,
+    "cargo_nombre": null,
+    "celda_excel": "",
+    "codigo_examen": "EXM-OSTEO-ADM",
+    "nombre_examen": "Osteomuscular",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": "Administrativo"
+   },
+   {
+    "cargo": null,
+    "cargo_nombre": null,
+    "celda_excel": "",
+    "codigo_examen": "EXM-OP-OSTEO",
+    "nombre_examen": "Examen médico con énfasis osteomuscular",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": "Operativo"
+   },
+   {
+    "cargo": null,
+    "cargo_nombre": null,
+    "celda_excel": "",
+    "codigo_examen": "EXM-OP-OPTO",
+    "nombre_examen": "Optometría",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": "Operativo"
+   },
+   {
+    "cargo": null,
+    "cargo_nombre": null,
+    "celda_excel": "",
+    "codigo_examen": "EXM-OP-KOH",
+    "nombre_examen": "KOH",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": "Operativo"
+   },
+   {
+    "cargo": null,
+    "cargo_nombre": null,
+    "celda_excel": "",
+    "codigo_examen": "EXM-OP-COPRO",
+    "nombre_examen": "Coprológico",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": "Operativo"
+   },
+   {
+    "cargo": null,
+    "cargo_nombre": null,
+    "celda_excel": "",
+    "codigo_examen": "EXM-OP-FROTIS",
+    "nombre_examen": "Frotis de garganta",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "examenes_estandar",
+    "parenttype": "IPS",
+    "tipo_cargo_aplica": "Operativo"
+   }
+  ],
+  "horarios": [
+   {
+    "cupos_por_slot": 50,
+    "dia_semana": "L",
+    "hora_fin": "8:00:00",
+    "hora_inicio": "7:00:00",
+    "intervalo_minutos": 60,
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "horarios",
+    "parenttype": "IPS"
+   },
+   {
+    "cupos_por_slot": 50,
+    "dia_semana": "M",
+    "hora_fin": "8:00:00",
+    "hora_inicio": "7:00:00",
+    "intervalo_minutos": 60,
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "horarios",
+    "parenttype": "IPS"
+   },
+   {
+    "cupos_por_slot": 50,
+    "dia_semana": "X",
+    "hora_fin": "8:00:00",
+    "hora_inicio": "7:00:00",
+    "intervalo_minutos": 60,
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "horarios",
+    "parenttype": "IPS"
+   },
+   {
+    "cupos_por_slot": 50,
+    "dia_semana": "J",
+    "hora_fin": "8:00:00",
+    "hora_inicio": "7:00:00",
+    "intervalo_minutos": 60,
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "horarios",
+    "parenttype": "IPS"
+   },
+   {
+    "cupos_por_slot": 50,
+    "dia_semana": "V",
+    "hora_fin": "8:00:00",
+    "hora_inicio": "7:00:00",
+    "intervalo_minutos": 60,
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "horarios",
+    "parenttype": "IPS"
+   },
+   {
+    "cupos_por_slot": 50,
+    "dia_semana": "S",
+    "hora_fin": "8:00:00",
+    "hora_inicio": "7:00:00",
+    "intervalo_minutos": 60,
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "horarios",
+    "parenttype": "IPS"
+   }
+  ],
+  "modified": "2026-05-08 18:12:42.801038",
+  "name": "Zonamedica MR SAS",
+  "nombre": "Zonamedica MR SAS",
+  "requiere_orden_servicio": 0,
+  "sedes": [
+   {
+    "activa": 1,
+    "ciudad": "Bogotá",
+    "direccion": "Av. Américas No. 62-84, locales 213-214-215",
+    "email_notificacion": "recepcion@zonamedicaips.com",
+    "nombre_sede": "Outlet Factory",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "sedes",
+    "parenttype": "IPS",
+    "requiere_orden_servicio": 0,
+    "telefono": "7514626 / 3168774072 / 3138536350"
+   },
+   {
+    "activa": 1,
+    "ciudad": "Bogotá",
+    "direccion": "Carrera 45 # 105-21",
+    "email_notificacion": "recepcion@zonamedicaips.com",
+    "nombre_sede": "Autopista Norte",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "sedes",
+    "parenttype": "IPS",
+    "requiere_orden_servicio": 0,
+    "telefono": "7514626 / 3168774072 / 3138536350"
+   },
+   {
+    "activa": 1,
+    "ciudad": "Bogotá",
+    "direccion": "Avenida Carrera 28 # 41-36",
+    "email_notificacion": "recepcion@zonamedicaips.com",
+    "nombre_sede": "Soledad",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "sedes",
+    "parenttype": "IPS",
+    "requiere_orden_servicio": 0,
+    "telefono": "7514626 / 3168774072 / 3138536350"
+   },
+   {
+    "activa": 1,
+    "ciudad": "Chía",
+    "direccion": "Cra. 1B No. 18-40, Barrio San Francisco",
+    "email_notificacion": "",
+    "nombre_sede": "Accionar Salud Chía",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "sedes",
+    "parenttype": "IPS",
+    "requiere_orden_servicio": 1,
+    "telefono": ""
+   },
+   {
+    "activa": 1,
+    "ciudad": "Medellín",
+    "direccion": "CARRERA 48B # 16 SUR - 38",
+    "email_notificacion": "",
+    "nombre_sede": "Medellín San Ignacio",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "sedes",
+    "parenttype": "IPS",
+    "requiere_orden_servicio": 1,
+    "telefono": ""
+   },
+   {
+    "activa": 1,
+    "ciudad": "Medellín",
+    "direccion": "Carrera 48B # 16 Sur - 38, Sector Aguacatala",
+    "email_notificacion": "",
+    "nombre_sede": "Medellín Aguacatala / Poblado",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "sedes",
+    "parenttype": "IPS",
+    "requiere_orden_servicio": 1,
+    "telefono": ""
+   },
+   {
+    "activa": 1,
+    "ciudad": "Cartagena",
+    "direccion": "Avenida Lacides Segovia # 15-114, Barrio Manga",
+    "email_notificacion": "",
+    "nombre_sede": "GSL Ocupacional Cartagena",
+    "parent": "Zonamedica MR SAS",
+    "parentfield": "sedes",
+    "parenttype": "IPS",
+    "requiere_orden_servicio": 1,
+    "telefono": ""
+   }
+  ],
+  "telefono": "7514626 / 3168774072 / 3138536350",
+  "template_orden_servicio": "/private/files/FRSN-02-ORDEN DE SERVICIO DE EXAMENES MEDICOS OCUPACIONALES - laura 1 (27).xlsx"
+ }
+]
