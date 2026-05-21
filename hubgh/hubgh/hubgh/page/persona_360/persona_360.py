@@ -588,6 +588,33 @@ def get_persona_stats(
             )
         )
 
+    # 5. People Ops Events — operacion.traslado_pdv.* (CAP-08)
+    people_ops_events = get_persona_timeline(employee_id, area="operacion")
+    for poe in people_ops_events:
+        tax = str(poe.get("taxonomy") or "")
+        if not tax.startswith("operacion.traslado_pdv."):
+            continue
+        estado_poe = poe.get("state") or ""
+        title_map = {
+            "operacion.traslado_pdv.programado": "Traslado programado",
+            "operacion.traslado_pdv.aplicado": "Traslado aplicado",
+            "operacion.traslado_pdv.anulado": "Traslado anulado",
+        }
+        title = title_map.get(tax, f"Traslado PDV: {tax.split('.')[-1]}")
+        timeline.append(
+            _event_entry(
+                date_value=poe.get("occurred_on"),
+                event_type="Traslado PDV",
+                title=title,
+                desc=f"PDV — {estado_poe}" if estado_poe else "Traslado de PDV",
+                ref=poe.get("source_name"),
+                color="purple" if "aplicado" in tax else ("orange" if "anulado" in tax else "blue"),
+                module="Traslado PDV",
+                state=estado_poe,
+                severity=tax.split(".")[-1],
+            )
+        )
+
     bienestar_followups = _build_bienestar_followups(
         [
             {
@@ -713,7 +740,54 @@ def get_persona_stats(
         ],
         "payroll_block": payroll_block,
         "traslados_pdv": get_traslados_history(employee_id),
+        "people_ops_events": get_persona_timeline(employee_id),
     }
+
+
+def get_persona_timeline(empleado: str, area: str | None = None, limit: int = 50) -> list:
+    """
+    Retorna eventos del backbone People Ops Event para el empleado dado.
+
+    Usado en:
+    - Sección Timeline cronológico de Persona 360 (CAP-08).
+    - Incluye taxonomy operacion.traslado_pdv.* entre otros.
+
+    Args:
+        empleado: nombre del doc Ficha Empleado.
+        area: filtrar por área (ej. "operacion"). None = todas las áreas.
+        limit: máximo de eventos a retornar (default 50).
+
+    Returns:
+        Lista de dicts con campos de People Ops Event, ordenada por occurred_on desc.
+    """
+    if not empleado:
+        return []
+    if not frappe.db.exists("DocType", "People Ops Event"):
+        return []
+
+    filters = {"persona": empleado}
+    if area:
+        filters["area"] = area
+
+    return frappe.get_all(
+        "People Ops Event",
+        filters=filters,
+        fields=[
+            "name",
+            "persona",
+            "area",
+            "taxonomy",
+            "sensitivity",
+            "state",
+            "severity",
+            "source_doctype",
+            "source_name",
+            "occurred_on",
+            "backbone_mode",
+        ],
+        order_by="occurred_on desc",
+        limit=limit,
+    )
 
 
 def get_traslados_history(empleado: str) -> list:

@@ -493,6 +493,16 @@ def _dispatch_notifications(doc, fase: str) -> list[dict]:
         as_dict=True,
     ) or {}
 
+    # Resolver label legible del motivo (SUGGESTION-1)
+    motivo_code = doc.get("motivo")
+    motivo_label = (
+        frappe.db.get_value("Motivo Traslado", motivo_code, "label")
+        if motivo_code
+        else None
+    )
+    # Fallback al código si no hay registro en Motivo Traslado
+    motivo_label = motivo_label or motivo_code
+
     context = {
         "traslado": {
             "name": doc.name,
@@ -501,7 +511,8 @@ def _dispatch_notifications(doc, fase: str) -> list[dict]:
             "pdv_origen": doc.get("pdv_origen"),
             "pdv_destino": doc.get("pdv_destino"),
             "fecha_aplicacion": str(doc.get("fecha_aplicacion") or ""),
-            "motivo": doc.get("motivo"),
+            "motivo": motivo_code,
+            "motivo_label": motivo_label,
             "justificacion": doc.get("justificacion"),
             "cargo_destino": doc.get("cargo_destino"),
         },

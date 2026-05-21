@@ -796,3 +796,156 @@ class TestFlowContextAndTray(FrappeTestCase):
         from hubgh.hubgh.services.traslado_service import get_tray
         result = get_tray(filters={})
         self.assertIsInstance(result, list)
+
+
+# ---------------------------------------------------------------------------
+# SUGGESTION-1: motivo_label en context de _dispatch_notifications
+# ---------------------------------------------------------------------------
+
+class TestDispatchNotificationsMotivoLabel(FrappeTestCase):
+    """
+    Tests para SUGGESTION-1 — motivo_label debe inyectarse en el context de email.
+
+    TDD Cycle (Strict):
+      RED  → estos tests (fallan hasta agregar motivo_label en _dispatch_notifications)
+      GREEN → agregar resolución de motivo_label en _dispatch_notifications
+      TRIANGULATE → fallback a code si no hay registro de Motivo Traslado
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        _ensure_pdv(PDV_A)
+        _ensure_pdv(PDV_B)
+        _ensure_empleado(EMP_ACTIVO, pdv=PDV_A, estado="Activo")
+        # Asegurar que el Motivo Traslado existe con label legible
+        if not frappe.db.exists("Motivo Traslado", MOTIVO_SIMPLE):
+            frappe.get_doc({
+                "doctype": "Motivo Traslado",
+                "codigo": MOTIVO_SIMPLE,
+                "label": "Necesidad operativa",
+                "requiere_cambio_cargo": 0,
+                "activo": 1,
+            }).insert(ignore_permissions=True)
+
+    def tearDown(self):
+        _cleanup_traslados(EMP_ACTIVO)
+
+    def _make_doc(self, motivo=MOTIVO_SIMPLE):
+        """Construye un doc de Traslado PDV sin guardarlo (para unit test de context)."""
+        doc = frappe.new_doc("Traslado PDV")
+        doc.empleado = EMP_ACTIVO
+        doc.pdv_origen = PDV_A
+        doc.pdv_destino = PDV_B
+        doc.fecha_aplicacion = today()
+        doc.motivo = motivo
+        doc.justificacion = JUSTIFICACION_VALIDA
+        doc.estado = "Programado"
+        return doc
+
+    def test_dispatch_context_includes_motivo_label_when_motivo_set(self):
+        """
+        Cuando motivo está seteado y existe en Motivo Traslado,
+        el context de dispatch debe contener motivo_label con la label legible.
+        """
+        from unittest.mock import patch, MagicMock
+
+        doc = self._make_doc(motivo=MOTIVO_SIMPLE)
+
+        captured_contexts = []
+
+        def capture_dispatch(template_name, recipients, context):
+            captured_contexts.append(context)
+            return {"status": "skipped", "template": template_name}
+
+        with patch("hubgh.hubgh.services.traslado_service.dispatch_email",
+                   side_effect=capture_dispatch), \
+             patch("hubgh.hubgh.services.traslado_service.resolve_employee_email",
+                   return_value=None), \
+             patch("hubgh.hubgh.services.traslado_service.resolve_jefe_pdv",
+                   return_value=None):
+            from hubgh.hubgh.services.traslado_service import _dispatch_notifications
+            _dispatch_notifications(doc, fase="programado")
+
+        self.assertTrue(captured_contexts, "dispatch_email no fue llamado")
+        ctx = captured_contexts[0]
+        traslado_ctx = ctx.get("traslado", {})
+        self.assertIn(
+            "motivo_label",
+            traslado_ctx,
+            "motivo_label no está en context['traslado']",
+        )
+        # La label debe ser la legible, no el código
+        self.assertEqual(
+            traslado_ctx["motivo_label"],
+            "Necesidad operativa",
+            "motivo_label debe ser la label del Motivo Traslado, no el código",
+        )
+
+    def test_dispatch_context_motivo_label_falls_back_to_code(self):
+        """
+        Cuando motivo no tiene registro en Motivo Traslado,
+        motivo_label cae al código del motivo.
+        """
+        from unittest.mock import patch
+
+        # Usar un motivo que no existe en DB
+        doc = self._make_doc(motivo="motivo_inexistente_xyz")
+
+        captured_contexts = []
+
+        def capture_dispatch(template_name, recipients, context):
+            captured_contexts.append(context)
+            return {"status": "skipped", "template": template_name}
+
+        with patch("hubgh.hubgh.services.traslado_service.dispatch_email",
+                   side_effect=capture_dispatch), \
+             patch("hubgh.hubgh.services.traslado_service.resolve_employee_email",
+                   return_value=None), \
+             patch("hubgh.hubgh.services.traslado_service.resolve_jefe_pdv",
+                   return_value=None):
+            from hubgh.hubgh.services.traslado_service import _dispatch_notifications
+            _dispatch_notifications(doc, fase="programado")
+
+        self.assertTrue(captured_contexts)
+        ctx = captured_contexts[0]
+        traslado_ctx = ctx.get("traslado", {})
+        self.assertIn("motivo_label", traslado_ctx)
+        # Fallback al código del motivo
+        self.assertEqual(
+            traslado_ctx["motivo_label"],
+            "motivo_inexistente_xyz",
+            "motivo_label debe caer al código cuando no hay registro",
+        )
+
+    def test_dispatch_context_motivo_label_when_motivo_is_none(self):
+        """
+        Cuando motivo es None, motivo_label también es None o cadena vacía.
+        """
+        from unittest.mock import patch
+
+        doc = self._make_doc(motivo=MOTIVO_SIMPLE)
+        doc.motivo = None  # Forzar None
+
+        captured_contexts = []
+
+        def capture_dispatch(template_name, recipients, context):
+            captured_contexts.append(context)
+            return {"status": "skipped", "template": template_name}
+
+        with patch("hubgh.hubgh.services.traslado_service.dispatch_email",
+                   side_effect=capture_dispatch), \
+             patch("hubgh.hubgh.services.traslado_service.resolve_employee_email",
+                   return_value=None), \
+             patch("hubgh.hubgh.services.traslado_service.resolve_jefe_pdv",
+                   return_value=None):
+            from hubgh.hubgh.services.traslado_service import _dispatch_notifications
+            _dispatch_notifications(doc, fase="programado")
+
+        self.assertTrue(captured_contexts)
+        ctx = captured_contexts[0]
+        traslado_ctx = ctx.get("traslado", {})
+        self.assertIn("motivo_label", traslado_ctx)
+        # None motivo → motivo_label debe ser None o vacío (no crash)
+        label = traslado_ctx["motivo_label"]
+        self.assertTrue(label is None or label == "", "motivo_label con motivo=None debe ser None o vacío")
