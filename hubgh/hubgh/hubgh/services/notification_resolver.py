@@ -122,6 +122,61 @@ def resolve_employee_email(employee: str) -> str | None:
 	return None
 
 
+def resolve_area_subscribers(area: str) -> list[str]:
+	"""
+	Retorna lista deduplicada de emails de suscriptores configurados para un área
+	de terminación.
+
+	Lee `Configuracion Terminacion.suscriptores_por_area` (Single DocType) y
+	filtra por `area` + `activo=1`.
+
+	Resolución por tipo de suscriptor (un row puede tener uno de los tres):
+	  - user    → frappe.db.get_value("User", user, "email")
+	  - role    → resolve_role_subscribers(role) para expandir a todos los emails
+	  - email_fijo → agrega el literal directamente
+
+	Args:
+		area: Código del área (ej. "sistemas", "rrll_dotacion", "sst", etc.)
+
+	Returns:
+		Lista ordenada y deduplicada de emails. Lista vacía si no hay config o
+		suscriptores activos para el área.
+	"""
+	try:
+		config = frappe.get_single("Configuracion Terminacion")
+	except Exception:
+		return []
+
+	emails: set[str] = set()
+	rows = getattr(config, "suscriptores_por_area", []) or []
+
+	for row in rows:
+		row_area = getattr(row, "area", None)
+		activo = getattr(row, "activo", 1)
+		if row_area != area:
+			continue
+		if not activo:
+			continue
+
+		user = getattr(row, "user", None)
+		role = getattr(row, "role", None)
+		email_fijo = getattr(row, "email_fijo", None)
+
+		if user:
+			user_email = frappe.db.get_value("User", user, "email")
+			if user_email:
+				emails.add(user_email)
+
+		if role:
+			role_emails = resolve_role_subscribers(role)
+			emails.update(role_emails)
+
+		if email_fijo:
+			emails.add(email_fijo)
+
+	return sorted(emails)
+
+
 def resolve_role_subscribers(role: str) -> list[str]:
 	"""
 	Retorna lista ordenada y deduplicada de emails de todos los Users activos con un rol dado.
