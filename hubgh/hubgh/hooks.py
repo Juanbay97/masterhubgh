@@ -22,8 +22,20 @@ fixtures = [
 		"traslado_pdv_jefe_origen_programado",
 		"traslado_pdv_jefe_destino_programado",
 		"traslado_pdv_aplicado_confirmacion",
+		"terminacion_iniciada_sistemas",
+		"terminacion_iniciada_rrll_dotacion",
+		"terminacion_iniciada_operacion",
+		"terminacion_examen_egreso_empleado",
+		"terminacion_iniciada_compensacion",
+		"terminacion_iniciada_jefe_pdv",
+		"terminacion_carta_empleado",
+		"terminacion_cerrada_rrll",
+		"terminacion_recordatorio_subproceso",
+		"carta_terminacion_justa_causa",
+		"carta_terminacion_periodo_prueba",
 	]]]},
 	{"dt": "Motivo Traslado"},
+	{"dt": "Causal Terminacion"},
 ]
 
 # Apps

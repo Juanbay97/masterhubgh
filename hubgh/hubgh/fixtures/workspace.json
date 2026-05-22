@@ -46,7 +46,7 @@
     "type": "Link"
    }
   ],
-  "modified": "2026-05-21 21:14:35.937537",
+  "modified": "2026-05-22 19:41:16.753476",
   "module": "Hubgh",
   "name": "Gestión Humana",
   "number_cards": [
@@ -437,7 +437,7 @@
   "is_hidden": 0,
   "label": "SST",
   "links": [],
-  "modified": "2026-05-21 21:14:36.197223",
+  "modified": "2026-05-22 19:41:16.965695",
   "module": "Hubgh",
   "name": "SST",
   "number_cards": [
@@ -982,7 +982,7 @@
   "is_hidden": 1,
   "label": "Formación y Bienestar",
   "links": [],
-  "modified": "2026-05-21 21:19:57.365029",
+  "modified": "2026-05-22 19:39:14.234248",
   "module": "Hubgh",
   "name": "Formación y Bienestar",
   "number_cards": [],

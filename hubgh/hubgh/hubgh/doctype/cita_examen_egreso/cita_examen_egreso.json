@@ -1,0 +1,155 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-05-22 14:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "empleado",
+  "terminacion_origen",
+  "sb_fechas",
+  "fecha_limite",
+  "fecha_agendada",
+  "sb_estado",
+  "estado",
+  "ips",
+  "sb_token",
+  "token"
+ ],
+ "fields": [
+  {
+   "default": "CXE-.YYYY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Serie",
+   "options": "CXE-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "empleado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Empleado",
+   "options": "Ficha Empleado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "terminacion_origen",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Terminación de Contrato",
+   "options": "Terminacion Contrato",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sb_fechas",
+   "fieldtype": "Section Break",
+   "label": "Fechas"
+  },
+  {
+   "fieldname": "fecha_limite",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha límite (5 días hábiles)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_agendada",
+   "fieldtype": "Date",
+   "label": "Fecha agendada"
+  },
+  {
+   "fieldname": "sb_estado",
+   "fieldtype": "Section Break",
+   "label": "Estado"
+  },
+  {
+   "default": "Pendiente Agendamiento",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Estado",
+   "options": "Pendiente Agendamiento\nAgendada\nRealizada\nNo Realizada\nCancelada"
+  },
+  {
+   "fieldname": "ips",
+   "fieldtype": "Link",
+   "label": "IPS",
+   "options": "IPS"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_token",
+   "fieldtype": "Section Break",
+   "label": "Token de agendamiento"
+  },
+  {
+   "fieldname": "token",
+   "fieldtype": "Data",
+   "label": "Token",
+   "read_only": 1,
+   "unique": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-22 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Cita Examen Egreso",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Labor Relations",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gerente GH",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Empleado",
+   "select": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

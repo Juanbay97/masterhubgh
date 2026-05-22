@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "creation": "2026-05-22 14:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "codigo_validacion",
+  "descripcion",
+  "resultado",
+  "detalle",
+  "override_por",
+  "override_justificacion"
+ ],
+ "fields": [
+  {
+   "fieldname": "codigo_validacion",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Código de validación",
+   "reqd": 1
+  },
+  {
+   "fieldname": "descripcion",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Descripción"
+  },
+  {
+   "fieldname": "resultado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Resultado",
+   "options": "OK\nAlerta\nBloqueante\nNo Aplica\nOverride",
+   "reqd": 1
+  },
+  {
+   "fieldname": "detalle",
+   "fieldtype": "Small Text",
+   "label": "Detalle"
+  },
+  {
+   "fieldname": "override_por",
+   "fieldtype": "Link",
+   "label": "Override por",
+   "options": "User"
+  },
+  {
+   "fieldname": "override_justificacion",
+   "fieldtype": "Small Text",
+   "label": "Justificación override"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-22 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Terminacion Validacion Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

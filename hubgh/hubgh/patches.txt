@@ -36,3 +36,6 @@ hubgh.patches.load_initial_motivo_traslado_fixture
 hubgh.patches.create_traslado_email_templates
 hubgh.patches.setup_traslado_pdv_permissions
 hubgh.patches.cleanup_retiro_legacy_v1
+hubgh.patches.load_initial_causal_terminacion_fixture
+hubgh.patches.create_terminacion_email_templates
+hubgh.patches.seed_terminacion_config

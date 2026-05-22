@@ -1,0 +1,80 @@
+[
+ {
+  "activo": 1,
+  "codigo": "renuncia",
+  "docstatus": 0,
+  "doctype": "Causal Terminacion",
+  "modified": "2026-05-22 19:38:49.302130",
+  "name": "renuncia",
+  "nombre": "Renuncia voluntaria",
+  "plantilla_carta_template_name": "",
+  "requiere_carta_automatica": 0,
+  "requiere_caso_disciplinario": 0,
+  "requiere_periodo_prueba_check": 0
+ },
+ {
+  "activo": 1,
+  "codigo": "abandono_cargo",
+  "docstatus": 0,
+  "doctype": "Causal Terminacion",
+  "modified": "2026-05-22 19:38:49.363779",
+  "name": "abandono_cargo",
+  "nombre": "Abandono de cargo",
+  "plantilla_carta_template_name": "",
+  "requiere_carta_automatica": 0,
+  "requiere_caso_disciplinario": 0,
+  "requiere_periodo_prueba_check": 0
+ },
+ {
+  "activo": 1,
+  "codigo": "justa_causa",
+  "docstatus": 0,
+  "doctype": "Causal Terminacion",
+  "modified": "2026-05-22 19:38:49.372875",
+  "name": "justa_causa",
+  "nombre": "Terminación con justa causa",
+  "plantilla_carta_template_name": "carta_terminacion_justa_causa",
+  "requiere_carta_automatica": 1,
+  "requiere_caso_disciplinario": 1,
+  "requiere_periodo_prueba_check": 0
+ },
+ {
+  "activo": 1,
+  "codigo": "periodo_prueba",
+  "docstatus": 0,
+  "doctype": "Causal Terminacion",
+  "modified": "2026-05-22 19:38:49.380507",
+  "name": "periodo_prueba",
+  "nombre": "Terminación en periodo de prueba",
+  "plantilla_carta_template_name": "carta_terminacion_periodo_prueba",
+  "requiere_carta_automatica": 1,
+  "requiere_caso_disciplinario": 0,
+  "requiere_periodo_prueba_check": 1
+ },
+ {
+  "activo": 1,
+  "codigo": "mutuo_acuerdo",
+  "docstatus": 0,
+  "doctype": "Causal Terminacion",
+  "modified": "2026-05-22 19:38:49.387937",
+  "name": "mutuo_acuerdo",
+  "nombre": "Mutuo acuerdo",
+  "plantilla_carta_template_name": "",
+  "requiere_carta_automatica": 0,
+  "requiere_caso_disciplinario": 0,
+  "requiere_periodo_prueba_check": 0
+ },
+ {
+  "activo": 1,
+  "codigo": "otros",
+  "docstatus": 0,
+  "doctype": "Causal Terminacion",
+  "modified": "2026-05-22 19:38:49.395327",
+  "name": "otros",
+  "nombre": "Otros",
+  "plantilla_carta_template_name": "",
+  "requiere_carta_automatica": 0,
+  "requiere_caso_disciplinario": 0,
+  "requiere_periodo_prueba_check": 0
+ }
+]

@@ -1,0 +1,86 @@
+{
+ "actions": [],
+ "creation": "2026-05-22 14:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "area",
+  "responsable_rol",
+  "responsable_usuario",
+  "tarea_descripcion",
+  "estado",
+  "fecha_notificacion",
+  "fecha_completado",
+  "evidencia",
+  "notas"
+ ],
+ "fields": [
+  {
+   "fieldname": "area",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Área",
+   "options": "sistemas\nrrll_dotacion\noperacion\nsst\ncompensacion\njefe_pdv\nnomina",
+   "reqd": 1
+  },
+  {
+   "fieldname": "responsable_rol",
+   "fieldtype": "Data",
+   "label": "Rol responsable"
+  },
+  {
+   "fieldname": "responsable_usuario",
+   "fieldtype": "Link",
+   "label": "Usuario responsable",
+   "options": "User"
+  },
+  {
+   "fieldname": "tarea_descripcion",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Tarea"
+  },
+  {
+   "default": "Pendiente",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Pendiente\nEn Proceso\nCompletado\nNo Aplica\nBloqueado"
+  },
+  {
+   "fieldname": "fecha_notificacion",
+   "fieldtype": "Datetime",
+   "label": "Fecha notificación"
+  },
+  {
+   "fieldname": "fecha_completado",
+   "fieldtype": "Datetime",
+   "label": "Fecha completado"
+  },
+  {
+   "fieldname": "evidencia",
+   "fieldtype": "Attach",
+   "label": "Evidencia"
+  },
+  {
+   "fieldname": "notas",
+   "fieldtype": "Small Text",
+   "label": "Notas"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-22 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Terminacion Subproceso",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

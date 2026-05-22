@@ -1,0 +1,355 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-05-22 14:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "empleado",
+  "causal",
+  "sb_fechas",
+  "fecha_ultimo_dia",
+  "fecha_terminacion_efectiva",
+  "sb_estado",
+  "estado",
+  "iniciado_por",
+  "iniciado_en",
+  "sb_justificacion",
+  "justificacion",
+  "override_role_block",
+  "sb_snapshots",
+  "pdv_al_terminar",
+  "cargo_al_terminar",
+  "contrato_origen",
+  "caso_disciplinario_origen",
+  "novedad_sst_origen",
+  "sb_checklist",
+  "checklist_validaciones",
+  "sb_subprocesos",
+  "subprocesos",
+  "sb_documentos",
+  "carta_terminacion",
+  "carta_status",
+  "carpeta_retiro",
+  "examen_egreso",
+  "sb_cierre",
+  "resumen_cierre",
+  "cerrado_en",
+  "cerrado_por",
+  "sb_cancelacion",
+  "cancelado_motivo",
+  "cancelado_en",
+  "cancelado_por"
+ ],
+ "fields": [
+  {
+   "default": "TC-.YYYY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Serie",
+   "options": "TC-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "empleado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Empleado",
+   "options": "Ficha Empleado",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "causal",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Causal de terminación",
+   "options": "Causal Terminacion",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sb_fechas",
+   "fieldtype": "Section Break",
+   "label": "Fechas"
+  },
+  {
+   "fieldname": "fecha_ultimo_dia",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha último día laborado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_terminacion_efectiva",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha terminación efectiva",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sb_estado",
+   "fieldtype": "Section Break",
+   "label": "Estado"
+  },
+  {
+   "default": "Iniciado",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Estado",
+   "options": "Iniciado\nEn Curso\nCerrado\nCancelado",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "iniciado_por",
+   "fieldtype": "Link",
+   "label": "Iniciado por",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "iniciado_en",
+   "fieldtype": "Datetime",
+   "label": "Iniciado en",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_justificacion",
+   "fieldtype": "Section Break",
+   "label": "Justificación"
+  },
+  {
+   "fieldname": "justificacion",
+   "fieldtype": "Long Text",
+   "label": "Justificación",
+   "reqd": 1
+  },
+  {
+   "default": 0,
+   "fieldname": "override_role_block",
+   "fieldtype": "Check",
+   "label": "Permite bloquear System Manager (override)"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_snapshots",
+   "fieldtype": "Section Break",
+   "label": "Datos al momento de la terminación"
+  },
+  {
+   "fieldname": "pdv_al_terminar",
+   "fieldtype": "Link",
+   "label": "PDV al terminar",
+   "options": "Punto de Venta",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cargo_al_terminar",
+   "fieldtype": "Data",
+   "label": "Cargo al terminar",
+   "read_only": 1
+  },
+  {
+   "fieldname": "contrato_origen",
+   "fieldtype": "Link",
+   "label": "Contrato origen",
+   "options": "Contrato"
+  },
+  {
+   "fieldname": "caso_disciplinario_origen",
+   "fieldtype": "Link",
+   "label": "Caso Disciplinario origen",
+   "options": "Caso Disciplinario"
+  },
+  {
+   "fieldname": "novedad_sst_origen",
+   "fieldtype": "Link",
+   "label": "Novedad SST origen",
+   "options": "Novedad SST"
+  },
+  {
+   "fieldname": "sb_checklist",
+   "fieldtype": "Section Break",
+   "label": "Checklist de validaciones"
+  },
+  {
+   "fieldname": "checklist_validaciones",
+   "fieldtype": "Table",
+   "label": "Checklist de validaciones",
+   "options": "Terminacion Validacion Item"
+  },
+  {
+   "fieldname": "sb_subprocesos",
+   "fieldtype": "Section Break",
+   "label": "Subprocesos por área"
+  },
+  {
+   "fieldname": "subprocesos",
+   "fieldtype": "Table",
+   "label": "Subprocesos",
+   "options": "Terminacion Subproceso"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_documentos",
+   "fieldtype": "Section Break",
+   "label": "Documentos"
+  },
+  {
+   "fieldname": "carta_terminacion",
+   "fieldtype": "Attach",
+   "label": "Carta de terminación (PDF)"
+  },
+  {
+   "fieldname": "carta_status",
+   "fieldtype": "Select",
+   "label": "Estado carta",
+   "options": "\nGenerada\nError\nNo aplica",
+   "read_only": 1
+  },
+  {
+   "fieldname": "carpeta_retiro",
+   "fieldtype": "Link",
+   "label": "Carpeta de retiro",
+   "options": "Person Document"
+  },
+  {
+   "fieldname": "examen_egreso",
+   "fieldtype": "Link",
+   "label": "Cita Examen Egreso",
+   "options": "Cita Examen Egreso"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_cierre",
+   "fieldtype": "Section Break",
+   "label": "Cierre"
+  },
+  {
+   "fieldname": "resumen_cierre",
+   "fieldtype": "Long Text",
+   "label": "Resumen de cierre"
+  },
+  {
+   "fieldname": "cerrado_en",
+   "fieldtype": "Datetime",
+   "label": "Cerrado en",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cerrado_por",
+   "fieldtype": "Link",
+   "label": "Cerrado por",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_cancelacion",
+   "fieldtype": "Section Break",
+   "label": "Cancelación"
+  },
+  {
+   "fieldname": "cancelado_motivo",
+   "fieldtype": "Small Text",
+   "label": "Motivo de cancelación"
+  },
+  {
+   "fieldname": "cancelado_en",
+   "fieldtype": "Datetime",
+   "label": "Cancelado en",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelado_por",
+   "fieldtype": "Link",
+   "label": "Cancelado por",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-22 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hubgh",
+ "name": "Terminacion Contrato",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Labor Relations",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gestión Humana",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Gerente GH",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Jefe_PDV",
+   "select": 1
+  },
+  {
+   "read": 1,
+   "role": "Empleado",
+   "select": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "empleado",
+ "track_changes": 1
+}
