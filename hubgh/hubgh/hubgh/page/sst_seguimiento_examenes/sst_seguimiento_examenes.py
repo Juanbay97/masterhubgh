@@ -157,6 +157,8 @@ def _query_seguimiento_examenes(
             cita.cargo_al_enviar,
             cita.ips,
             cita.observaciones_sst,
+            cita.fecha_envio,
+            cita.fecha_agendamiento,
             cand.name AS candidato,
             cand.nombres,
             cand.primer_apellido,
@@ -196,6 +198,8 @@ def _query_seguimiento_examenes(
 
     rows_raw = frappe.db.sql(select_sql, params_paged, as_dict=True)
 
+    from hubgh.hubgh.examen_medico.cita_service import _format_hora_hhmm
+
     rows = []
     for r in rows_raw:
         row = dict(r)
@@ -212,6 +216,17 @@ def _query_seguimiento_examenes(
         row["datos_faltantes"] = bool(
             row.get("modo") == "Manual" and not row.get("fecha_cita")
         )
+        # Si no hay fecha_cita, la hora no aplica — limpiarla para evitar mostrar
+        # valores espurios heredados (timedelta crudo con microsegundos).
+        if not row.get("fecha_cita"):
+            row["hora_cita"] = None
+        else:
+            row["hora_cita"] = _format_hora_hhmm(row.get("hora_cita")) or None
+        # Formatear fecha_envio como ISO string para JS (evita repr de datetime)
+        if row.get("fecha_envio"):
+            row["fecha_envio"] = str(row["fecha_envio"])
+        if row.get("fecha_agendamiento"):
+            row["fecha_agendamiento"] = str(row["fecha_agendamiento"])
         rows.append(row)
 
     return rows, int(total)
@@ -246,11 +261,12 @@ def list_seguimiento_examenes(filters=None, limit=100, offset=0):
 
 
 @frappe.whitelist()
-def set_cita_schedule(cita_name, fecha, hora, sede=None, force_pasado=False):
-    """Agenda o reagenda una cita (fecha, hora, sede).
+def set_cita_schedule(cita_name, fecha, hora, sede=None, force_pasado=False, notify_ips=True):
+    """Agenda o reagenda una cita (fecha, hora, sede) desde la bandeja de seguimiento.
 
-    Transiciona el estado a 'Agendada'. Usa frappe.db.set_value para bypass
-    del read_only=1 en sede_seleccionada.
+    Transiciona el estado a 'Agendada', sella `fecha_agendamiento` y por defecto
+    dispara el correo de notificación a la IPS (best-effort). El envío sella
+    `enviado_ips` y `fecha_envio` automáticamente.
 
     Args:
         cita_name: name del documento Cita Examen Medico.
@@ -258,9 +274,10 @@ def set_cita_schedule(cita_name, fecha, hora, sede=None, force_pasado=False):
         hora: str en formato HH:MM o HH:MM:SS.
         sede: nombre de la sede (opcional).
         force_pasado: bool — si True, permite fechas pasadas sin error.
+        notify_ips: bool — si True (default) dispara correo a IPS al guardar.
 
     Returns:
-        {"ok": True, "cita": cita_name, "fecha": fecha, "hora": hora}
+        {"ok": True, "cita": cita_name, "fecha": fecha, "hora": hora, "ips_email_sent": bool}
     """
     _require_access()
 
@@ -275,6 +292,7 @@ def set_cita_schedule(cita_name, fecha, hora, sede=None, force_pasado=False):
     today = getdate(nowdate())
 
     force = frappe.parse_json(force_pasado) if isinstance(force_pasado, str) else bool(force_pasado)
+    notify = frappe.parse_json(notify_ips) if isinstance(notify_ips, str) else bool(notify_ips)
 
     if fecha_parsed < today and not force:
         frappe.throw(
@@ -291,13 +309,46 @@ def set_cita_schedule(cita_name, fecha, hora, sede=None, force_pasado=False):
         "estado": "Agendada",
         "fecha_cita": fecha,
         "hora_cita": hora,
+        "fecha_agendamiento": frappe.utils.now_datetime(),
     }
     if sede is not None:
         vals["sede_seleccionada"] = sede
 
     frappe.db.set_value("Cita Examen Medico", cita_name, vals, update_modified=True)
 
-    return {"ok": True, "cita": cita_name, "fecha": fecha, "hora": hora}
+    # Envío a IPS: best-effort, no bloquea la respuesta si falla
+    ips_email_sent = False
+    if notify:
+        try:
+            from hubgh.hubgh.examen_medico.cita_service import notify_ips_cita_agendada
+            ips_email_sent = bool(notify_ips_cita_agendada(cita_name))
+        except Exception:
+            try:
+                frappe.log_error(frappe.get_traceback(), "set_cita_schedule.notify_ips")
+            except Exception:
+                pass
+
+    _publish_cita_change(cita_name, action="schedule")
+
+    return {
+        "ok": True,
+        "cita": cita_name,
+        "fecha": fecha,
+        "hora": hora,
+        "ips_email_sent": ips_email_sent,
+    }
+
+
+def _publish_cita_change(cita_name: str, action: str = "update") -> None:
+    """Emite un evento realtime para que las bandejas abiertas refresquen."""
+    try:
+        frappe.publish_realtime(
+            event="cita_examen_medico_changed",
+            message={"cita": cita_name, "action": action},
+            after_commit=True,
+        )
+    except Exception:
+        pass
 
 
 @frappe.whitelist()
@@ -365,6 +416,7 @@ def set_cita_observaciones(cita_name, texto):
         texto,
         update_modified=True,
     )
+    _publish_cita_change(cita_name, action="observaciones")
     return {"ok": True}
 
 
@@ -433,6 +485,7 @@ def set_cita_outcome(cita_name, estado, concepto=None, motivo=None, instruccione
         instrucciones=instrucciones,
     )
 
+    _publish_cita_change(cita_name, action="outcome")
     return {"ok": True, "cita": cita_name, "estado": estado}
 
 
@@ -472,6 +525,8 @@ def reagendar_cita_desde_bandeja(cita_name):
 
     nueva = reagendar_cita(cita_name)
 
+    _publish_cita_change(cita_name, action="reagendar")
+    _publish_cita_change(nueva, action="reagendar_nueva")
     return {
         "ok": True,
         "cita_anterior": cita_name,

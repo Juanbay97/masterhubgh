@@ -423,10 +423,26 @@ def book_slot(token: str, fecha: str, hora: str, sede: str | None = None) -> dic
 					},
 					attachments=attachments,
 				)
-				frappe.db.set_value("Cita Examen Medico", cita_name, "enviado_ips", 1)
+				frappe.db.set_value(
+					"Cita Examen Medico",
+					cita_name,
+					{
+						"enviado_ips": 1,
+						"fecha_envio": frappe.utils.now_datetime(),
+					},
+				)
 			except Exception:
 				pass
 		frappe.db.commit()
+	except Exception:
+		pass
+
+	try:
+		frappe.publish_realtime(
+			event="cita_examen_medico_changed",
+			message={"cita": cita_name, "action": "autogestionado_agendada"},
+			after_commit=True,
+		)
 	except Exception:
 		pass
 

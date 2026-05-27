@@ -40,6 +40,15 @@ frappe.pages["sst_seguimiento_examenes"].on_page_load = function (wrapper) {
 		return frappe.datetime.get_today();
 	}
 
+	// Formatea "YYYY-MM-DD HH:MM:SS[.ffffff]" → "DD/MM HH:MM"
+	function formatEnvio(value) {
+		if (!value) return "—";
+		const s = String(value).trim();
+		const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+		if (!m) return s;
+		return `${m[3]}/${m[2]} ${m[4]}:${m[5]}`;
+	}
+
 	function defaultFechaDesde() {
 		return frappe.datetime.add_days(today(), -7);
 	}
@@ -259,6 +268,7 @@ frappe.pages["sst_seguimiento_examenes"].on_page_load = function (wrapper) {
 					<td>${esc(r.fecha_cita || "—")}</td>
 					<td>${esc(r.hora_cita || "—")}</td>
 					<td>${esc(r.modo)}</td>
+					<td title="${esc(r.fecha_envio || "")}">${esc(formatEnvio(r.fecha_envio))}</td>
 					<td class="obs-preview" title="${esc(r.observaciones_sst)}">${esc(r.observaciones_preview)}</td>
 					<td>
 						<div style="display:flex;gap:4px;flex-wrap:wrap;">
@@ -296,6 +306,7 @@ frappe.pages["sst_seguimiento_examenes"].on_page_load = function (wrapper) {
 						<th>Fecha</th>
 						<th>Hora</th>
 						<th>Modo</th>
+						<th>Enviado</th>
 						<th>Observaciones</th>
 						<th>Acciones</th>
 					</tr>
@@ -374,7 +385,13 @@ frappe.pages["sst_seguimiento_examenes"].on_page_load = function (wrapper) {
 					callback(r) {
 						if (r && r.message && r.message.ok) {
 							d.hide();
-							frappe.show_alert({ message: __("Agendamiento actualizado."), indicator: "green" });
+							const msg = r.message.ips_email_sent
+								? __("Agendamiento actualizado. Correo enviado a la IPS.")
+								: __("Agendamiento actualizado. (No se pudo enviar correo a la IPS — revisá la configuración.)");
+							frappe.show_alert({
+								message: msg,
+								indicator: r.message.ips_email_sent ? "green" : "orange",
+							});
 							resetAndFetch();
 						}
 					},
@@ -674,6 +691,50 @@ frappe.pages["sst_seguimiento_examenes"].on_page_load = function (wrapper) {
 	$body.on("click", ".btn-reagendar", function () {
 		const $btn = $(this);
 		reagendarCita($btn.data("cita"), $btn.data("nombre"), $btn.data("modo"));
+	});
+
+	// ─── Auto-refresh: realtime + polling de respaldo ─────────────────────
+	function silentRefresh() {
+		if (state.loading) return;
+		// No interrumpir si hay un diálogo abierto editando
+		if (cur_dialog && cur_dialog.display) return;
+		frappe.call({
+			method: "hubgh.hubgh.page.sst_seguimiento_examenes.sst_seguimiento_examenes.list_seguimiento_examenes",
+			args: {
+				filters: getFilters(),
+				limit: state.limit,
+				offset: state.offset,
+			},
+			callback(r) {
+				if (r && r.message) {
+					state.rows = r.message.rows || [];
+					state.total = r.message.total || 0;
+					renderTable(state.rows);
+					renderPagination();
+				}
+			},
+		});
+	}
+
+	let _rtDebounce = null;
+	function scheduleRealtimeRefresh() {
+		clearTimeout(_rtDebounce);
+		_rtDebounce = setTimeout(silentRefresh, 800);
+	}
+
+	try {
+		frappe.realtime.on("cita_examen_medico_changed", scheduleRealtimeRefresh);
+	} catch (e) {
+		// realtime no disponible — caemos al polling de respaldo
+	}
+
+	// Polling de respaldo cada 60s
+	const _pollId = setInterval(silentRefresh, 60000);
+
+	// Limpiar listeners cuando el usuario sale de la página
+	$(wrapper).on("remove", () => {
+		clearInterval(_pollId);
+		try { frappe.realtime.off("cita_examen_medico_changed", scheduleRealtimeRefresh); } catch (e) {}
 	});
 
 	// ─── Carga inicial ────────────────────────────────────────────────────

@@ -721,3 +721,173 @@ def reagendar_cita(cita_name: str) -> str:
 		cargo=cargo,
 		cita_anterior=cita_name,
 	)
+
+
+def notify_ips_cita_agendada(cita_name: str) -> bool:
+	"""Envía el correo de notificación a la IPS con los datos de la cita.
+
+	Resuelve sede, exámenes y orden de servicio (FRSN-02 si aplica). Best-effort:
+	no relanza excepciones — en caso de fallo loguea via frappe.log_error y retorna False.
+
+	Side effects en éxito:
+	  - `enviado_ips = 1`
+	  - `fecha_envio = now_datetime()`
+
+	Args:
+		cita_name: Nombre del Cita Examen Medico.
+
+	Returns:
+		True si se envió el correo, False si no hubo destinatario o falló.
+	"""
+	import frappe
+
+	from hubgh.hubgh.examen_medico.email_service import send_exam_email
+	from hubgh.hubgh.examen_medico.frsn02_generator import generate_frsn02
+
+	try:
+		cita = frappe.get_doc("Cita Examen Medico", cita_name)
+	except Exception:
+		return False
+
+	ips_name = cita.ips
+	if not ips_name:
+		return False
+
+	try:
+		ips_doc = frappe.get_doc("IPS", ips_name)
+	except Exception:
+		return False
+
+	candidato_name = cita.candidato
+	try:
+		candidato = frappe.get_doc("Candidato", candidato_name)
+	except Exception:
+		return False
+
+	candidato_nombre = " ".join(filter(None, [
+		getattr(candidato, "nombres", None),
+		getattr(candidato, "primer_apellido", None),
+		getattr(candidato, "segundo_apellido", None),
+	])) or candidato_name
+	candidato_ciudad = getattr(candidato, "ciudad", "") or ""
+
+	# Resolver sede elegida en la cita; fallback a sintética con datos IPS
+	sedes_visibles = _get_sedes_for_ciudad(ips_doc.as_dict(), candidato_ciudad)
+	sede_nombre = cita.sede_seleccionada or ""
+	sede_resuelta = None
+	for s in sedes_visibles or []:
+		if sede_nombre and s.get("nombre_sede") == sede_nombre:
+			sede_resuelta = s
+			break
+	if not sede_resuelta and sedes_visibles:
+		sede_resuelta = sedes_visibles[0]
+	if not sede_resuelta:
+		sede_resuelta = {
+			"nombre_sede": sede_nombre or "Sede principal",
+			"direccion": getattr(ips_doc, "direccion", "") or "",
+			"telefono": getattr(ips_doc, "telefono", "") or "",
+			"email": getattr(ips_doc, "email_notificacion", "") or "",
+			"requiere_orden_servicio": int(getattr(ips_doc, "requiere_orden_servicio", 0) or 0),
+		}
+
+	sede_email = sede_resuelta.get("email") or ""
+	if not sede_email:
+		return False
+
+	cargo_cita = cita.cargo_al_enviar or ""
+	cargo_label = _resolve_cargo_label(cargo_cita) or cargo_cita
+	tipo_cargo = _resolve_cargo_tipo(cargo_cita)
+	examenes = _resolve_examenes_for_cargo(ips_doc, cargo_cita, tipo_cargo=tipo_cargo)
+
+	attachments = []
+	if int(sede_resuelta.get("requiere_orden_servicio", 0) or 0):
+		try:
+			candidato_for_frsn = {
+				"nombre": candidato_nombre,
+				"cedula": getattr(candidato, "numero_documento", None) or candidato_name,
+				"cargo": cargo_label,
+				"ciudad": candidato_ciudad,
+			}
+			xlsx_bytes = generate_frsn02(ips_doc.as_dict(), candidato_for_frsn)
+			if xlsx_bytes:
+				attachments = [{
+					"fname": f"FRSN-02_{candidato_name}.xlsx",
+					"fcontent": xlsx_bytes,
+				}]
+		except Exception:
+			pass
+
+	# Normalizar hora a HH:MM para mostrar en el correo
+	hora_display = _format_hora_hhmm(cita.hora_cita)
+
+	try:
+		send_exam_email(
+			template_name="examen_medico_ips_notificacion",
+			recipients=[sede_email],
+			context={
+				"candidato": {
+					"nombre": candidato_nombre,
+					"cedula": getattr(candidato, "numero_documento", None) or candidato_name,
+					"cargo": cargo_label,
+					"ciudad": candidato_ciudad,
+				},
+				"cita": {
+					"fecha_cita": cita.fecha_cita,
+					"hora_cita": hora_display,
+					"sede": sede_resuelta.get("nombre_sede", ""),
+					"sede_direccion": sede_resuelta.get("direccion", ""),
+					"sede_ciudad": sede_resuelta.get("ciudad", "") or candidato_ciudad,
+				},
+				"examenes": examenes,
+			},
+			attachments=attachments,
+		)
+	except Exception:
+		try:
+			frappe.log_error(frappe.get_traceback(), "notify_ips_cita_agendada")
+		except Exception:
+			pass
+		return False
+
+	frappe.db.set_value(
+		"Cita Examen Medico",
+		cita_name,
+		{
+			"enviado_ips": 1,
+			"fecha_envio": frappe.utils.now_datetime(),
+		},
+		update_modified=True,
+	)
+	return True
+
+
+def _format_hora_hhmm(value) -> str:
+	"""Formatea un valor de Time (timedelta | time | str | None) como 'HH:MM'.
+
+	Devuelve string vacío si el valor es None/falso. Tolera microsegundos
+	y formatos parciales (HH:MM, HH:MM:SS, HH:MM:SS.ffffff).
+	"""
+	import datetime as _dt
+
+	if not value:
+		return ""
+	if isinstance(value, _dt.timedelta):
+		total = int(value.total_seconds())
+		hh = (total // 3600) % 24
+		mm = (total % 3600) // 60
+		return f"{hh:02d}:{mm:02d}"
+	if isinstance(value, _dt.time):
+		return value.strftime("%H:%M")
+	text = str(value).strip()
+	if not text:
+		return ""
+	# string formats: "HH:MM" | "HH:MM:SS" | "HH:MM:SS.ffffff"
+	parts = text.split(":")
+	if len(parts) >= 2:
+		try:
+			hh = int(parts[0])
+			mm = int(parts[1])
+			return f"{hh:02d}:{mm:02d}"
+		except ValueError:
+			return text
+	return text

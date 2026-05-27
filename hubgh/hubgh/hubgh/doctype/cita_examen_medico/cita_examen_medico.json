@@ -27,6 +27,7 @@
   "observaciones_sst",
   "section_seguimiento",
   "fecha_agendamiento",
+  "fecha_envio",
   "enviado_confirmacion",
   "enviado_recordatorio",
   "enviado_ips",
@@ -162,6 +163,13 @@
    "label": "Fecha de Agendamiento",
    "read_only": 1,
    "description": "Timestamp en que el candidato confirmó fecha y hora. Usado por el digest diario."
+  },
+  {
+   "fieldname": "fecha_envio",
+   "fieldtype": "Datetime",
+   "label": "Fecha de Envío",
+   "read_only": 1,
+   "description": "Timestamp automático en que se envió el correo de notificación a la IPS."
   },
   {
    "fieldname": "enviado_confirmacion",
