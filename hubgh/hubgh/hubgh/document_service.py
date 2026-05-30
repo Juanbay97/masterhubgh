@@ -75,30 +75,6 @@ def _is_excluded_from_candidate_hiring_progress(doc_type_row):
 	return name == "contrato"
 
 
-def _is_bank_certification_document(doc_type_row):
-	name = _normalize_text((doc_type_row.get("document_name") if isinstance(doc_type_row, dict) else getattr(doc_type_row, "document_name", None)) or (doc_type_row.get("name") if isinstance(doc_type_row, dict) else getattr(doc_type_row, "name", None)) or "")
-	return name == _normalize_text("Certificación bancaria (No mayor a 30 días).")
-
-
-def _candidate_has_bank_account(candidate):
-	row = frappe.db.get_value(
-		"Candidato",
-		candidate,
-		["tiene_cuenta_bancaria", "banco_siesa", "tipo_cuenta_bancaria", "numero_cuenta_bancaria"],
-		as_dict=True,
-	)
-	value = str((row or {}).get("tiene_cuenta_bancaria") or "").strip().lower()
-	if value in {"si", "sí", "1", "true", "yes"}:
-		return True
-	return any((row or {}).get(fieldname) not in (None, "") for fieldname in ("banco_siesa", "tipo_cuenta_bancaria", "numero_cuenta_bancaria"))
-
-
-def _filter_candidate_document_types_for_profile(candidate, doc_types):
-	if _candidate_has_bank_account(candidate):
-		return list(doc_types or [])
-	return [row for row in (doc_types or []) if not _is_bank_certification_document(row)]
-
-
 def _get_document_type_rules(document_type):
 	dt_name = _resolve_document_type_name(document_type)
 	dt = frappe.get_doc("Document Type", dt_name)
@@ -762,7 +738,6 @@ def ensure_candidate_required_documents(candidate):
 		filters={"is_active": 1, "applies_to": ["in", ["Candidato", "Ambos"]]},
 		fields=["name", "allows_multiple"],
 	)
-	doc_types = _filter_candidate_document_types_for_profile(candidate, doc_types)
 	for d in doc_types:
 		if int(d.allows_multiple or 0):
 			exists = frappe.db.exists(
@@ -786,7 +761,6 @@ def get_candidate_progress(candidate):
 		fields=["name", "requires_approval", "document_name", "allows_multiple"],
 	)
 	required = [row for row in required if not _is_excluded_from_candidate_hiring_progress(row)]
-	required = _filter_candidate_document_types_for_profile(candidate, required)
 
 	if not required:
 		return {
