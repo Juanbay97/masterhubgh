@@ -43,6 +43,13 @@ class TestApplyCedulaChange(unittest.TestCase):
 		self.frappe = self.patcher.start()
 		self.addCleanup(self.patcher.stop)
 
+		# `rename_doc_unrestricted` se importa por separado (no es atributo de
+		# frappe), así que se patchea aparte. El código usa la función de bajo
+		# nivel con `ignore_permissions=True` en vez de `frappe.rename_doc`.
+		self.rename_patcher = patch.object(ccs, "rename_doc_unrestricted")
+		self.rename_doc = self.rename_patcher.start()
+		self.addCleanup(self.rename_patcher.stop)
+
 		# `frappe.throw` debe levantar excepción; por defecto Mock no levanta.
 		def _throw(msg, *args, **kwargs):
 			raise ccs.frappe.ValidationError(str(msg))
@@ -100,12 +107,12 @@ class TestApplyCedulaChange(unittest.TestCase):
 
 		# Validaciones clave de la cascada:
 		# 1. rename del Candidato.
-		self.frappe.rename_doc.assert_any_call(
-			"Candidato", "12345678", "87654321", merge=False,
+		self.rename_doc.assert_any_call(
+			"Candidato", "12345678", "87654321", merge=False, ignore_permissions=True,
 		)
 		# 2. rename de la Ficha Empleado.
-		self.frappe.rename_doc.assert_any_call(
-			"Ficha Empleado", "12345678", "87654321", merge=False,
+		self.rename_doc.assert_any_call(
+			"Ficha Empleado", "12345678", "87654321", merge=False, ignore_permissions=True,
 		)
 		# 3. set_value de User.username (NO rename).
 		self.frappe.db.set_value.assert_any_call("User", "user@example.com", "username", "87654321")
@@ -139,7 +146,7 @@ class TestApplyCedulaChange(unittest.TestCase):
 		result = ccs._apply_cedula_change(doc)
 
 		# rename_doc se llama UNA sola vez (Candidato), no para Ficha.
-		rename_calls = [c.args[0] for c in self.frappe.rename_doc.call_args_list]
+		rename_calls = [c.args[0] for c in self.rename_doc.call_args_list]
 		self.assertIn("Candidato", rename_calls)
 		self.assertNotIn("Ficha Empleado", rename_calls)
 		self.assertFalse(result["ficha_empleado_renamed"])
@@ -246,7 +253,7 @@ class TestApplyCedulaChange(unittest.TestCase):
 		self.assertIn("AFIL-12345678", str(ctx.exception))
 		# No debe haber abierto savepoint ni renombrado nada.
 		self.frappe.db.savepoint.assert_not_called()
-		self.frappe.rename_doc.assert_not_called()
+		self.rename_doc.assert_not_called()
 
 	def test_bloqueo_por_afiliacion_en_proceso(self):
 		"""Si hay Afiliacion en estado 'En Proceso' → también bloquea."""
@@ -289,7 +296,7 @@ class TestApplyCedulaChange(unittest.TestCase):
 			if args[0] == "Ficha Empleado":
 				raise RuntimeError("simulated rename failure")
 			return None
-		self.frappe.rename_doc.side_effect = _rename
+		self.rename_doc.side_effect = _rename
 
 		doc = _make_doc(valor_nuevo="87654321")
 		with self.assertRaises(RuntimeError):
@@ -318,7 +325,7 @@ class TestApplyCedulaChange(unittest.TestCase):
 
 		# rename_doc llamado con Ficha Empleado.
 		ficha_rename_calls = [
-			c for c in self.frappe.rename_doc.call_args_list
+			c for c in self.rename_doc.call_args_list
 			if c.args and c.args[0] == "Ficha Empleado"
 		]
 		self.assertEqual(len(ficha_rename_calls), 1)

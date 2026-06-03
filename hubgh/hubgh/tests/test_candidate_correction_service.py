@@ -140,7 +140,7 @@ class TestApplyEmailChange(FrappeTestCase):
 			"set_value": patch(f"{module}.frappe.db.set_value", set_value_mock),
 			"savepoint": patch(f"{module}.frappe.db.savepoint", savepoint_mock),
 			"rollback": patch(f"{module}.frappe.db.rollback", rollback_mock),
-			"rename_doc": patch(f"{module}.frappe.rename_doc"),
+			"rename_doc": patch(f"{module}.rename_doc_unrestricted"),
 			"clear_sessions": patch(f"{module}.frappe.sessions.clear_sessions"),
 			"send_activation": patch(f"{module}.send_user_activation_email"),
 			"get_doc": patch(
@@ -166,7 +166,7 @@ class TestApplyEmailChange(FrappeTestCase):
 
 		mocks["rename_doc"].assert_called_once_with(
 			"User", "old@example.com", "new@example.com",
-			merge=False,
+			merge=False, ignore_permissions=True,
 		)
 		mocks["send_activation"].assert_called_once_with("new@example.com")
 		mocks["clear_sessions"].assert_not_called()
@@ -187,7 +187,8 @@ class TestApplyEmailChange(FrappeTestCase):
 		result = candidate_correction_service._apply_email_change(doc)
 
 		mocks["rename_doc"].assert_called_once()
-		mocks["clear_sessions"].assert_called_once_with(user="new@example.com")
+		# Las sesiones se invalidan ANTES del rename, con el usuario VIEJO + force.
+		mocks["clear_sessions"].assert_called_once_with(user="old@example.com", force=True)
 		mocks["send_activation"].assert_not_called()
 		self.assertTrue(result["user_was_active"])
 		self.assertTrue(result["sessions_invalidated"])
