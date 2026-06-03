@@ -42,6 +42,7 @@ def _install_stubs():
 
 	document_service = types.ModuleType("hubgh.hubgh.document_service")
 	document_service.build_employee_documents_zip = lambda employee: "/private/files/test.zip"
+	document_service._persist_generated_private_file = lambda *args, **kwargs: "/private/files/test.zip"
 	sys.modules["hubgh.hubgh.document_service"] = document_service
 
 	role_matrix = types.ModuleType("hubgh.hubgh.role_matrix")

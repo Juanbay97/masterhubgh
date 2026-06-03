@@ -1,5 +1,4 @@
 import io
-import hashlib
 import os
 import re
 import unicodedata
@@ -10,7 +9,10 @@ import frappe
 from frappe.utils import cint, getdate, now_datetime
 from frappe.utils.file_manager import save_file
 
-from hubgh.hubgh.document_service import build_employee_documents_zip
+from hubgh.hubgh.document_service import (
+	build_employee_documents_zip,
+	_persist_generated_private_file,
+)
 from hubgh.hubgh.role_matrix import user_has_any_role
 
 
@@ -779,49 +781,6 @@ def replace_document(person_document, employee, document_type, file_url, issue_d
 		valid_until=valid_until,
 		person_document=person_document,
 	)
-
-
-def _persist_generated_private_file(file_name, content, attached_to_doctype, attached_to_name):
-	private_files_path = frappe.get_site_path("private", "files")
-	os.makedirs(private_files_path, exist_ok=True)
-	base_name, ext = os.path.splitext(file_name)
-	safe_base = re.sub(r"[^\w\-.]+", "_", base_name).strip("._") or "archivo"
-	content_hash = hashlib.md5(content).hexdigest()
-	final_name = f"{safe_base}{ext}"
-	absolute_path = os.path.join(private_files_path, final_name)
-	idx = 2
-	while os.path.exists(absolute_path):
-		with open(absolute_path, "rb") as existing_file:
-			if hashlib.md5(existing_file.read()).hexdigest() == content_hash:
-				break
-		final_name = f"{safe_base}-{idx}{ext}"
-		absolute_path = os.path.join(private_files_path, final_name)
-		idx += 1
-	if not os.path.exists(absolute_path):
-		with open(absolute_path, "wb") as output_file:
-			output_file.write(content)
-	file_url = f"/private/files/{final_name}"
-	existing = frappe.db.get_value(
-		"File",
-		{
-			"file_url": file_url,
-			"attached_to_doctype": attached_to_doctype,
-			"attached_to_name": attached_to_name,
-		},
-		"name",
-	)
-	if existing:
-		return file_url
-	frappe.get_doc({
-		"doctype": "File",
-		"file_name": final_name,
-		"file_url": file_url,
-		"is_private": 1,
-		"attached_to_doctype": attached_to_doctype,
-		"attached_to_name": attached_to_name,
-		"folder": "Home/Attachments",
-	}).insert(ignore_permissions=True)
-	return file_url
 
 
 @frappe.whitelist()
