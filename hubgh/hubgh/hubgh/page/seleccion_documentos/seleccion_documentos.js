@@ -285,9 +285,8 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 				`);
 
 				dialog.fields_dict.content.$wrapper.find(".btn-download-zip").on("click", () => {
-					frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.download_candidate_documents_zip", { candidate }).then(resp => {
-						if (resp.message) window.open(resp.message, "_blank");
-					});
+					const url = "/api/method/hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.download_candidate_documents_zip?candidate=" + encodeURIComponent(candidate);
+					window.open(url, "_blank");
 				});
 				dialog.fields_dict.content.$wrapper.find(".btn-upload-selection-doc").on("click", () => openSelectionDocsUploadDialog(candidate, uploadDocTypes));
 				dialog.fields_dict.content.$wrapper.find(".action-delete-pdoc").on("click", function() {

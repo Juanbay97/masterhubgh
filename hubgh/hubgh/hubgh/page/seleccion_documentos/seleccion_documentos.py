@@ -12,7 +12,7 @@ from hubgh.hubgh.candidate_states import (
 )
 from hubgh.hubgh.display_labels import get_punto_name_map, resolve_candidate_location_labels, resolve_siesa_bank_name
 from hubgh.hubgh.document_service import (
-	build_candidate_documents_zip,
+	build_candidate_documents_zip_bytes,
 	ensure_candidate_required_documents,
 	get_person_document_rows,
 	get_candidate_progress,
@@ -913,4 +913,7 @@ def employee_folder(employee):
 @frappe.whitelist()
 def download_candidate_documents_zip(candidate):
 	_validate_selection_access(candidate)
-	return build_candidate_documents_zip(candidate)
+	zip_name, content = build_candidate_documents_zip_bytes(candidate)
+	frappe.response["filename"] = zip_name
+	frappe.response["filecontent"] = content
+	frappe.response["type"] = "binary"
