@@ -172,19 +172,19 @@ class TestHiringDocumentLinkage(TestCase):
 		self.assertEqual(result, "/private/files/zip.zip")
 		dossier_mock.assert_called_once_with("Candidato", "CAND-001")
 
-	def test_build_candidate_documents_zip_persists_without_save_file(self):
+	def test_build_candidate_documents_zip_bytes_returns_zip_without_persisting(self):
 		with patch(
 			"hubgh.hubgh.document_service._build_person_dossier",
 			return_value={"vigentes": [{"document_type": "HV", "file": "/private/files/hv.pdf", "version": 1, "is_vigente": True}], "historico": []},
 		) as dossier_mock, patch(
 			"hubgh.hubgh.document_service.os.path.exists", return_value=False
 		), patch("hubgh.hubgh.document_service.save_file") as save_file_mock, patch(
-			"hubgh.hubgh.document_service._persist_generated_private_file",
-			return_value="/private/files/candidato_CAND-001_documentos.zip",
+			"hubgh.hubgh.document_service._persist_generated_private_file"
 		) as persist_mock:
-			result = document_service.build_candidate_documents_zip("CAND-001")
+			zip_name, content = document_service.build_candidate_documents_zip_bytes("CAND-001")
 
-		self.assertEqual(result, "/private/files/candidato_CAND-001_documentos.zip")
-		persist_mock.assert_called_once()
+		self.assertEqual(zip_name, "candidato_CAND-001_documentos.zip")
+		self.assertIsInstance(content, (bytes, bytearray))
 		save_file_mock.assert_not_called()
+		persist_mock.assert_not_called()
 		dossier_mock.assert_called_once_with("Candidato", "CAND-001")

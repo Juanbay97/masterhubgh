@@ -1036,7 +1036,15 @@ def _persist_generated_private_file(file_name, content, attached_to_doctype, att
 	return file_url
 
 
-def build_candidate_documents_zip(candidate):
+def build_candidate_documents_zip_bytes(candidate):
+	"""Build the candidate documents ZIP in memory and return ``(zip_name, content)``.
+
+	The bundle is streamed straight to the browser by the download endpoint, so it
+	is never persisted as a private File. That avoids the ``/private/files``
+	permission wall — selection users are gated by ``_validate_selection_access``,
+	not by Frappe's standard read permission on the Candidato, so a persisted
+	private file would 403 on download — and keeps throwaway ZIPs out of storage.
+	"""
 	dossier = _build_person_dossier("Candidato", candidate)
 	docs = list(dossier.get("vigentes") or []) + list(dossier.get("historico") or [])
 
@@ -1056,7 +1064,7 @@ def build_candidate_documents_zip(candidate):
 			zf.write(abs_path, arcname=f"{safe_name}_v{version}{suffix}{ext}")
 
 	zip_name = f"candidato_{candidate}_documentos.zip"
-	return _persist_generated_private_file(zip_name, buf.getvalue(), "Candidato", candidate)
+	return zip_name, buf.getvalue()
 
 
 def build_employee_documents_zip(employee):
