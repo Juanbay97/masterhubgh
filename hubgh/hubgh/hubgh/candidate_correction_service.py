@@ -16,6 +16,7 @@ from typing import Optional
 
 import frappe
 from frappe import _
+from frappe.model.rename_doc import rename_doc as rename_doc_unrestricted
 from frappe.utils import validate_email_address
 
 from hubgh.hubgh.onboarding_security import send_user_activation_email
@@ -266,23 +267,29 @@ def _apply_email_change(doc):
 			last_login = user_info.get("last_login")
 			user_was_active = enabled and last_login is not None
 
+			# Si el usuario estaba activo, invalidamos sus sesiones ANTES del
+			# rename, usando el nombre viejo: en `tabSessions` las filas todavía
+			# apuntan a `old_user`. Hacerlo después con el email nuevo puede no
+			# matchear si el rename no propaga a `tabSessions`.
+			if user_was_active:
+				frappe.sessions.clear_sessions(user=old_user, force=True)
+				sessions_invalidated = True
+
 			# Rename del User (User.name = email en Frappe).
-			# NOTE: `frappe.rename_doc` (el wrapper público) en Frappe v15 NO
-			# acepta `ignore_permissions`. El solicitante (HR Selection) suele
-			# no tener write sobre User, así que escalamos a Administrator
-			# alrededor del rename y luego restauramos. La validación de quién
-			# puede solicitar la corrección ya se hizo antes en el flow.
-			_original_user = frappe.session.user
-			try:
-				frappe.set_user("Administrator")
-				frappe.rename_doc(
-					"User",
-					old_user,
-					new_email,
-					merge=False,
-				)
-			finally:
-				frappe.set_user(_original_user)
+			# El wrapper público `frappe.rename_doc` v15 NO acepta
+			# `ignore_permissions`, pero la función de bajo nivel SÍ. HR Selection
+			# no tiene write sobre User, así que salteamos el check de permiso con
+			# `ignore_permissions=True`. NUNCA usar `frappe.set_user` dentro de un
+			# request web: corrompe `frappe.local.session` y deja el sid apuntando
+			# a un user fantasma → "User None is disabled" + lockout. El permiso de
+			# quién puede corregir ya se validó en `_check_solicitar_permission`.
+			rename_doc_unrestricted(
+				"User",
+				old_user,
+				new_email,
+				merge=False,
+				ignore_permissions=True,
+			)
 			user_renamed = True
 			user_new_name = new_email
 
@@ -290,10 +297,8 @@ def _apply_email_change(doc):
 			frappe.db.set_value("Candidato", candidato_name, "user", new_email)
 			user_updated = True
 
-			if user_was_active:
-				frappe.sessions.clear_sessions(user=new_email)
-				sessions_invalidated = True
-			else:
+			# Si el usuario NO estaba activo, reenviamos el email de activación.
+			if not user_was_active:
 				send_user_activation_email(new_email)
 				welcome_email_resent = True
 		else:
@@ -431,20 +436,18 @@ def _apply_cedula_change(doc):
 		# Afiliacion.candidato, Datos Contratacion, etc.). Esto es la razón
 		# por la cual no hace falta actualizar manualmente esas tablas.
 		# `frappe.rename_doc` (wrapper público) en Frappe v15 NO acepta
-		# `ignore_permissions`. El aprobador (Gerente GH / System Manager)
-		# en post_contrato suele tener write, pero escalamos a Administrator
-		# para asegurar idempotencia con otras corridas administrativas.
-		_original_user = frappe.session.user
-		try:
-			frappe.set_user("Administrator")
-			frappe.rename_doc(
-				"Candidato",
-				candidato_name,
-				nueva_cedula,
-				merge=False,
-			)
-		finally:
-			frappe.set_user(_original_user)
+		# `ignore_permissions`, pero la función de bajo nivel SÍ.
+		# Usamos la función de bajo nivel con `ignore_permissions=True` en vez de
+		# `frappe.set_user`, que corrompe `frappe.local.session` dentro de un
+		# request web (causa "User None is disabled" + lockout). El permiso ya se
+		# validó en la capa de API antes de llegar acá.
+		rename_doc_unrestricted(
+			"Candidato",
+			candidato_name,
+			nueva_cedula,
+			merge=False,
+			ignore_permissions=True,
+		)
 		new_candidato_name = nueva_cedula
 
 		# Actualizar también el campo `numero_documento` (el rename cambia .name
@@ -454,17 +457,15 @@ def _apply_cedula_change(doc):
 
 		# b) Rename de la Ficha Empleado (autoname = cedula).
 		if old_persona:
-			_original_user2 = frappe.session.user
-			try:
-				frappe.set_user("Administrator")
-				frappe.rename_doc(
-					"Ficha Empleado",
-					old_persona,
-					nueva_cedula,
-					merge=False,
-				)
-			finally:
-				frappe.set_user(_original_user2)
+			# Misma razón que el rename del Candidato: bajo nivel +
+			# ignore_permissions, nunca frappe.set_user en un request web.
+			rename_doc_unrestricted(
+				"Ficha Empleado",
+				old_persona,
+				nueva_cedula,
+				merge=False,
+				ignore_permissions=True,
+			)
 			new_persona = nueva_cedula
 			ficha_renamed = True
 			# Actualizar el campo `cedula` de la Ficha (idem razón que arriba).
