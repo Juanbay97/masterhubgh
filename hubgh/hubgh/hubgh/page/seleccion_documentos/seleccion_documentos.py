@@ -16,6 +16,7 @@ from hubgh.hubgh.document_service import (
 	ensure_candidate_required_documents,
 	get_person_document_rows,
 	get_candidate_progress,
+	get_candidates_progress_bulk,
 	hire_candidate,
 	send_candidate_to_labor_relations,
 	upload_person_document,
@@ -301,22 +302,41 @@ def list_candidates(search=None):
 			"concepto_medico",
 			"fecha_envio_examen_medico",
 			"solo_afiliacion",
+			"persona",
+			"fecha_tentativa_ingreso",
 		],
 		order_by="creation desc",
 	)
 	pdv_name_map = _candidate_pdv_name_map(rows)
-	data = []
+
+	# Filter in Python — same rules as before, no per-row DB calls here.
+	# En afiliación: solo seguir mostrando si fue handoff parcial (solo a afiliación con docs pendientes).
+	# Cuando se envía oficialmente a RRLL (send_candidate_to_labor_relations), solo_afiliacion vuelve a 0
+	# y el candidato sale de la cola de Selección.
+	active_rows = []
 	for row in rows:
 		if is_candidate_status(row.estado_proceso, "Rechazado", STATE_LISTO_CONTRATAR, "Contratado"):
 			continue
-		# En afiliación: solo seguir mostrando si fue handoff parcial (solo a afiliación con docs pendientes).
-		# Cuando se envía oficialmente a RRLL (send_candidate_to_labor_relations), solo_afiliacion vuelve a 0
-		# y el candidato sale de la cola de Selección.
 		if is_candidate_status(row.estado_proceso, STATE_AFILIACION) and not (row.solo_afiliacion or 0):
 			continue
-		ensure_candidate_required_documents(row.name)
-		progress = get_candidate_progress(row.name)
-		sagrilaft_ok = _has_uploaded_document(row.name, "SAGRILAFT")
+		active_rows.append(row)
+
+	# Single bulk call — N-independent query count.
+	# Document seeding (ensure_candidate_required_documents) stays in after_insert
+	# and candidate_detail only; it must NOT be called in the list path.
+	bulk = get_candidates_progress_bulk([r.name for r in active_rows])
+
+	_zero_progress = {
+		"percent": 0,
+		"required_ok": 0,
+		"required_total": 0,
+		"is_complete": False,
+		"sagrilaft_ok": False,
+	}
+
+	data = []
+	for row in active_rows:
+		progress = bulk.get(row.name, _zero_progress)
 		data.append({
 			"name": row.name,
 			"full_name": f"{row.nombres or ''} {_candidate_apellidos_fallback(row) or ''}".strip(),
@@ -328,14 +348,14 @@ def list_candidates(search=None):
 			"estado_proceso": row.estado_proceso,
 			"concepto_medico": row.concepto_medico,
 			"fecha_envio_examen_medico": row.fecha_envio_examen_medico,
-			"sagrilaft_ok": sagrilaft_ok,
-			"avance_porcentaje": progress["percent"],
-			"documentos_ok": progress["required_ok"],
-			"documentos_total": progress["required_total"],
-			"completo": progress["is_complete"],
+			"sagrilaft_ok": progress.get("sagrilaft_ok", False),
+			"avance_porcentaje": progress.get("percent", 0),
+			"documentos_ok": progress.get("required_ok", 0),
+			"documentos_total": progress.get("required_total", 0),
+			"completo": progress.get("is_complete", False),
 			"can_manage": is_manager,
 			"solo_afiliacion": int(row.solo_afiliacion or 0),
-			"fecha_tentativa_ingreso": frappe.db.get_value("Candidato", row.name, "fecha_tentativa_ingreso"),
+			"fecha_tentativa_ingreso": row.fecha_tentativa_ingreso,
 		})
 	return data
 

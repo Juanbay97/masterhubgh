@@ -33,6 +33,29 @@ _MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK = {
 }
 
 
+def _resolve_allows_multiple(allows_multiple_raw, document_name, name):
+	"""Single source of truth for allows_multiple resolution.
+
+	Converts raw DB allows_multiple to the effective value, applying the
+	_MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK override so that both the
+	per-document-type path (_get_document_type_rules) and the bulk-prefetch
+	path (prefetched_rules in get_candidates_progress_bulk) always agree.
+
+	Args:
+		allows_multiple_raw: raw integer (or falsy) value from the DB row.
+		document_name: Document Type.document_name field (may be None/empty).
+		name: Document Type.name field (the docname).
+
+	Returns:
+		1 if allows_multiple is truthy OR the normalised document_name/name is
+		in _MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK; 0 otherwise.
+	"""
+	value = int(allows_multiple_raw or 0)
+	if not value and _normalize_text(document_name or name) in _MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK:
+		value = 1
+	return value
+
+
 def _normalize_text(value):
 	text = str(value or "").strip().lower()
 	if not text:
@@ -78,6 +101,16 @@ def _is_excluded_from_candidate_hiring_progress(doc_type_row):
 
 def _get_document_type_rules(document_type):
 	dt_name = _resolve_document_type_name(document_type)
+
+	# Request-scoped cache on frappe.local to avoid redundant frappe.get_doc
+	# calls for the same Document Type within one HTTP request / test call.
+	cache = getattr(frappe.local, "_doc_type_rules_cache", None)
+	if cache is None:
+		frappe.local._doc_type_rules_cache = {}
+		cache = frappe.local._doc_type_rules_cache
+	if dt_name in cache:
+		return cache[dt_name]
+
 	dt = frappe.get_doc("Document Type", dt_name)
 	allowed_roles = []
 	for row in dt.allowed_areas or []:
@@ -87,16 +120,21 @@ def _get_document_type_rules(document_type):
 	if dt.allowed_roles_override:
 		override_roles = [r.strip() for r in dt.allowed_roles_override.replace("\n", ",").split(",") if r.strip()]
 
-	allows_multiple = int(dt.allows_multiple or 0)
-	if not allows_multiple and _normalize_text(dt.document_name or dt.name) in _MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK:
-		allows_multiple = 1
+	allows_multiple = _resolve_allows_multiple(dt.allows_multiple, dt.document_name, dt.name)
 
-	return {
+	result = {
 		"requires_approval": int(dt.requires_approval or 0),
 		"allows_multiple": allows_multiple,
 		"allowed_roles": sorted(set(allowed_roles + override_roles)),
 		"document_type": dt_name,
 	}
+	cache[dt_name] = result
+	return result
+
+
+def _clear_doc_type_rules_cache():
+	"""Reset the request-scoped Document Type rules cache. Use in tests."""
+	frappe.local._doc_type_rules_cache = {}
 
 
 def _safe_document_type_slug(document_type):
@@ -751,6 +789,54 @@ def ensure_candidate_required_documents(candidate):
 		ensure_person_document("Candidato", candidate, d.name)
 
 
+def _compute_candidate_progress(required, vigentes_by_type):
+	"""Shared progress core used by both single-candidate and bulk paths.
+
+	Args:
+		required: list of Document Type rows (already filtered, excl. Contrato).
+		vigentes_by_type: dict mapping doc_type_name -> list of vigente rows for
+		    this candidate.  Each row must carry at least ``file`` and ``status``.
+
+	Returns:
+		dict with keys: required_total, required_ok, missing, percent, is_complete.
+	"""
+	if not required:
+		return {
+			"required_total": 0,
+			"required_ok": 0,
+			"missing": [],
+			"percent": 100,
+			"is_complete": True,
+		}
+
+	ok = 0
+	missing = []
+	for req in required:
+		req_name = _row_get(req, "name")
+		req_requires_approval = _row_get(req, "requires_approval", 0)
+		related_docs = vigentes_by_type.get(req_name) or []
+		valid_related_docs = [d for d in related_docs if _row_get(d, "file")]
+		statuses = [_row_get(d, "status") for d in valid_related_docs]
+		if req_requires_approval:
+			is_ok = any(status == "Aprobado" for status in statuses)
+		else:
+			is_ok = any(status in {"Subido", "Aprobado"} for status in statuses)
+
+		if is_ok:
+			ok += 1
+		else:
+			missing.append(req_name)
+
+	percent = int(round((ok / len(required)) * 100)) if required else 100
+	return {
+		"required_total": len(required),
+		"required_ok": ok,
+		"missing": missing,
+		"percent": percent,
+		"is_complete": ok == len(required),
+	}
+
+
 def get_candidate_progress(candidate):
 	required = frappe.get_all(
 		"Document Type",
@@ -774,34 +860,225 @@ def get_candidate_progress(candidate):
 
 	dossier = _build_person_dossier("Candidato", candidate)
 	documents = list(dossier.get("vigentes") or [])
-	doc_map = {}
+	vigentes_by_type = {}
 	for d in documents:
-		doc_map.setdefault(_row_get(d, "document_type"), []).append(d)
+		vigentes_by_type.setdefault(_row_get(d, "document_type"), []).append(d)
 
-	ok = 0
-	missing = []
-	for req in required:
-		related_docs = doc_map.get(req.name) or []
-		valid_related_docs = [d for d in related_docs if _row_get(d, "file")]
-		statuses = [_row_get(d, "status") for d in valid_related_docs]
-		if req.requires_approval:
-			is_ok = any(status == "Aprobado" for status in statuses)
-		else:
-			is_ok = any(status in {"Subido", "Aprobado"} for status in statuses)
+	return _compute_candidate_progress(required, vigentes_by_type)
 
-		if is_ok:
-			ok += 1
-		else:
-			missing.append(req.name)
 
-	percent = int(round((ok / len(required)) * 100)) if required else 100
-	return {
-		"required_total": len(required),
-		"required_ok": ok,
-		"missing": missing,
-		"percent": percent,
-		"is_complete": ok == len(required),
-	}
+def get_candidates_progress_bulk(candidate_names):
+	"""Return a progress dict for each candidate using a fixed number of DB queries.
+
+	The query count is N-independent (bounded by the document-type catalog, not by
+	the number of candidates).
+
+	Query plan:
+	  1. frappe.get_all("Candidato", ...)           — alias pre-pass q1
+	  2. frappe.get_all("Ficha Empleado", ...)       — alias pre-pass q2 (skipped when no persona FKs)
+	  3. frappe.get_all("Person Document", ...)      — bulk fetch q3
+	  4. frappe.get_all("Document Type", ...)        — required list + rules prefetch q4
+	  (SAGRILAFT lookup names resolved from module constant — no extra query)
+
+	No per-doc-type frappe.get_doc("Document Type", ...) calls are issued inside the
+	grouping loop.  Types not present in the prefetched required set fall back to
+	_get_document_type_rules, preserving exact semantics at the cost of one get_doc
+	per unknown type (first occurrence only, then cached via request-scoped cache).
+
+	Args:
+		candidate_names: list of Candidato ``name`` values.
+
+	Returns:
+		dict mapping each name to its progress record:
+		  {percent, required_ok, required_total, is_complete, missing, sagrilaft_ok}
+		Unknown / missing candidates get a zero-progress default entry.
+	"""
+	if not candidate_names:
+		return {}
+
+	from hubgh.hubgh.selection_document_types import get_selection_document_lookup_names
+
+	# -----------------------------------------------------------------------
+	# Step 1 — Alias pre-pass (2 queries max)
+	# -----------------------------------------------------------------------
+	cand_rows = frappe.get_all(
+		"Candidato",
+		filters={"name": ["in", candidate_names]},
+		fields=["name", "numero_documento", "persona"],
+	)
+
+	# Build per-candidate alias sets and the shared reverse index.
+	# alias_index maps alias_value -> set of candidate names that own it.
+	alias_index = {}
+	cand_aliases = {}  # candidate_name -> set of alias strings
+
+	for cand in cand_rows:
+		cname = str(_row_get(cand, "name") or "").strip()
+		if not cname:
+			continue
+		aliases = set()
+		for val in (cname, str(_row_get(cand, "numero_documento") or "").strip()):
+			if val:
+				aliases.add(val)
+		cand_aliases[cname] = aliases
+
+	persona_ids = [
+		str(_row_get(cand, "persona") or "").strip()
+		for cand in cand_rows
+		if str(_row_get(cand, "persona") or "").strip()
+	]
+
+	if persona_ids:
+		ficha_rows = frappe.get_all(
+			"Ficha Empleado",
+			filters={"name": ["in", persona_ids]},
+			fields=["name", "cedula"],
+		)
+		ficha_map = {
+			str(_row_get(f, "name") or "").strip(): str(_row_get(f, "cedula") or "").strip()
+			for f in ficha_rows
+			if str(_row_get(f, "name") or "").strip()
+		}
+		# Add cedula alias for candidates that have a persona FK
+		for cand in cand_rows:
+			cname = str(_row_get(cand, "name") or "").strip()
+			persona = str(_row_get(cand, "persona") or "").strip()
+			if cname and persona and persona in ficha_map:
+				cedula = ficha_map[persona]
+				if cedula:
+					cand_aliases.setdefault(cname, set()).add(cedula)
+					cand_aliases[cname].add(persona)  # ficha empleado name is also an alias
+
+	# Build reverse alias_index
+	for cname, aliases in cand_aliases.items():
+		for alias in aliases:
+			alias_index.setdefault(alias, set()).add(cname)
+
+	# Ensure all requested candidates are represented even if not in DB
+	for cname in candidate_names:
+		if cname not in cand_aliases:
+			cand_aliases[cname] = {cname}
+			alias_index.setdefault(cname, set()).add(cname)
+
+	# -----------------------------------------------------------------------
+	# Step 2 — Bulk Person Document fetch (1 query)
+	# -----------------------------------------------------------------------
+	all_aliases = list({alias for aliases in cand_aliases.values() for alias in aliases})
+
+	pd_rows = frappe.get_all(
+		"Person Document",
+		filters={"person_type": "Candidato", "person": ["in", all_aliases]},
+		fields=["name", "person", "candidate", "employee", "document_type", "status", "file", "modified", "creation"],
+	)
+
+	# Group rows per candidate via reverse alias index
+	rows_by_candidate = {cname: [] for cname in candidate_names}
+	for row in pd_rows:
+		for fieldname in ("person", "candidate", "employee"):
+			val = str(_row_get(row, fieldname) or "").strip()
+			if val and val in alias_index:
+				for cname in alias_index[val]:
+					if cname in rows_by_candidate:
+						rows_by_candidate[cname].append(row)
+				break  # avoid double-appending from multiple matching fields
+
+	# -----------------------------------------------------------------------
+	# Step 3 — Build vigentes_by_type per candidate (pure Python)
+	# -----------------------------------------------------------------------
+	def _build_vigentes_by_type(rows, prefetched_rules):
+		"""Group Person Document rows into vigentes_by_type for one candidate.
+
+		Args:
+			rows: Person Document rows attributed to this candidate.
+			prefetched_rules: dict mapping doc_type_name -> {"allows_multiple": int, ...}
+			    built from the Step 4 bulk get_all.  For types absent from this dict,
+			    _get_document_type_rules is called as a fallback (first hit may issue a
+			    frappe.get_doc; subsequent hits are served from the request-scoped cache).
+		"""
+		by_type = {}
+		for row in rows:
+			doc_type = _row_get(row, "document_type")
+			if not doc_type:
+				continue
+			by_type.setdefault(doc_type, []).append(row)
+
+		vigentes_by_type = {}
+		for doc_type, group in by_type.items():
+			sorted_group = sorted(group, key=_doc_sort_key, reverse=True)
+			if doc_type in prefetched_rules:
+				allows_multiple = int(prefetched_rules[doc_type].get("allows_multiple") or 0)
+			else:
+				# Fallback: doc type not in required set (non-required or newly added type).
+				# _get_document_type_rules uses the request-scoped cache so repeated calls
+				# for the same type within one request cost at most one frappe.get_doc.
+				rules = _get_document_type_rules(doc_type)
+				allows_multiple = int(rules.get("allows_multiple") or 0)
+			if allows_multiple:
+				vigentes_by_type[doc_type] = sorted_group
+			else:
+				# Only the most recent row is vigente
+				vigentes_by_type[doc_type] = sorted_group[:1]
+		return vigentes_by_type
+
+	# -----------------------------------------------------------------------
+	# Step 4 — Required Document Type list (1 query, shared across all candidates)
+	# Also builds the rules dict passed to _build_vigentes_by_type so that
+	# no per-doc-type frappe.get_doc is issued inside the grouping loop.
+	# -----------------------------------------------------------------------
+	required = frappe.get_all(
+		"Document Type",
+		filters={
+			"is_active": 1,
+			"is_required_for_hiring": 1,
+			"applies_to": ["in", ["Candidato", "Ambos"]],
+		},
+		fields=["name", "requires_approval", "document_name", "allows_multiple"],
+	)
+	required = [row for row in required if not _is_excluded_from_candidate_hiring_progress(row)]
+
+	# Build a rules lookup from the already-fetched rows so _build_vigentes_by_type
+	# can resolve allows_multiple without issuing additional frappe.get_doc calls.
+	# _resolve_allows_multiple is called here (same helper as _get_document_type_rules)
+	# so the two paths cannot diverge on _MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK overrides.
+	prefetched_rules = {}
+	for row in required:
+		rname = _row_get(row, "name")
+		rdoc_name = _row_get(row, "document_name")
+		raw_allows_multiple = _row_get(row, "allows_multiple", 0)
+		prefetched_rules[rname] = {
+			"allows_multiple": _resolve_allows_multiple(raw_allows_multiple, rdoc_name, rname),
+			"requires_approval": _row_get(row, "requires_approval", 0),
+			"document_name": rdoc_name,
+		}
+
+	# -----------------------------------------------------------------------
+	# Step 5 — SAGRILAFT lookup names (module constant, no extra query)
+	# -----------------------------------------------------------------------
+	sagrilaft_names = set(get_selection_document_lookup_names("SAGRILAFT"))
+
+	# -----------------------------------------------------------------------
+	# Step 6 — Compute progress per candidate
+	# -----------------------------------------------------------------------
+	result = {}
+	for cname in candidate_names:
+		rows = rows_by_candidate.get(cname, [])
+		vigentes_by_type = _build_vigentes_by_type(rows, prefetched_rules)
+		progress = _compute_candidate_progress(required, vigentes_by_type)
+
+		# SAGRILAFT: any vigente row for a SAGRILAFT-type that has a file and is Subido/Aprobado
+		sagrilaft_ok = False
+		for dt_name, vrows in vigentes_by_type.items():
+			if dt_name in sagrilaft_names:
+				for vrow in vrows:
+					if _row_get(vrow, "file") and _row_get(vrow, "status") in {"Subido", "Aprobado"}:
+						sagrilaft_ok = True
+						break
+			if sagrilaft_ok:
+				break
+
+		result[cname] = {**progress, "sagrilaft_ok": sagrilaft_ok}
+
+	return result
 
 
 def set_candidate_status_from_progress(candidate):

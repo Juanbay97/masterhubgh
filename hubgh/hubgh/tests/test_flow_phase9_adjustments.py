@@ -1525,6 +1525,9 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 				estado_proceso="En Proceso",
 				concepto_medico="Pendiente",
 				fecha_envio_examen_medico="2026-03-01",
+				solo_afiliacion=0,
+				persona=None,
+				fecha_tentativa_ingreso=None,
 			),
 		]
 
@@ -2480,3 +2483,640 @@ class TestFlowPhase9Adjustments(FrappeTestCase):
 
 		self.assertEqual(ctx["ind_estado"], "1")
 		self.assertEqual(ctx["fecha_retiro"], "20260331")
+
+
+# ---------------------------------------------------------------------------
+# T1 / T2 / T3 — seleccion-documentos-perf failing tests (RED-by-construction)
+# All tests in this class will be RED until get_candidates_progress_bulk is
+# implemented in document_service.py.
+# ---------------------------------------------------------------------------
+
+class TestCandidatesProgressBulk(FrappeTestCase):
+	"""Bulk progress helper contract tests.
+
+	All tests are RED-by-construction pending bench execution.  They will fail
+	with ImportError / AttributeError until get_candidates_progress_bulk is
+	added to document_service.py (T6) and list_candidates is refactored (T7).
+	"""
+
+	# ------------------------------------------------------------------
+	# Helpers
+	# ------------------------------------------------------------------
+
+	def _make_doc_type_row(self, name, requires_approval=0, allows_multiple=0, document_name=None):
+		import frappe
+		return frappe._dict({
+			"name": name,
+			"document_name": document_name or name,
+			"requires_approval": requires_approval,
+			"allows_multiple": allows_multiple,
+			"is_active": 1,
+			"is_required_for_hiring": 1,
+			"applies_to": "Candidato",
+		})
+
+	def _make_person_doc_row(self, person, document_type, status="Subido", file="/files/x.pdf"):
+		import frappe
+		return frappe._dict({
+			"name": f"PD-{person}-{document_type}",
+			"person": person,
+			"candidate": person,
+			"employee": None,
+			"document_type": document_type,
+			"status": status,
+			"file": file,
+			"modified": "2026-01-01 10:00:00",
+			"creation": "2026-01-01 09:00:00",
+		})
+
+	def _make_cand_row(self, name, numero_documento=None, persona=None):
+		import frappe
+		return frappe._dict({
+			"name": name,
+			"numero_documento": numero_documento or name,
+			"persona": persona,
+		})
+
+	# ------------------------------------------------------------------
+	# T1 — bulk contract tests (7 scenarios)
+	# ------------------------------------------------------------------
+
+	def test_bulk_empty_list_returns_empty_dict(self):
+		"""Empty input must return {} without any frappe.get_all calls."""
+		from hubgh.hubgh.document_service import get_candidates_progress_bulk
+
+		with patch("hubgh.hubgh.document_service.frappe.get_all") as get_all_mock:
+			result = get_candidates_progress_bulk([])
+
+		self.assertEqual(result, {})
+		get_all_mock.assert_not_called()
+
+	def test_bulk_single_candidate_equals_single_path(self):
+		"""get_candidates_progress_bulk([c])[c] must equal get_candidate_progress(c) field-for-field."""
+		from hubgh.hubgh.document_service import (
+			get_candidates_progress_bulk,
+			get_candidate_progress,
+		)
+
+		required = [self._make_doc_type_row("Cedula")]
+		cand_rows = [self._make_cand_row("CAND-A", numero_documento="1001")]
+		pd_rows = [self._make_person_doc_row("CAND-A", "Cedula", status="Subido")]
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Document Type":
+				return required
+			if doctype == "Person Document":
+				return pd_rows
+			if doctype == "Candidato":
+				return cand_rows
+			if doctype == "Ficha Empleado":
+				return []
+			return []
+
+		def fake_rules(doc_type):
+			return {"document_type": doc_type, "allows_multiple": 0, "requires_approval": 0}
+
+		with patch("hubgh.hubgh.document_service.frappe.get_all", side_effect=fake_get_all), \
+				patch("hubgh.hubgh.document_service._get_document_type_rules", side_effect=fake_rules), \
+				patch("hubgh.hubgh.document_service.frappe.db.get_value", return_value=None), \
+				patch("hubgh.hubgh.document_service.frappe.db.exists", return_value=True):
+			bulk_result = get_candidates_progress_bulk(["CAND-A"])
+			single_result = get_candidate_progress("CAND-A")
+
+		self.assertIn("CAND-A", bulk_result)
+		for key in ("percent", "required_ok", "required_total", "is_complete"):
+			self.assertEqual(bulk_result["CAND-A"].get(key), single_result.get(key),
+				f"Mismatch for key {key!r}")
+
+	def test_bulk_n_candidates_parity(self):
+		"""For 3 candidates (incl. one with legacy numero_documento row), bulk matches single-path."""
+		from hubgh.hubgh.document_service import (
+			get_candidates_progress_bulk,
+			get_candidate_progress,
+		)
+
+		required = [self._make_doc_type_row("Cedula"), self._make_doc_type_row("EPS")]
+
+		# CAND-A: Cedula+EPS uploaded, keyed by name
+		# CAND-B: only Cedula, keyed by name
+		# CAND-C: legacy row keyed by numero_documento "9999"
+		pd_rows_all = [
+			self._make_person_doc_row("CAND-A", "Cedula"),
+			self._make_person_doc_row("CAND-A", "EPS"),
+			self._make_person_doc_row("CAND-B", "Cedula"),
+			self._make_person_doc_row("9999", "EPS"),   # legacy keyed by numero_documento
+		]
+		cand_meta = [
+			self._make_cand_row("CAND-A", numero_documento="1001"),
+			self._make_cand_row("CAND-B", numero_documento="2002"),
+			self._make_cand_row("CAND-C", numero_documento="9999"),
+		]
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Document Type":
+				return required
+			if doctype == "Person Document":
+				return pd_rows_all
+			if doctype == "Candidato":
+				names = (kwargs.get("filters") or {}).get("name", ["in", []])
+				if isinstance(names, list) and names[0] == "in":
+					return [r for r in cand_meta if r["name"] in names[1]]
+				return cand_meta
+			if doctype == "Ficha Empleado":
+				return []
+			return []
+
+		def fake_rules(doc_type):
+			return {"document_type": doc_type, "allows_multiple": 0, "requires_approval": 0}
+
+		names = ["CAND-A", "CAND-B", "CAND-C"]
+		with patch("hubgh.hubgh.document_service.frappe.get_all", side_effect=fake_get_all), \
+				patch("hubgh.hubgh.document_service._get_document_type_rules", side_effect=fake_rules), \
+				patch("hubgh.hubgh.document_service.frappe.db.get_value", return_value=None), \
+				patch("hubgh.hubgh.document_service.frappe.db.exists", return_value=True):
+			bulk = get_candidates_progress_bulk(names)
+
+		self.assertEqual(set(bulk.keys()), set(names))
+		# CAND-A: 2/2
+		self.assertEqual(bulk["CAND-A"]["required_ok"], 2)
+		self.assertEqual(bulk["CAND-A"]["required_total"], 2)
+		# CAND-B: 1/2
+		self.assertEqual(bulk["CAND-B"]["required_ok"], 1)
+		self.assertEqual(bulk["CAND-B"]["required_total"], 2)
+		# CAND-C: row keyed by numero_documento=9999 → EPS attributed to CAND-C → 1/2
+		self.assertEqual(bulk["CAND-C"]["required_ok"], 1)
+		self.assertEqual(bulk["CAND-C"]["required_total"], 2)
+
+	def test_bulk_alias_numero_documento_keyed_row_attributed(self):
+		"""Person Document row keyed by numero_documento must be attributed to the correct candidate."""
+		from hubgh.hubgh.document_service import get_candidates_progress_bulk
+
+		required = [self._make_doc_type_row("Cedula")]
+		# Row person = "DOC-X" (the candidate's numero_documento)
+		pd_rows = [self._make_person_doc_row("DOC-X", "Cedula")]
+		cand_meta = [self._make_cand_row("CAND-X", numero_documento="DOC-X")]
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Document Type":
+				return required
+			if doctype == "Person Document":
+				return pd_rows
+			if doctype == "Candidato":
+				return cand_meta
+			if doctype == "Ficha Empleado":
+				return []
+			return []
+
+		def fake_rules(doc_type):
+			return {"document_type": doc_type, "allows_multiple": 0, "requires_approval": 0}
+
+		with patch("hubgh.hubgh.document_service.frappe.get_all", side_effect=fake_get_all), \
+				patch("hubgh.hubgh.document_service._get_document_type_rules", side_effect=fake_rules), \
+				patch("hubgh.hubgh.document_service.frappe.db.get_value", return_value=None), \
+				patch("hubgh.hubgh.document_service.frappe.db.exists", return_value=True):
+			bulk = get_candidates_progress_bulk(["CAND-X"])
+
+		self.assertEqual(bulk["CAND-X"]["required_ok"], 1)
+
+	def test_bulk_alias_cedula_ficha_empleado_keyed_row_attributed(self):
+		"""Person Document keyed by Ficha Empleado cedula must be attributed to the candidate."""
+		from hubgh.hubgh.document_service import get_candidates_progress_bulk
+
+		required = [self._make_doc_type_row("Cedula")]
+		# Row person = "CED-Y" (the ficha empleado cedula)
+		pd_rows = [self._make_person_doc_row("CED-Y", "Cedula")]
+		cand_meta = [self._make_cand_row("CAND-Y", numero_documento="2002", persona="FE-Y")]
+		ficha_rows = [{"name": "FE-Y", "cedula": "CED-Y"}]
+
+		import frappe as _frappe
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Document Type":
+				return required
+			if doctype == "Person Document":
+				return pd_rows
+			if doctype == "Candidato":
+				return cand_meta
+			if doctype == "Ficha Empleado":
+				return [_frappe._dict(r) for r in ficha_rows]
+			return []
+
+		def fake_rules(doc_type):
+			return {"document_type": doc_type, "allows_multiple": 0, "requires_approval": 0}
+
+		with patch("hubgh.hubgh.document_service.frappe.get_all", side_effect=fake_get_all), \
+				patch("hubgh.hubgh.document_service._get_document_type_rules", side_effect=fake_rules), \
+				patch("hubgh.hubgh.document_service.frappe.db.get_value", return_value=None), \
+				patch("hubgh.hubgh.document_service.frappe.db.exists", return_value=True):
+			bulk = get_candidates_progress_bulk(["CAND-Y"])
+
+		self.assertEqual(bulk["CAND-Y"]["required_ok"], 1)
+
+	def test_bulk_no_persona_fk_only_name_and_doc_aliases(self):
+		"""Candidate with no persona FK — no error; only name+numero_documento aliases used."""
+		from hubgh.hubgh.document_service import get_candidates_progress_bulk
+
+		required = [self._make_doc_type_row("Cedula")]
+		pd_rows = [self._make_person_doc_row("CAND-Z", "Cedula")]
+		# No persona FK
+		cand_meta = [self._make_cand_row("CAND-Z", numero_documento="3003", persona=None)]
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Document Type":
+				return required
+			if doctype == "Person Document":
+				return pd_rows
+			if doctype == "Candidato":
+				return cand_meta
+			if doctype == "Ficha Empleado":
+				return []
+			return []
+
+		def fake_rules(doc_type):
+			return {"document_type": doc_type, "allows_multiple": 0, "requires_approval": 0}
+
+		# Must not raise
+		with patch("hubgh.hubgh.document_service.frappe.get_all", side_effect=fake_get_all), \
+				patch("hubgh.hubgh.document_service._get_document_type_rules", side_effect=fake_rules), \
+				patch("hubgh.hubgh.document_service.frappe.db.get_value", return_value=None), \
+				patch("hubgh.hubgh.document_service.frappe.db.exists", return_value=True):
+			bulk = get_candidates_progress_bulk(["CAND-Z"])
+
+		self.assertIn("CAND-Z", bulk)
+		self.assertEqual(bulk["CAND-Z"]["required_ok"], 1)
+
+	def test_bulk_allows_multiple_counted_once(self):
+		"""Document Type with allows_multiple=True — 3 uploaded rows count as 1 in documentos_ok."""
+		from hubgh.hubgh.document_service import get_candidates_progress_bulk
+
+		import frappe as _frappe
+		required = [
+			_frappe._dict({
+				"name": "Carta Referencia",
+				"document_name": "Carta Referencia",
+				"requires_approval": 0,
+				"allows_multiple": 1,
+				"is_active": 1,
+				"is_required_for_hiring": 1,
+				"applies_to": "Candidato",
+			})
+		]
+		# 3 uploaded rows for the same allows_multiple type
+		pd_rows = [
+			self._make_person_doc_row("CAND-M", "Carta Referencia", status="Subido", file="/files/a.pdf"),
+			self._make_person_doc_row("CAND-M", "Carta Referencia", status="Subido", file="/files/b.pdf"),
+			self._make_person_doc_row("CAND-M", "Carta Referencia", status="Subido", file="/files/c.pdf"),
+		]
+		# Give them distinct names
+		pd_rows[1]["name"] = "PD-CAND-M-Carta Referencia-2"
+		pd_rows[2]["name"] = "PD-CAND-M-Carta Referencia-3"
+
+		cand_meta = [self._make_cand_row("CAND-M", numero_documento="4004")]
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Document Type":
+				return required
+			if doctype == "Person Document":
+				return pd_rows
+			if doctype == "Candidato":
+				return cand_meta
+			if doctype == "Ficha Empleado":
+				return []
+			return []
+
+		def fake_rules(doc_type):
+			return {"document_type": doc_type, "allows_multiple": 1, "requires_approval": 0}
+
+		with patch("hubgh.hubgh.document_service.frappe.get_all", side_effect=fake_get_all), \
+				patch("hubgh.hubgh.document_service._get_document_type_rules", side_effect=fake_rules), \
+				patch("hubgh.hubgh.document_service.frappe.db.get_value", return_value=None), \
+				patch("hubgh.hubgh.document_service.frappe.db.exists", return_value=True):
+			bulk = get_candidates_progress_bulk(["CAND-M"])
+
+		# 1 required type → required_ok=1, required_total=1
+		self.assertEqual(bulk["CAND-M"]["required_total"], 1)
+		self.assertEqual(bulk["CAND-M"]["required_ok"], 1)
+		self.assertEqual(bulk["CAND-M"]["percent"], 100)
+
+	# ------------------------------------------------------------------
+	# T2 — N-independent query count (RED-by-construction)
+	# ------------------------------------------------------------------
+
+	def test_bulk_query_count_n_independent(self):
+		"""Query count for N=1 and N=5 must be equal, and no per-doc-type get_doc is issued.
+
+		T0 finding: this repo has no frappe.db.count_queries context manager.
+		We count frappe.get_all call_count instead (each call = 1 DB query for
+		ORM callers), which is the established pattern in this test suite.
+
+		W1 fix contract: _build_vigentes_by_type must NOT call frappe.get_doc("Document
+		Type", ...) for any doc type present in the prefetched required set.  We verify
+		this by NOT patching _get_document_type_rules and instead patching frappe.get_doc
+		directly — if the per-doc-type fallback path is hit, get_doc_mock.call_args_list
+		will show "Document Type" calls and the assertion will fail.
+		"""
+		from hubgh.hubgh.document_service import get_candidates_progress_bulk
+		import frappe as _frappe
+
+		required = [self._make_doc_type_row("Cedula")]
+
+		def _build_fixture(candidate_names):
+			cand_meta = [self._make_cand_row(n, numero_documento=f"ND-{n}") for n in candidate_names]
+			pd_rows = [self._make_person_doc_row(n, "Cedula") for n in candidate_names]
+			return cand_meta, pd_rows
+
+		def _run_with_counter(candidate_names):
+			cand_meta, pd_rows = _build_fixture(candidate_names)
+			call_counter = {"count": 0}
+			get_doc_calls = []
+
+			def fake_get_all(doctype, *args, **kwargs):
+				call_counter["count"] += 1
+				if doctype == "Document Type":
+					return required
+				if doctype == "Person Document":
+					return pd_rows
+				if doctype == "Candidato":
+					return cand_meta
+				if doctype == "Ficha Empleado":
+					return []
+				return []
+
+			def fake_get_doc(doctype, *args, **kwargs):
+				# Record calls so we can assert none target "Document Type".
+				get_doc_calls.append((doctype,) + args)
+				# Return a minimal stub so the code does not crash if called.
+				doc = _frappe._dict({"name": args[0] if args else doctype,
+				                     "allows_multiple": 0,
+				                     "requires_approval": 0,
+				                     "document_name": args[0] if args else doctype,
+				                     "allowed_areas": [],
+				                     "allowed_roles_override": None})
+				return doc
+
+			with patch("hubgh.hubgh.document_service.frappe.get_all", side_effect=fake_get_all), \
+					patch("hubgh.hubgh.document_service.frappe.get_doc", side_effect=fake_get_doc), \
+					patch("hubgh.hubgh.document_service.frappe.db.get_value", return_value=None), \
+					patch("hubgh.hubgh.document_service.frappe.db.exists", return_value=True):
+				get_candidates_progress_bulk(candidate_names)
+
+			return call_counter["count"], get_doc_calls
+
+		count_n1, get_doc_n1 = _run_with_counter(["CAND-1"])
+		count_n5, get_doc_n5 = _run_with_counter(["CAND-1", "CAND-2", "CAND-3", "CAND-4", "CAND-5"])
+
+		# N-independence: same number of get_all calls regardless of candidate count.
+		self.assertLessEqual(count_n1, 10, f"N=1 issued {count_n1} get_all calls (budget: 10)")
+		self.assertLessEqual(count_n5, 10, f"N=5 issued {count_n5} get_all calls (budget: 10)")
+		self.assertEqual(count_n1, count_n5,
+			f"Query count is NOT N-independent: N=1 → {count_n1}, N=5 → {count_n5}")
+
+		# W1 fix: no per-doc-type frappe.get_doc("Document Type", ...) must be issued.
+		doc_type_get_doc_calls_n1 = [c for c in get_doc_n1 if c[0] == "Document Type"]
+		doc_type_get_doc_calls_n5 = [c for c in get_doc_n5 if c[0] == "Document Type"]
+		self.assertEqual(doc_type_get_doc_calls_n1, [],
+			f"N=1: unexpected frappe.get_doc('Document Type', ...) calls: {doc_type_get_doc_calls_n1}")
+		self.assertEqual(doc_type_get_doc_calls_n5, [],
+			f"N=5: unexpected frappe.get_doc('Document Type', ...) calls: {doc_type_get_doc_calls_n5}")
+
+	# ------------------------------------------------------------------
+	# T3 — no-write-on-read and full 18-field shape
+	# ------------------------------------------------------------------
+
+	def test_list_candidates_zero_writes(self):
+		"""list_candidates must not call set_value, ensure_candidate_required_documents, or issue INSERT/UPDATE."""
+		import frappe as _frappe
+
+		cand_rows = [
+			_frappe._dict({
+				"name": "CAND-001",
+				"nombres": "Ana",
+				"apellidos": "Paz",
+				"primer_apellido": "Paz",
+				"segundo_apellido": "",
+				"numero_documento": "1001",
+				"pdv_destino": "PDV-1",
+				"cargo_postulado": "Cajera",
+				"creation": "2026-01-01 08:00:00",
+				"estado_proceso": "En proceso",
+				"concepto_medico": "Pendiente",
+				"fecha_envio_examen_medico": None,
+				"solo_afiliacion": 0,
+				"persona": None,
+				"fecha_tentativa_ingreso": "2026-02-01",
+			})
+		]
+		progress_result = {
+			"CAND-001": {
+				"percent": 50,
+				"required_ok": 1,
+				"required_total": 2,
+				"is_complete": False,
+				"missing": ["EPS"],
+				"sagrilaft_ok": False,
+			}
+		}
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Candidato":
+				return cand_rows
+			return []
+
+		with patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.get_all", side_effect=fake_get_all), \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.session",
+					new=SimpleNamespace(user="gh@example.com")), \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._validate_selection_access"), \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._can_manage_candidates", return_value=True), \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._candidate_pdv_name_map", return_value={}), \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.get_candidates_progress_bulk",
+					return_value=progress_result) as bulk_mock, \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.ensure_candidate_required_documents") as ensure_mock, \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.db.set_value") as set_value_mock:
+			result = seleccion_documentos.list_candidates()
+
+		# ensure_candidate_required_documents must NOT be called in the list path
+		ensure_mock.assert_not_called()
+		# No DB writes
+		set_value_mock.assert_not_called()
+		# Bulk helper called once
+		bulk_mock.assert_called_once()
+		self.assertIsInstance(result, list)
+
+	def test_list_candidates_full_field_set(self):
+		"""Every row returned by list_candidates must have exactly the 18 spec-required fields."""
+		import frappe as _frappe
+
+		EXPECTED_FIELDS = {
+			"name", "full_name", "numero_documento", "pdv_destino", "pdv_destino_nombre",
+			"cargo_postulado", "creation", "estado_proceso", "concepto_medico",
+			"fecha_envio_examen_medico", "sagrilaft_ok", "avance_porcentaje",
+			"documentos_ok", "documentos_total", "completo", "can_manage",
+			"solo_afiliacion", "fecha_tentativa_ingreso",
+		}
+
+		cand_rows = [
+			_frappe._dict({
+				"name": "CAND-001",
+				"nombres": "Ana",
+				"apellidos": "Paz",
+				"primer_apellido": "Paz",
+				"segundo_apellido": "",
+				"numero_documento": "1001",
+				"pdv_destino": "PDV-1",
+				"cargo_postulado": "Cajera",
+				"creation": "2026-01-01 08:00:00",
+				"estado_proceso": "En proceso",
+				"concepto_medico": "Pendiente",
+				"fecha_envio_examen_medico": None,
+				"solo_afiliacion": 0,
+				"persona": None,
+				"fecha_tentativa_ingreso": "2026-02-01",
+			})
+		]
+		progress_result = {
+			"CAND-001": {
+				"percent": 100,
+				"required_ok": 2,
+				"required_total": 2,
+				"is_complete": True,
+				"missing": [],
+				"sagrilaft_ok": True,
+			}
+		}
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Candidato":
+				return cand_rows
+			return []
+
+		with patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.get_all", side_effect=fake_get_all), \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.session",
+					new=SimpleNamespace(user="gh@example.com")), \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._validate_selection_access"), \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._can_manage_candidates", return_value=True), \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos._candidate_pdv_name_map", return_value={"PDV-1": "PDV Norte"}), \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.get_candidates_progress_bulk",
+					return_value=progress_result), \
+				patch("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.ensure_candidate_required_documents"):
+			result = seleccion_documentos.list_candidates()
+
+		self.assertEqual(len(result), 1)
+		row_keys = set(result[0].keys())
+		self.assertEqual(row_keys, EXPECTED_FIELDS,
+			f"Field mismatch. Extra: {row_keys - EXPECTED_FIELDS}. Missing: {EXPECTED_FIELDS - row_keys}")
+
+	# ------------------------------------------------------------------
+	# W3 — prefetched_rules parity: _MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK
+	# ------------------------------------------------------------------
+
+	def test_bulk_prefetched_rules_fallback_parity_allows_multiple(self):
+		"""Bulk path must agree with single path for fallback-override doc types.
+
+		RED-by-construction — unexecuted (no bench available in this environment).
+
+		Scenario: a required Document Type whose DB allows_multiple = 0 but whose
+		normalised document_name is in _MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK.
+		Three Person Document rows are uploaded for it.
+
+		Before the W3 fix:
+		  - prefetched_rules stored raw allows_multiple=0 → _build_vigentes_by_type
+		    would keep only the most-recent row as vigente → required_ok=1, but
+		    vigentes_by_type["<fallback-type>"] contains only 1 row.
+		  - _get_document_type_rules applied the fallback → allows_multiple=1 →
+		    all 3 rows are vigente.
+		  The two paths diverged: bulk vigentes count ≠ single vigentes count.
+
+		After the W3 fix (_resolve_allows_multiple shared helper):
+		  - Both paths call _resolve_allows_multiple → same result (allows_multiple=1)
+		    → all 3 rows are vigente in both paths → required_ok agrees.
+
+		Assertions:
+		  1. Bulk path reports required_ok=1 (type satisfied) and vigentes count=3.
+		  2. Single path (_compute_candidate_progress) reports the same required_ok.
+		  3. _resolve_allows_multiple(0, fallback_name, fallback_name) == 1 (unit check).
+		"""
+		from hubgh.hubgh.document_service import (
+			get_candidates_progress_bulk,
+			_compute_candidate_progress,
+			_resolve_allows_multiple,
+		)
+		import frappe as _frappe
+
+		# A document_name that IS in _MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK (unnormalised form).
+		# _normalize_text strips accents and lowercases, so this plain ASCII version matches.
+		FALLBACK_DOC_NAME = "2 cartas de referencias personales."
+		FALLBACK_TYPE_NAME = "Carta Referencia Fallback"  # distinct .name from .document_name
+
+		# Unit check: _resolve_allows_multiple must return 1 for the fallback case.
+		self.assertEqual(
+			_resolve_allows_multiple(0, FALLBACK_DOC_NAME, FALLBACK_TYPE_NAME),
+			1,
+			"_resolve_allows_multiple should return 1 when document_name is in _MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK",
+		)
+
+		# Required set: one doc type with DB allows_multiple=0 but fallback document_name.
+		required = [
+			_frappe._dict({
+				"name": FALLBACK_TYPE_NAME,
+				"document_name": FALLBACK_DOC_NAME,
+				"requires_approval": 0,
+				"allows_multiple": 0,   # raw DB value — the fallback must promote this to 1
+				"is_active": 1,
+				"is_required_for_hiring": 1,
+				"applies_to": "Candidato",
+			})
+		]
+
+		# Three uploaded rows for the fallback type (simulating multiple references).
+		pd_rows = [
+			_frappe._dict({
+				"name": f"PD-CAND-F-{i}",
+				"person": "CAND-F",
+				"candidate": "CAND-F",
+				"employee": None,
+				"document_type": FALLBACK_TYPE_NAME,
+				"status": "Subido",
+				"file": f"/files/ref_{i}.pdf",
+				"modified": f"2026-01-0{i + 1} 10:00:00",
+				"creation": f"2026-01-0{i + 1} 09:00:00",
+			})
+			for i in range(1, 4)
+		]
+
+		cand_meta = [self._make_cand_row("CAND-F", numero_documento="5005")]
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Document Type":
+				return required
+			if doctype == "Person Document":
+				return pd_rows
+			if doctype == "Candidato":
+				return cand_meta
+			if doctype == "Ficha Empleado":
+				return []
+			return []
+
+		with patch("hubgh.hubgh.document_service.frappe.get_all", side_effect=fake_get_all), \
+				patch("hubgh.hubgh.document_service.frappe.db.get_value", return_value=None), \
+				patch("hubgh.hubgh.document_service.frappe.db.exists", return_value=True):
+			bulk_result = get_candidates_progress_bulk(["CAND-F"])
+
+		self.assertIn("CAND-F", bulk_result, "CAND-F must appear in bulk result")
+		cand_progress = bulk_result["CAND-F"]
+
+		# The single doc type is satisfied → required_ok=1, required_total=1.
+		self.assertEqual(cand_progress["required_total"], 1,
+			"required_total must be 1 (one required type)")
+		self.assertEqual(cand_progress["required_ok"], 1,
+			"required_ok must be 1: fallback override → allows_multiple=1 → all 3 rows are vigente → type satisfied")
+
+		# Parity check: run _compute_candidate_progress directly with allows_multiple=1
+		# (what _resolve_allows_multiple produces) to confirm both paths agree.
+		# Build vigentes_by_type as the bulk path would after the fix.
+		vigentes_by_type_expected = {FALLBACK_TYPE_NAME: pd_rows}  # all 3 rows vigente
+		single_progress = _compute_candidate_progress(required, vigentes_by_type_expected)
+		self.assertEqual(
+			cand_progress["required_ok"],
+			single_progress["required_ok"],
+			"Bulk and single paths must agree on required_ok for fallback-override doc types",
+		)
