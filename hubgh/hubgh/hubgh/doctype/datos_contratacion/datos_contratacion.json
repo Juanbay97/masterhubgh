@@ -78,7 +78,12 @@
   "telefono_contacto_siesa",
   "seccion_auditoria",
   "completado_por",
-  "fecha_completado"
+  "fecha_completado",
+  "documentacion_incompleta",
+  "motivo_doc_incompleta",
+  "autorizado_por",
+  "fecha_autorizacion",
+  "docs_faltantes_snapshot"
  ],
  "fields": [
   {
@@ -483,6 +488,41 @@
    "fieldname": "fecha_completado",
    "fieldtype": "Datetime",
    "label": "Fecha Completado"
+  },
+  {
+   "default": "0",
+   "fieldname": "documentacion_incompleta",
+   "fieldtype": "Check",
+   "label": "Documentación Incompleta al Envío"
+  },
+  {
+   "depends_on": "eval:doc.documentacion_incompleta == 1",
+   "fieldname": "motivo_doc_incompleta",
+   "fieldtype": "Small Text",
+   "label": "Motivo Envío Incompleto",
+   "mandatory_depends_on": "eval:doc.documentacion_incompleta == 1"
+  },
+  {
+   "depends_on": "eval:doc.documentacion_incompleta == 1",
+   "fieldname": "autorizado_por",
+   "fieldtype": "Link",
+   "label": "Autorizado Por",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.documentacion_incompleta == 1",
+   "fieldname": "fecha_autorizacion",
+   "fieldtype": "Datetime",
+   "label": "Fecha Autorización",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.documentacion_incompleta == 1",
+   "fieldname": "docs_faltantes_snapshot",
+   "fieldtype": "Small Text",
+   "label": "Docs Faltantes (Snapshot)",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
