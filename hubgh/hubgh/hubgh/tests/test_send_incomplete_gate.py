@@ -71,6 +71,7 @@ class TestSendIncompletGate(FrappeTestCase):
                 return_value=_gate_ready(),
             ),
             patch("hubgh.hubgh.document_service.frappe.get_doc", return_value=MagicMock()),
+            patch("hubgh.hubgh.document_service.frappe.get_all", return_value=[]),
             patch("hubgh.hubgh.document_service.frappe.db"),
         ):
             with self.assertRaises(frappe.exceptions.ValidationError):
@@ -117,6 +118,7 @@ class TestSendIncompletGate(FrappeTestCase):
                 return_value=_gate_ready(),
             ),
             patch("hubgh.hubgh.document_service.frappe.get_doc", side_effect=_fake_get_doc),
+            patch("hubgh.hubgh.document_service.frappe.get_all", return_value=[]),
             patch("hubgh.hubgh.document_service.frappe.db") as mock_db,
             patch("hubgh.hubgh.document_service.frappe.session") as mock_session,
             patch("hubgh.hubgh.document_service.now", return_value="2026-06-25 10:00:00"),
@@ -169,6 +171,7 @@ class TestSendIncompletGate(FrappeTestCase):
                 return_value=_gate_blocked("Concepto médico no Favorable"),
             ),
             patch("hubgh.hubgh.document_service.frappe.get_doc", return_value=MagicMock()),
+            patch("hubgh.hubgh.document_service.frappe.get_all", return_value=[]),
             patch("hubgh.hubgh.document_service.frappe.db"),
         ):
             with self.assertRaises(frappe.exceptions.ValidationError):
@@ -203,6 +206,7 @@ class TestSendIncompletGate(FrappeTestCase):
                 return_value=_gate_ready(),
             ),
             patch("hubgh.hubgh.document_service.frappe.get_doc", side_effect=_fake_get_doc),
+            patch("hubgh.hubgh.document_service.frappe.get_all", return_value=[]),
             patch("hubgh.hubgh.document_service.frappe.db") as mock_db,
             patch("hubgh.hubgh.document_service.frappe.session") as mock_session,
         ):
@@ -246,6 +250,7 @@ class TestSendIncompletGate(FrappeTestCase):
                 return_value=_gate_ready(),
             ),
             patch("hubgh.hubgh.document_service.frappe.get_doc", side_effect=_fake_get_doc),
+            patch("hubgh.hubgh.document_service.frappe.get_all", return_value=[]),
             patch("hubgh.hubgh.document_service.frappe.db") as mock_db,
             patch("hubgh.hubgh.document_service.frappe.session") as mock_session,
         ):
@@ -297,6 +302,7 @@ class TestSendIncompletGate(FrappeTestCase):
                 return_value=_gate_ready(),
             ),
             patch("hubgh.hubgh.document_service.frappe.get_doc", side_effect=_fake_get_doc),
+            patch("hubgh.hubgh.document_service.frappe.get_all", return_value=[]),
             patch("hubgh.hubgh.document_service.frappe.db") as mock_db,
             patch("hubgh.hubgh.document_service.frappe.session") as mock_session,
             patch("hubgh.hubgh.document_service.now", return_value="2026-06-25 10:00:00"),
@@ -346,6 +352,7 @@ class TestSendIncompletGate(FrappeTestCase):
                 "hubgh.hubgh.document_service.frappe.get_doc",
                 side_effect=_fake_get_doc_capture,
             ),
+            patch("hubgh.hubgh.document_service.frappe.get_all", return_value=[]),
             patch("hubgh.hubgh.document_service.frappe.db") as mock_db,
             patch("hubgh.hubgh.document_service.frappe.session") as mock_session,
             patch("hubgh.hubgh.document_service.now", return_value="2026-06-25 10:00:00"),

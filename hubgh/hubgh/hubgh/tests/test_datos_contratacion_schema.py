@@ -84,7 +84,7 @@ class TestDatosContratacionSchema(FrappeTestCase):
     def test_audit_fields_in_field_order(self):
         """All five audit fields must appear in the field_order of the DocType."""
         dt = frappe.get_doc("DocType", "Datos Contratacion")
-        field_order = list(dt.field_order or [])
+        field_order = [f.fieldname for f in dt.fields]
         for fieldname in AUDIT_FIELDS:
             self.assertIn(
                 fieldname,
@@ -95,7 +95,7 @@ class TestDatosContratacionSchema(FrappeTestCase):
     def test_audit_fields_under_seccion_auditoria(self):
         """documentacion_incompleta must appear after seccion_auditoria in field order."""
         dt = frappe.get_doc("DocType", "Datos Contratacion")
-        field_order = list(dt.field_order or [])
+        field_order = [f.fieldname for f in dt.fields]
         self.assertIn("seccion_auditoria", field_order)
         audit_pos = field_order.index("seccion_auditoria")
         dc_pos = field_order.index("documentacion_incompleta")
