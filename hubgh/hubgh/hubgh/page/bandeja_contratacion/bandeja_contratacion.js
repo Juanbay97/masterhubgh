@@ -64,13 +64,30 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 			});
 	};
 
-	const openUploadDocumentDialog = (candidate, docTypes) => {
-		const options = (docTypes || []).join("\n");
+	const openUploadDocumentDialog = (candidate, docTypes, missing) => {
+		const missingList = missing || [];
+		// Missing documents first (pre-selected), then the rest of the uploadable types
+		// so the operator can still upload something else if needed.
+		const others = (docTypes || []).filter(t => !missingList.includes(t));
+		const options = [...missingList, ...others].join("\n");
+		const missingMessage = missingList.length
+			? `<div class="alert alert-warning" style="margin-bottom:10px;">Documentos faltantes: <b>${esc(missingList.join(", "))}</b></div>`
+			: "";
+		const dialogFields = [];
+		if (missingMessage) {
+			dialogFields.push({ fieldtype: "HTML", options: missingMessage });
+		}
+		dialogFields.push({
+			fieldname: "document_type",
+			label: "Tipo de documento",
+			fieldtype: "Select",
+			options,
+			default: missingList[0] || undefined,
+			reqd: 1,
+		});
 		const d = new frappe.ui.Dialog({
 			title: "Subir documento",
-			fields: [
-				{ fieldname: "document_type", label: "Tipo de documento", fieldtype: "Select", options, reqd: 1 },
-			],
+			fields: dialogFields,
 			primary_action_label: "Seleccionar archivo",
 			primary_action(values) {
 				d.hide();
@@ -386,10 +403,12 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 
 		$root.find(".btn-upload-doc").off("click").on("click", function() {
 			const candidate = $(this).data("c");
+			const row = (state.rows || []).find(r => r.name === candidate) || {};
+			const missing = row.missing || [];
 			frappe.call("hubgh.hubgh.page.bandeja_contratacion.bandeja_contratacion.list_upload_document_types")
 				.then(r => {
 					const docTypes = r.message || [];
-					openUploadDocumentDialog(candidate, docTypes);
+					openUploadDocumentDialog(candidate, docTypes, missing);
 				})
 				.catch(err => {
 					const msg = (err && (err.message || err.exc || err._server_messages)) || "No fue posible cargar los tipos de documento.";
