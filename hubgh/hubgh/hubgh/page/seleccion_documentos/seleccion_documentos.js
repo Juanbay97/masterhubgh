@@ -102,10 +102,16 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		return ["favorable", "desfavorable", "aplazado"].includes(concept);
 	};
 	const canSendToRL = row => !!(row?.can_manage && row?.completo && row?.sagrilaft_ok && (row?.concepto_medico || "") === "Favorable" && !isInMedicalExam(row));
+	// canSendToRLIncomplete: HARD gate passes (Favorable + SAGRILAFT) but docs are incomplete.
+	// Server will require motivo; client shows dialog with motivo field.
+	const canSendToRLIncomplete = row => !!(row?.can_manage && !row?.completo && row?.sagrilaft_ok && (row?.concepto_medico || "") === "Favorable" && !isInMedicalExam(row));
 	const canShowSendToRL = row => !!(row?.can_manage && (row?.concepto_medico || "") === "Favorable" && !isInMedicalExam(row));
 	const getPrimaryAction = row => {
 		if (canSendToRL(row)) {
 			return { type: "send", label: "Enviar a RRLL", tone: "btn-primary", copy: "Handoff listo para formalización" };
+		}
+		if (canSendToRLIncomplete(row)) {
+			return { type: "send", label: "Enviar a RRLL (incompleto)", tone: "btn-warning", copy: "Documentación incompleta — requiere motivo" };
 		}
 		if (row?.can_manage && !isInMedicalExam(row) && !hasResolvedMedicalConcept(row) && !canShowSendToRL(row)) {
 			return { type: "medical", label: "Enviar a examen", tone: "btn-warning", copy: "Siguiente paso operativo" };
@@ -618,20 +624,66 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		$root.find(".action-send").off("click").on("click", function() {
 			const candidate = $(this).data("c");
 			const row = (state.rows || []).find(r => r.name === candidate) || {};
-			openSimpleDialog("Enviar a RL", [
+			const isComplete = !!row.completo;
+			const missing = row.missing || [];
+
+			const baseFields = [
 				{ fieldname: "pdv_destino", label: "Punto de Venta", fieldtype: "Link", options: "Punto de Venta", default: row.pdv_destino || "", reqd: 1 },
 				{ fieldname: "fecha_tentativa_ingreso", label: "Fecha de Ingreso", fieldtype: "Date", default: row.fecha_tentativa_ingreso || "", reqd: 1 },
 				{ fieldname: "cargo", label: "Cargo", fieldtype: "Link", options: "Cargo", default: row.cargo_postulado || "", reqd: 1 },
-			], "Enviar", values => {
-				frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.send_to_labor_relations", {
+			];
+
+			let dialogTitle = "Enviar a Relaciones Laborales";
+			let fields = baseFields;
+
+			if (!isComplete && missing.length > 0) {
+				const missingListHtml = missing
+					.map(m => `<li style='margin:2px 0;'>${frappe.utils.escape_html(m)}</li>`)
+					.join("");
+				fields = [
+					{
+						fieldname: "incomplete_alert",
+						fieldtype: "HTML",
+						options: `<div class='sel-docs-note' style='border-color:#fbbf24;background:#fffbeb;color:#92400e;margin-bottom:8px;'>
+							<strong>Documentación incompleta.</strong> Los siguientes documentos están pendientes:
+							<ul style='margin:6px 0 0 16px;padding:0;'>${missingListHtml}</ul>
+							<div style='margin-top:6px;'>Podés igualmente enviarlo indicando el motivo. El candidato quedará visible en ambas bandejas hasta completar los documentos.</div>
+						</div>`,
+					},
+					...baseFields,
+					{
+						fieldname: "motivo",
+						label: "Motivo del envío incompleto (obligatorio)",
+						fieldtype: "Small Text",
+						reqd: 1,
+						description: "Justificación para enviar con documentación pendiente. Queda registrado en la trazabilidad del candidato.",
+					},
+				];
+				dialogTitle = "Enviar a RRLL — documentación incompleta";
+			}
+
+			openSimpleDialog(dialogTitle, fields, "Enviar", values => {
+				const callArgs = {
 					candidate,
 					pdv_destino: values.pdv_destino,
 					fecha_tentativa_ingreso: values.fecha_tentativa_ingreso,
 					cargo: values.cargo,
-				}).then(() => {
-					frappe.show_alert({ indicator: "green", message: "Enviado a Relaciones Laborales" });
-					loadBoard();
-				});
+				};
+				if (!isComplete) {
+					callArgs.motivo = (values.motivo || "").trim();
+				}
+				frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.send_to_labor_relations", callArgs)
+					.then(() => {
+						const msg = isComplete
+							? "Enviado a Relaciones Laborales"
+							: "Enviado a RRLL con documentación incompleta. El candidato queda visible en ambas bandejas.";
+						frappe.show_alert({ indicator: "green", message: msg });
+						loadBoard();
+					})
+					.catch(err => {
+						const msg = (err && (err.message || err.exc || err._server_messages)) || "No fue posible enviar a Relaciones Laborales.";
+						frappe.msgprint(msg);
+					});
 			});
 		});
 

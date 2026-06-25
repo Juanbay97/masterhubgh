@@ -331,6 +331,7 @@ def list_candidates(search=None):
 		"required_ok": 0,
 		"required_total": 0,
 		"is_complete": False,
+		"missing": [],
 		"sagrilaft_ok": False,
 	}
 
@@ -353,6 +354,7 @@ def list_candidates(search=None):
 			"documentos_ok": progress.get("required_ok", 0),
 			"documentos_total": progress.get("required_total", 0),
 			"completo": progress.get("is_complete", False),
+			"missing": progress.get("missing", []),
 			"can_manage": is_manager,
 			"solo_afiliacion": int(row.solo_afiliacion or 0),
 			"fecha_tentativa_ingreso": row.fecha_tentativa_ingreso,
