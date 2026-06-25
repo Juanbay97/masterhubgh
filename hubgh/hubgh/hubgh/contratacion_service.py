@@ -1032,6 +1032,16 @@ def contract_candidates(search=None):
 		fields=["name", "nombres", "apellidos", "numero_documento", "pdv_destino", "cargo_postulado", "fecha_tentativa_ingreso"],
 		order_by="fecha_tentativa_ingreso asc, modified asc",
 	)
+
+	# Fetch documentacion_incompleta from Datos Contratacion for all candidates in one query.
+	candidate_names = [r.name for r in rows]
+	datos_rows = frappe.get_all(
+		"Datos Contratacion",
+		filters={"candidato": ["in", candidate_names]},
+		fields=["candidato", "documentacion_incompleta"],
+	) if candidate_names else []
+	incomplete_map = {d.candidato: int(d.documentacion_incompleta or 0) for d in datos_rows}
+
 	return [{
 		"name": r.name,
 		"full_name": f"{r.nombres or ''} {r.apellidos or ''}".strip(),
@@ -1039,6 +1049,7 @@ def contract_candidates(search=None):
 		"pdv_destino": r.pdv_destino,
 		"cargo_postulado": r.cargo_postulado,
 		"fecha_tentativa_ingreso": r.fecha_tentativa_ingreso,
+		"documentacion_incompleta": incomplete_map.get(r.name, 0),
 	} for r in rows]
 
 

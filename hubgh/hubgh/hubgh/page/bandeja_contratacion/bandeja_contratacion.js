@@ -45,6 +45,61 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 		}
 	};
 
+	const uploadToFileAPI = (doctype, docname, file) => {
+		const formData = new FormData();
+		formData.append("file", file);
+		formData.append("is_private", 1);
+		formData.append("doctype", doctype);
+		formData.append("docname", docname);
+		return fetch("/api/method/upload_file", {
+			method: "POST",
+			body: formData,
+			credentials: "same-origin",
+			headers: { "X-Frappe-CSRF-Token": frappe.csrf_token },
+		})
+			.then(r => r.json())
+			.then(r => {
+				if (!r.message?.file_url) throw new Error("upload_error");
+				return r.message.file_url;
+			});
+	};
+
+	const openUploadDocumentDialog = (candidate, docTypes) => {
+		const options = (docTypes || []).join("\n");
+		const d = new frappe.ui.Dialog({
+			title: "Subir documento",
+			fields: [
+				{ fieldname: "document_type", label: "Tipo de documento", fieldtype: "Select", options, reqd: 1 },
+			],
+			primary_action_label: "Seleccionar archivo",
+			primary_action(values) {
+				d.hide();
+				const picker = $("<input type='file' class='d-none' />");
+				picker.on("change", function() {
+					const file = this.files[0];
+					if (!file) return;
+					frappe.show_alert({ indicator: "blue", message: "Subiendo documento..." });
+					uploadToFileAPI("Candidato", candidate, file)
+						.then(fileUrl => frappe.call(
+							"hubgh.hubgh.page.bandeja_contratacion.bandeja_contratacion.upload_contratacion_document",
+							{ candidate, document_type: values.document_type, file_url: fileUrl },
+						))
+						.then(() => {
+							frappe.show_alert({ indicator: "green", message: "Documento subido correctamente" });
+							load();
+						})
+						.catch(err => {
+							const msg = (err && (err.message || err.exc || err._server_messages)) || "No fue posible subir el documento.";
+							frappe.msgprint(msg);
+						});
+				});
+				$("body").append(picker);
+				picker.trigger("click");
+			},
+		});
+		d.show();
+	};
+
 	const bindCommonActions = () => {
 		$root.find(".btn-reportes, .go-siesa").off("click").on("click", function() {
 			frappe.set_route("app", "reportes_siesa");
@@ -114,18 +169,30 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 
 	const render = () => {
 		const rows = getFilteredRows();
-		const htmlCards = rows.map(r => `
-			<div class='hubgh-card'>
+		const htmlCards = rows.map(r => {
+			const isIncomplete = !!(r.documentacion_incompleta);
+			const missing = r.missing || [];
+			const missingCount = missing.length;
+			const incompleteBadge = isIncomplete
+				? `<span class='indicator-pill orange incomplete-docs-badge' title='${esc(missing.join(", "))}'>Documentación incompleta: ${esc(missingCount)} faltante${missingCount !== 1 ? "s" : ""}</span>`
+				: "";
+			const missingDocsDetail = (isIncomplete && missingCount > 0)
+				? `<div class='hubgh-submeta' style='color:#92400e;font-size:11px;margin-top:4px;'>Pendientes: ${esc(missing.join(", "))}</div>`
+				: "";
+			return `
+			<div class='hubgh-card' data-c='${esc(r.name)}' data-incomplete='${isIncomplete ? "1" : "0"}'>
 				<div class='hubgh-card-head'>
 					<div class='hubgh-main'>
 						<div class='hubgh-title-row'>
 							<div class='hubgh-name'>${esc(r.full_name || "")}</div>
 							<span class='indicator-pill blue'>Listo para formalizar</span>
+							${incompleteBadge}
 						</div>
 						<div class='hubgh-meta'>CC ${esc(r.numero_documento || "-")}</div>
 						<div class='hubgh-submeta'>
 							<span>Ingreso tentativo: ${esc(formatTentativeDate(r.fecha_tentativa_ingreso))}</span>
 						</div>
+						${missingDocsDetail}
 						<div class='hubgh-badges-grid'>
 							<div class='hubgh-badge is-complete'>
 								<span class='hubgh-badge-label'>Documento</span>
@@ -140,12 +207,14 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 				</div>
 				<div class='hubgh-actions'>
 					<button class='btn btn-xs btn-primary btn-create' data-c='${esc(r.name)}'>Crear contrato</button>
+					${isIncomplete ? `<button class='btn btn-xs btn-warning btn-upload-doc' data-c='${esc(r.name)}'>Subir documento</button>` : ""}
 					<button class='btn btn-xs btn-link btn-correccion' data-c='${esc(r.name)}' data-label='${esc(r.full_name || r.name)}'>Corregir datos</button>
 					<button class='btn btn-xs btn-link text-danger btn-reject' data-c='${esc(r.name)}'>Rechazar</button>
 					<button class='btn btn-xs btn-link go-siesa'>Reportes SIESA</button>
 				</div>
 			</div>
-		`).join("");
+		`;
+		}).join("");
 
 		renderFrame(`
 			<div class='hubgh-board-toolbar'>
@@ -314,6 +383,19 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 					frappe.msgprint(msg);
 				});
 		});
+
+		$root.find(".btn-upload-doc").off("click").on("click", function() {
+			const candidate = $(this).data("c");
+			frappe.call("hubgh.hubgh.page.bandeja_contratacion.bandeja_contratacion.list_upload_document_types")
+				.then(r => {
+					const docTypes = r.message || [];
+					openUploadDocumentDialog(candidate, docTypes);
+				})
+				.catch(err => {
+					const msg = (err && (err.message || err.exc || err._server_messages)) || "No fue posible cargar los tipos de documento.";
+					frappe.msgprint(msg);
+				});
+		});
 	};
 
 	const load = () => {
@@ -322,9 +404,46 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 		renderLoading();
 		frappe.call("hubgh.hubgh.page.bandeja_contratacion.bandeja_contratacion.contract_candidates")
 			.then(r => {
-				state.rows = r.message || [];
-				state.status = "ready";
-				render();
+				const candidates = r.message || [];
+				const incompleteNames = candidates
+					.filter(c => c.documentacion_incompleta)
+					.map(c => c.name);
+
+				if (!incompleteNames.length) {
+					state.rows = candidates;
+					state.status = "ready";
+					render();
+					return;
+				}
+
+				// Fetch live progress only for incomplete candidates to drive the missing-docs badge.
+				// Complete candidates have no missing docs — no extra round-trip needed.
+				const progressCalls = incompleteNames.map(name =>
+					frappe.call(
+						"hubgh.hubgh.page.bandeja_contratacion.bandeja_contratacion.get_candidate_progress",
+						{ candidate: name },
+					).then(resp => ({ name, progress: resp.message || {} })),
+				);
+
+				Promise.all(progressCalls)
+					.then(results => {
+						const progressMap = {};
+						results.forEach(({ name, progress }) => { progressMap[name] = progress; });
+
+						state.rows = candidates.map(c => {
+							if (!c.documentacion_incompleta) return c;
+							const prog = progressMap[c.name] || {};
+							return Object.assign({}, c, { missing: prog.missing || [] });
+						});
+						state.status = "ready";
+						render();
+					})
+					.catch(() => {
+						// Degrade gracefully: show candidates without live missing list.
+						state.rows = candidates;
+						state.status = "ready";
+						render();
+					});
 			})
 			.catch(err => {
 				state.rows = [];
