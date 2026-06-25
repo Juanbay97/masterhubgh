@@ -459,9 +459,10 @@ def upload_candidate_document(candidate, document_type, file_url, notes=None):
 
 
 @frappe.whitelist()
-def send_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso=None, cargo=None):
+def send_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso=None, cargo=None, motivo=None):
 	_validate_selection_access(candidate)
 	cand = frappe.get_doc("Candidato", candidate)
+	# Hard pre-checks — always enforced, motivo cannot bypass.
 	if (cand.concepto_medico or "") != "Favorable":
 		frappe.throw("No se puede enviar a RRLL: el concepto médico debe ser Favorable.")
 	if not _has_uploaded_document(candidate, "SAGRILAFT"):
@@ -471,6 +472,7 @@ def send_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso
 		pdv_destino=pdv_destino,
 		fecha_tentativa_ingreso=fecha_tentativa_ingreso,
 		cargo=cargo,
+		motivo=motivo,
 	)
 
 

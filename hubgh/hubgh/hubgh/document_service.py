@@ -1,5 +1,6 @@
 import hashlib
 import io
+import json
 import os
 import re
 import unicodedata
@@ -1137,14 +1138,20 @@ def upload_person_document(person_type, person, document_type, file_url, notes=N
 	return doc
 
 
-def send_candidate_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso=None, cargo=None):
+def send_candidate_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso=None, cargo=None, motivo=None):
 	if not user_has_any_role(frappe.session.user, "HR Selection") and frappe.session.user != "Administrator":
 		frappe.throw(_("No autorizado para enviar candidatos a Relaciones Laborales."))
 
 	progress = get_candidate_progress(candidate)
-	if not progress["is_complete"]:
-		frappe.throw(_("No se puede enviar: documentación requerida incompleta."))
+	incomplete = not progress["is_complete"]
 
+	# Soft gate: incomplete docs are allowed only when a motivo is provided.
+	if incomplete and not (motivo or "").strip():
+		frappe.throw(_(
+			"Documentación incompleta: indique un motivo para enviar igualmente."
+		))
+
+	# Hard gate: medical concept + SAGRILAFT. Always enforced, motivo cannot bypass.
 	candidate_doc = frappe.get_doc("Candidato", candidate)
 	handoff_gate = validate_selection_to_rrll_gate(
 		{
@@ -1167,7 +1174,10 @@ def send_candidate_to_labor_relations(candidate, pdv_destino=None, fecha_tentati
 			)
 		)
 
-	updates = {"estado_proceso": STATE_AFILIACION, "solo_afiliacion": 0}
+	updates = {
+		"estado_proceso": STATE_AFILIACION,
+		"solo_afiliacion": 1 if incomplete else 0,
+	}
 	if pdv_destino:
 		updates["pdv_destino"] = pdv_destino
 	if fecha_tentativa_ingreso:
@@ -1189,12 +1199,41 @@ def send_candidate_to_labor_relations(candidate, pdv_destino=None, fecha_tentati
 			frappe.db.set_value("Ficha Empleado", persona, persona_updates)
 
 	if not frappe.db.exists("Datos Contratacion", {"candidato": candidate}):
-		frappe.get_doc({
+		datos_doc_data = {
 			"doctype": "Datos Contratacion",
 			"candidato": candidate,
-		}).insert(ignore_permissions=True)
+		}
+		if incomplete:
+			datos_doc_data["documentacion_incompleta"] = 1
+			datos_doc_data["motivo_doc_incompleta"] = (motivo or "").strip()
+			datos_doc_data["autorizado_por"] = frappe.session.user
+			datos_doc_data["fecha_autorizacion"] = now()
+			datos_doc_data["docs_faltantes_snapshot"] = json.dumps(
+				progress.get("missing") or []
+			)
+		frappe.get_doc(datos_doc_data).insert(ignore_permissions=True)
+	elif incomplete:
+		# Record already exists — update audit fields.
+		existing_name = frappe.db.get_value("Datos Contratacion", {"candidato": candidate}, "name")
+		if existing_name:
+			frappe.db.set_value(
+				"Datos Contratacion",
+				existing_name,
+				{
+					"documentacion_incompleta": 1,
+					"motivo_doc_incompleta": (motivo or "").strip(),
+					"autorizado_por": frappe.session.user,
+					"fecha_autorizacion": now(),
+					"docs_faltantes_snapshot": json.dumps(progress.get("missing") or []),
+				},
+			)
 
-	return {"ok": True, "status": STATE_AFILIACION, "handoff_gate": handoff_gate}
+	return {
+		"ok": True,
+		"status": STATE_AFILIACION,
+		"handoff_gate": handoff_gate,
+		"documentacion_incompleta": 1 if incomplete else 0,
+	}
 
 
 def hire_candidate(candidate):
