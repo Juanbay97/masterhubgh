@@ -1084,7 +1084,18 @@ def get_candidates_progress_bulk(candidate_names):
 
 def set_candidate_status_from_progress(candidate):
 	current_status = frappe.db.get_value("Candidato", candidate, "estado_proceso")
-	if is_candidate_status(current_status, STATE_EXAMEN_MEDICO):
+	# Never regress a candidate who has already advanced past documentation.
+	# Uploading a document (e.g. from the contratación board) must not pull an
+	# afiliación / listo-para-contratar / contratado candidate back to "En
+	# documentación", which would drop them out of the RRLL board before the
+	# contract is created. Medical exam is also a protected forward state.
+	if is_candidate_status(
+		current_status,
+		STATE_EXAMEN_MEDICO,
+		STATE_AFILIACION,
+		STATE_LISTO_CONTRATAR,
+		STATE_CONTRATADO,
+	):
 		return current_status
 
 	get_candidate_progress(candidate)
