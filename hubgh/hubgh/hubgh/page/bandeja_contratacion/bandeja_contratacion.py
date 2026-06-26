@@ -11,7 +11,6 @@ from hubgh.hubgh.document_service import (
     get_candidate_progress,
     upload_person_document,
 )
-from hubgh.hubgh.selection_document_types import get_selection_operational_document_names
 
 
 __all__ = [
@@ -47,5 +46,16 @@ def upload_contratacion_document(candidate, document_type, file_url, notes=None)
 
 @frappe.whitelist()
 def list_upload_document_types():
-    """Return the document type names the JS upload picker should offer."""
-    return get_selection_operational_document_names()
+    """Return the document type names the RRLL upload picker should offer.
+
+    Returns every active document type applicable to candidates (carnet, hoja de
+    vida, EPS, SAGRILAFT, etc.), not just the internal operational subset, so RRLL
+    can upload any required candidate document from the contratación board.
+    Required-for-hiring types are listed first.
+    """
+    return frappe.get_all(
+        "Document Type",
+        filters={"is_active": 1, "applies_to": ["in", ["Candidato", "Ambos"]]},
+        order_by="is_required_for_hiring desc, name asc",
+        pluck="name",
+    )
