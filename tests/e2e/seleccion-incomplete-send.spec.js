@@ -8,6 +8,9 @@
  *   3. Confirmar con motivo valido: llama a send_to_labor_relations con el motivo
  *      y muestra el mensaje de exito.
  *   4. Candidato con docs completos: dialog NO tiene el campo motivo ni alerta.
+ *   5. (PR1 regression, T-21e) completo=false + missing=[]: el dialog debe
+ *      aparecer igual (antes `!isComplete && missing.length > 0` saltaba el
+ *      gate cuando missing resolvia vacio).
  *
  * Requiere fixture sembrada via:
  *   bench --site hubgh.local execute hubgh.hubgh.tests._seed_incomplete_send_e2e.seed
@@ -28,6 +31,11 @@ const USER_SELECCION = process.env.HUBGH_E2E_USER_SELECCION || 'test.seleccion@h
 const PASS_SELECCION = process.env.HUBGH_E2E_PASS_SELECCION || 'Hubgh-E2E-TestSeleccion-2026';
 const CAND_INCOMPLETE = process.env.HUBGH_E2E_CAND_INCOMPLETE || '9100000001';
 const CAND_COMPLETE = process.env.HUBGH_E2E_CAND_COMPLETE || '9100000002';
+// Incomplete (completo=false) candidate whose `missing` list resolves empty —
+// the edge case that used to skip the motivo dialog (see T-21e below).
+// Needs a dedicated fixture row in _seed_incomplete_send_e2e (not yet
+// authored — see PR1 apply report).
+const CAND_INCOMPLETE_NO_MISSING = process.env.HUBGH_E2E_CAND_INCOMPLETE_NO_MISSING || '9100000003';
 
 const ADMIN_PASSWORD = process.env.HUBGH_ADMIN_PASSWORD || 'admin';
 
@@ -170,6 +178,27 @@ test.describe('Seleccion: envio incompleto a RRLL', () => {
 
 		// Success alert should appear
 		await expect(page.locator('.alert-message-container, .frappe-alert')).toContainText('incompleta', { timeout: 15_000 });
+	});
+
+	test('T-21e (PR1 regression): motivo dialog shows even when completo=false and missing=[]', async ({ page, baseURL }) => {
+		test.setTimeout(90_000);
+
+		await clickSendActionForCandidate(page, CAND_INCOMPLETE_NO_MISSING);
+
+		const dialog = page.locator('.modal-dialog').last();
+		await expect(dialog).toBeVisible({ timeout: 15_000 });
+
+		// Title must still signal the incomplete state...
+		await expect(dialog.locator('.modal-title')).toContainText('incompleto');
+
+		// ...and the motivo field must be required, even though there is no
+		// missing-docs list to render inside the alert block.
+		const motivoWrapper = dialog.locator('[data-fieldname="motivo"]');
+		await expect(motivoWrapper).toBeVisible();
+
+		// The alert block itself may render without an inner <ul> when
+		// missing=[], but it must still be shown (not silently skipped).
+		await expect(dialog.locator('.sel-docs-note')).toBeVisible();
 	});
 
 	test('T-21d: complete candidate send dialog has NO motivo field', async ({ page, baseURL }) => {
