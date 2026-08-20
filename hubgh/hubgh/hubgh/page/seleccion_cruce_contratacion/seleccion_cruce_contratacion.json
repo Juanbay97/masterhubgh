@@ -1,0 +1,32 @@
+{
+ "doctype": "Page",
+ "name": "seleccion_cruce_contratacion",
+ "title": "Cruce Selección - Contratación",
+ "module": "Hubgh",
+ "standard": "Yes",
+ "page_name": "seleccion_cruce_contratacion",
+ "icon": "file",
+ "roles": [
+  {
+   "role": "HR Selection"
+  },
+  {
+   "role": "Gestión Humana"
+  },
+  {
+   "role": "GH - Bandeja General"
+  },
+  {
+   "role": "Gerente GH"
+  },
+  {
+   "role": "HR Labor Relations"
+  },
+  {
+   "role": "Relaciones Laborales Jefe"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+}

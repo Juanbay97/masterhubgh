@@ -68,9 +68,24 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		}
 	`);
 
+	const $tabsWrap = $(`
+		<div class='hubgh-board-toolbar' style='margin-bottom:8px'>
+			<button class='btn btn-sm btn-primary tab-board'>Bandeja</button>
+			<button class='btn btn-sm btn-default tab-post-handoff'>Enviados con pendientes</button>
+		</div>
+	`).appendTo(page.body);
 	const $root = $("<div class='hubgh-board-shell'></div>").appendTo(page.body);
-	let state = { rows: [], search: "", status: "all" };
+	let state = { rows: [], postHandoffRows: [], search: "", status: "all", view: "board" };
 	const esc = ui.esc;
+
+	const setActiveTab = view => {
+		$tabsWrap.find(".tab-board")
+			.toggleClass("btn-primary", view === "board")
+			.toggleClass("btn-default", view !== "board");
+		$tabsWrap.find(".tab-post-handoff")
+			.toggleClass("btn-primary", view === "post_handoff")
+			.toggleClass("btn-default", view !== "post_handoff");
+	};
 
 	const cleanupModal = dialog => {
 		dialog.$wrapper.on("hidden.bs.modal", () => {
@@ -772,6 +787,72 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 			$root.find(".go-rrll-board").off("click").on("click", () => frappe.set_route("app", "bandeja_contratacion"));
 		});
 	};
+
+	// ------------------------------------------------------------------
+	// Tab "Enviados con pendientes" (PR3, 3.4.5): candidatos ya enviados a
+	// afiliación/contratación cuyo avance permission-independent todavía no
+	// está completo. Única acción: subir documentos (reutiliza el flujo de
+	// subida ya autorizado; sin nuevo endpoint).
+	// ------------------------------------------------------------------
+	const renderPostHandoffTable = (rows) => {
+		const htmlRows = (rows || []).map(r => `
+			<tr>
+				<td>${esc(r.full_name)}</td>
+				<td>${esc(r.numero_documento)}</td>
+				<td>${esc(r.pdv_destino_nombre)}</td>
+				<td>${esc(r.estado_proceso)}</td>
+				<td>${esc(r.avance_porcentaje)}%</td>
+				<td style='font-size:12px;color:#6b7280'>${esc((r.missing || []).join(", "))}</td>
+				<td><button class='btn btn-xs btn-primary action-post-handoff-upload' data-c='${esc(r.name)}'>Subir documentos</button></td>
+			</tr>
+		`).join("");
+
+		$root.html(`
+			<div class='hubgh-board-hero'>
+				<div class='hubgh-board-hero-head'>
+					<div>
+						<div class='hubgh-board-kickers'>
+							<span class='hubgh-board-kicker'>Selección</span>
+							<span class='hubgh-board-kicker'>Post-handoff</span>
+						</div>
+						<h3 class='hubgh-board-title'>Enviados con pendientes</h3>
+						<p class='hubgh-board-copy'>Candidatos ya enviados (en afiliación, listos para contratar o contratados) cuya documentación todavía no está completa. Única acción disponible: subir soportes.</p>
+					</div>
+					<div class='hubgh-board-meta'><span class='hubgh-meta-pill'>${esc((rows || []).length)} pendientes</span></div>
+				</div>
+			</div>
+			<div class='hubgh-table-shell' style='margin-top:12px'>
+				<table class='table table-bordered hubgh-table'>
+					<thead>
+						<tr><th>Candidato</th><th>Documento</th><th>PDV</th><th>Estado</th><th>Avance</th><th>Faltantes</th><th></th></tr>
+					</thead>
+					<tbody>${htmlRows || "<tr><td colspan='7'>Sin candidatos pendientes</td></tr>"}</tbody>
+				</table>
+			</div>
+		`);
+
+		$root.find(".action-post-handoff-upload").off("click").on("click", function() {
+			openSelectionDocsUploadDialog($(this).data("c"));
+		});
+	};
+
+	const loadPostHandoff = () => {
+		frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.list_post_handoff_candidates").then(r => {
+			state.postHandoffRows = r.message || [];
+			renderPostHandoffTable(state.postHandoffRows);
+		});
+	};
+
+	$tabsWrap.find(".tab-board").on("click", () => {
+		state.view = "board";
+		setActiveTab("board");
+		loadBoard();
+	});
+	$tabsWrap.find(".tab-post-handoff").on("click", () => {
+		state.view = "post_handoff";
+		setActiveTab("post_handoff");
+		loadPostHandoff();
+	});
 
 	loadBoard();
 };
