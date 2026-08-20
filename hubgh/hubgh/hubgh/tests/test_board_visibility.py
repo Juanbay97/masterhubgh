@@ -270,3 +270,32 @@ class TestContractGateRegression(FrappeTestCase):
                 self.fail(
                     f"_validate_mandatory_ingreso_gate raised unexpectedly after all docs uploaded: {exc}"
                 )
+
+
+# Phase 1.1.3 (PR1 triangulation): board must match across HR-EXT roles.
+# _has_selection_access authorizes HR Selection, Gestión Humana, GH - Bandeja
+# General and Gerente GH; the role check itself runs through the real
+# user_has_any_role/frappe.get_roles (only get_all/session/progress mocked).
+
+HR_EXT_ROLES = ["HR Selection", "Gestión Humana", "GH - Bandeja General", "Gerente GH"]
+
+
+class TestBoardVisibilityRoleParity(FrappeTestCase):
+
+    def test_all_hr_ext_roles_see_identical_board(self):
+        row = _make_candidate_row("CAND-PARITY", estado="Documentación", solo_afiliacion=0)
+        progress_map = {"CAND-PARITY": _make_progress(False, ["Cédula"])}
+
+        for role in HR_EXT_ROLES:
+            with (
+                patch("hubgh.hubgh.role_matrix.frappe.get_roles", return_value=[role]),
+                patch(f"{_SEL_MODULE}.frappe.session") as mock_session,
+                patch(f"{_SEL_MODULE}.frappe.get_all", return_value=[row]),
+                patch(f"{_SEL_MODULE}._candidate_pdv_name_map", return_value={}),
+                patch(f"{_SEL_MODULE}.get_candidates_progress_bulk", return_value=progress_map),
+            ):
+                mock_session.user = f"parity-{role}@example.com"
+                result = list_candidates()  # must not raise (access gate)
+
+            names = [r["name"] for r in result]
+            self.assertIn("CAND-PARITY", names, f"Role {role!r} must see the same board")

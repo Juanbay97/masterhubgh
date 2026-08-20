@@ -389,3 +389,57 @@ class TestSendIncompletGate(FrappeTestCase):
             0,
             "docs_faltantes_snapshot must not be modified via set_value after initial insert",
         )
+
+
+# Phase 1.3.1 (PR1): send gate must authorize the full HR-EXT role set, not
+# just "HR Selection". Uses the REAL role_matrix.user_has_any_role (only
+# frappe.get_roles is mocked per user) so it exercises the actual gate.
+
+HR_EXT_ROLES = ["HR Selection", "Gestión Humana", "GH - Bandeja General", "Gerente GH"]
+
+
+class TestSendGateHrExtRoleParity(FrappeTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Warm the translation cache before frappe.db gets mocked below —
+        # frappe.throw()/_() lazily hits frappe.db.get_global() once, which
+        # blows up with an unrelated mock error if frappe.db is a bare Mock.
+        frappe._("warm the translation cache")
+
+    def _call_as(self, user, roles):
+        with (
+            patch("hubgh.hubgh.role_matrix.frappe.get_roles", return_value=roles),
+            patch(
+                "hubgh.hubgh.document_service.get_candidate_progress",
+                return_value=_make_progress(True),
+            ),
+            patch(
+                "hubgh.hubgh.document_service.validate_selection_to_rrll_gate",
+                return_value=_gate_ready(),
+            ),
+            patch("hubgh.hubgh.document_service.frappe.get_doc", return_value=MagicMock()),
+            patch("hubgh.hubgh.document_service.frappe.get_all", return_value=[]),
+            patch("hubgh.hubgh.document_service.frappe.db") as mock_db,
+            patch("hubgh.hubgh.document_service.frappe.session") as mock_session,
+        ):
+            mock_db.get_value = MagicMock(return_value=None)
+            mock_db.exists = MagicMock(return_value=False)
+            mock_db.set_value = MagicMock()
+            mock_session.user = user
+            return send_candidate_to_labor_relations("CAND-001")
+
+    def test_every_hr_ext_role_is_authorized(self):
+        """Every HR-EXT role (not just HR Selection) must be able to send."""
+        for role in HR_EXT_ROLES:
+            try:
+                result = self._call_as(f"user-{role}@example.com", [role])
+            except frappe.exceptions.ValidationError as exc:
+                self.fail(f"Role {role!r} must be authorized to send to RRLL, but raised: {exc}")
+            self.assertEqual(result.get("documentacion_incompleta"), 0)
+
+    def test_role_outside_hr_ext_is_rejected(self):
+        """A role outside the HR-EXT set must still be rejected."""
+        with self.assertRaises(frappe.exceptions.ValidationError):
+            self._call_as("user-hr-sst@example.com", ["HR SST"])

@@ -636,17 +636,22 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 			let dialogTitle = "Enviar a Relaciones Laborales";
 			let fields = baseFields;
 
-			if (!isComplete && missing.length > 0) {
-				const missingListHtml = missing
-					.map(m => `<li style='margin:2px 0;'>${frappe.utils.escape_html(m)}</li>`)
-					.join("");
+			if (!isComplete) {
+				// Any incompleteness surfaces the motivo dialog; only the <ul> itself
+				// is conditional on missing.length (is_complete=false + missing=[]
+				// still needs to block on a motivo, just with nothing to list).
+				const missingListHtml = missing.length > 0
+					? `<ul style='margin:6px 0 0 16px;padding:0;'>${missing
+						.map(m => `<li style='margin:2px 0;'>${frappe.utils.escape_html(m)}</li>`)
+						.join("")}</ul>`
+					: "";
 				fields = [
 					{
 						fieldname: "incomplete_alert",
 						fieldtype: "HTML",
 						options: `<div class='sel-docs-note' style='border-color:#fbbf24;background:#fffbeb;color:#92400e;margin-bottom:8px;'>
-							<strong>Documentación incompleta.</strong> Los siguientes documentos están pendientes:
-							<ul style='margin:6px 0 0 16px;padding:0;'>${missingListHtml}</ul>
+							<strong>Documentación incompleta.</strong>${missing.length > 0 ? " Los siguientes documentos están pendientes:" : ""}
+							${missingListHtml}
 							<div style='margin-top:6px;'>Podés igualmente enviarlo indicando el motivo. El candidato quedará visible en ambas bandejas hasta completar los documentos.</div>
 						</div>`,
 					},

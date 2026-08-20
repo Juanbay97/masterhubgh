@@ -42,3 +42,4 @@ hubgh.patches.seed_terminacion_config
 # Re-agregado tras fix del docstatus (Rechazado modelado como 0, no 2).
 # El revert previo (commit 698bb21) era por un bug que ya está resuelto.
 hubgh.patches.correccion_datos_workflow
+hubgh.patches.document_type_read_gh_roles

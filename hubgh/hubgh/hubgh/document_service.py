@@ -28,6 +28,9 @@ from hubgh.hubgh.role_matrix import roles_have_any, user_has_any_role
 from hubgh.hubgh.selection_document_types import canonicalize_selection_document_name
 
 
+logger = frappe.logger("hubgh.document_service")
+
+
 _MULTI_UPLOAD_DOCUMENT_TYPES_FALLBACK = {
 	"2 cartas de referencias personales.",
 	"certificados de estudios y/o actas de grado bachiller y posteriores.",
@@ -847,10 +850,15 @@ def get_candidate_progress(candidate):
 			"applies_to": ["in", ["Candidato", "Ambos"]],
 		},
 		fields=["name", "requires_approval", "document_name", "allows_multiple"],
+		ignore_permissions=True,
 	)
 	required = [row for row in required if not _is_excluded_from_candidate_hiring_progress(row)]
 
 	if not required:
+		logger.warning(
+			"get_candidate_progress: required Document Type catalog resolved empty",
+			extra={"candidate": candidate, "user": frappe.session.user},
+		)
 		return {
 			"required_total": 0,
 			"required_ok": 0,
@@ -1034,8 +1042,14 @@ def get_candidates_progress_bulk(candidate_names):
 			"applies_to": ["in", ["Candidato", "Ambos"]],
 		},
 		fields=["name", "requires_approval", "document_name", "allows_multiple"],
+		ignore_permissions=True,
 	)
 	required = [row for row in required if not _is_excluded_from_candidate_hiring_progress(row)]
+	if not required:
+		logger.warning(
+			"get_candidates_progress_bulk: required Document Type catalog resolved empty",
+			extra={"candidate_count": len(candidate_names), "user": frappe.session.user},
+		)
 
 	# Build a rules lookup from the already-fetched rows so _build_vigentes_by_type
 	# can resolve allows_multiple without issuing additional frappe.get_doc calls.
@@ -1150,7 +1164,8 @@ def upload_person_document(person_type, person, document_type, file_url, notes=N
 
 
 def send_candidate_to_labor_relations(candidate, pdv_destino=None, fecha_tentativa_ingreso=None, cargo=None, motivo=None):
-	if not user_has_any_role(frappe.session.user, "HR Selection") and frappe.session.user != "Administrator":
+	_hr_ext_roles = ("HR Selection", "Gestión Humana", "GH - Bandeja General", "Gerente GH")
+	if not user_has_any_role(frappe.session.user, *_hr_ext_roles) and frappe.session.user != "Administrator":
 		frappe.throw(_("No autorizado para enviar candidatos a Relaciones Laborales."))
 
 	progress = get_candidate_progress(candidate)
