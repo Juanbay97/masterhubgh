@@ -4,18 +4,12 @@
 """
 TDD — Phase 1.2: document_type_read_gh_roles patch idempotency.
 
-NOTE: this site already has pre-existing (broader, full-CRUD) DocPerm rows for
-these 3 roles on 'Document Type' — DB/fixture drift, unrelated to this patch
-(absent from document_type.json; not a Custom DocPerm override either). Tests
-are black-box and never delete pre-existing rows; they assert only what the
-patch promises: read=1 ends up present, and row counts never grow.
-
-KNOWN CAVEAT (verified, tracked as a follow-up, not fixed here — see PR1 apply
-report): ensure_docperm(doctype, role, read=1) on a role with NO pre-existing
-row silently grants full CRUD, not read-only, because DocPerm's own doctype
-defaults write/create/delete/etc to 1 and ensure_docperm never zeroes flags it
-wasn't asked to set. This affects several other ensure_docperm() call sites
-too, not just this patch — a dedicated fix is intentionally out of scope here.
+CORRECTION (gate feedback): the full-CRUD rows an earlier version found were
+NOT "pre-existing drift" — they were created by this patch's own first-ever
+run (ensure_docperm's fresh-row defect, see patch docstring), committed for
+real by execute()'s own frappe.db.commit(). Verified against a genuinely
+clean baseline: the corrected two-pass patch grants EXACTLY
+read=1/write=0/create=0/delete=0. These tests assert that exact flag set.
 """
 
 import frappe
@@ -34,29 +28,36 @@ def _docperm_rows(role):
 
 class TestDocumentTypeReadGhRolesPatch(FrappeTestCase):
 
-	def test_every_gh_role_ends_up_with_read_permission(self):
+	def test_fresh_grant_is_exactly_read_only(self):
+		"""Starting from NO pre-existing row, the patch must grant EXACTLY
+		read=1/write=0/create=0/delete=0 — not full CRUD."""
+		for role in GH_ROLES:
+			frappe.db.delete("DocPerm", {"parent": "Document Type", "parenttype": "DocType", "role": role})
+		frappe.db.commit()
+		frappe.clear_cache(doctype="Document Type")
+
 		apply_patch()
+
 		for role in GH_ROLES:
 			rows = _docperm_rows(role)
-			self.assertTrue(rows, f"Expected at least one DocPerm row for role {role!r}")
-			self.assertTrue(
-				any(int(row.read or 0) == 1 for row in rows),
-				f"Role {role!r} must have read=1 on Document Type after the patch runs",
-			)
+			self.assertEqual(len(rows), 1, f"Expected exactly one DocPerm row for role {role!r}")
+			row = rows[0]
+			self.assertEqual(int(row.read or 0), 1, f"Role {role!r} must have read=1")
+			self.assertEqual(int(row.write or 0), 0, f"Role {role!r} must NOT get write access")
+			self.assertEqual(int(row.create or 0), 0, f"Role {role!r} must NOT get create access")
+			self.assertEqual(int(row.delete or 0), 0, f"Role {role!r} must NOT get delete access")
 
-	def test_running_patch_twice_never_duplicates_rows(self):
-		before_counts = {role: len(_docperm_rows(role)) for role in GH_ROLES}
+	def test_running_patch_twice_never_duplicates_rows_or_widens_them(self):
 		apply_patch()
-		after_first_counts = {role: len(_docperm_rows(role)) for role in GH_ROLES}
+		after_first = {role: _docperm_rows(role) for role in GH_ROLES}
 		apply_patch()
-		after_second_counts = {role: len(_docperm_rows(role)) for role in GH_ROLES}
+		after_second = {role: _docperm_rows(role) for role in GH_ROLES}
 
 		for role in GH_ROLES:
-			self.assertGreaterEqual(
-				after_first_counts[role], before_counts[role],
-				f"First run must not remove any pre-existing DocPerm row for {role!r}",
-			)
+			self.assertEqual(len(after_second[role]), len(after_first[role]), f"Duplicated row for {role!r}")
 			self.assertEqual(
-				after_second_counts[role], after_first_counts[role],
-				f"Second run must not add a duplicate DocPerm row for {role!r}",
+				(after_second[role][0].read, after_second[role][0].write,
+				 after_second[role][0].create, after_second[role][0].delete),
+				(1, 0, 0, 0),
+				f"Second run must not widen the grant for {role!r}",
 			)
