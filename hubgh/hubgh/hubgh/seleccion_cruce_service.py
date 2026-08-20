@@ -11,6 +11,7 @@ ANTES de cualquier lectura a base de datos.
 """
 
 import base64
+import logging
 import unicodedata
 from collections import namedtuple
 from datetime import date
@@ -319,6 +320,19 @@ def build_cruce_row(candidato, datos=None):
 # Bandeja del cruce (PR3) — listado + export Excel
 # ---------------------------------------------------------------------------
 
+AUDIT_LOGGER_NAME = "hubgh.seleccion_cruce"
+
+
+def _get_audit_logger():
+	"""Logger de auditoría, forzado a nivel INFO: sin este setLevel, `.info(...)`
+	se descarta en silencio (frappe.logger default es ERROR fuera de dev server;
+	remediation: verify finding)."""
+	logger = frappe.logger(AUDIT_LOGGER_NAME, allow_site=True)
+	logger.setLevel(logging.INFO)
+	return logger
+	logger.setLevel(logging.INFO)
+	return logger
+
 
 def _base_cruce_filters(pdv=None, fecha_desde=None, fecha_hasta=None, search=None):
 	filters = {}
@@ -439,7 +453,7 @@ def export_cruce_xlsx(filters=None):
 	wb.save(output)
 	count = len(rows)
 
-	frappe.logger("hubgh.seleccion_cruce").info({
+	_get_audit_logger().info({
 		"user": frappe.session.user,
 		"timestamp": frappe.utils.now(),
 		"count": count,

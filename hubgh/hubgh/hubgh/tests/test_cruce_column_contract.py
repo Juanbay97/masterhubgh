@@ -316,3 +316,46 @@ class TestBuildCruceRow(FrappeTestCase):
 		row = build_cruce_row(self._candidato(talla_camisa="XXL"))
 		for size in ("xs", "s", "m", "l", "xl"):
 			self.assertEqual(row[f"talla_camisa__{size}"], "")
+
+
+class TestFechaLugarNacimientoBlankRule(FrappeTestCase):
+	"""Remediation (verify CRITICAL — coverage gap): lugar comes ONLY from
+	Datos Contratacion's `*_nacimiento_siesa` triad, never Candidato.procedencia_*."""
+
+	def _candidato(self, **overrides):
+		base = {
+			"fecha_nacimiento": "1995-05-20",
+			"procedencia_pais": "PROC-PAIS-CODE",
+			"procedencia_departamento": "PROC-DEP-CODE",
+			"procedencia_ciudad": "PROC-CIU-CODE",
+		}
+		base.update(overrides)
+		return frappe._dict(base)
+
+	def test_empty_triad_renders_fecha_only_no_procedencia_fallback(self):
+		"""(a) Triad empty -> fecha-only, no fallback to procedencia_* (populated in fixture)."""
+		datos = frappe._dict({
+			"ciudad_nacimiento_siesa": None, "departamento_nacimiento_siesa": None, "pais_nacimiento_siesa": None,
+		})
+		row = build_cruce_row(self._candidato(), datos)
+		self.assertEqual(row["fecha_lugar_nacimiento"], "1995-05-20")
+
+	def test_populated_triad_combines_fecha_and_lugar(self):
+		"""(b) Triad populated -> combined "fecha - lugar", resolved from Datos Contratacion codes."""
+		datos = frappe._dict({
+			"ciudad_nacimiento_siesa": "CIU-SIESA", "departamento_nacimiento_siesa": "DEP-SIESA",
+			"pais_nacimiento_siesa": "PAIS-SIESA",
+		})
+
+		def _fake_labels(*, pais=None, departamento=None, ciudad=None):
+			if pais == "PAIS-SIESA":
+				return {"ciudad": "Bogotá", "departamento": "Cundinamarca", "pais": "Colombia"}
+			return {"ciudad": "", "departamento": "", "pais": ""}
+
+		with patch(
+			"hubgh.hubgh.seleccion_cruce_service.resolve_candidate_location_labels", side_effect=_fake_labels,
+		) as mock_labels:
+			row = build_cruce_row(self._candidato(), datos)
+
+		mock_labels.assert_any_call(pais="PAIS-SIESA", departamento="DEP-SIESA", ciudad="CIU-SIESA")
+		self.assertEqual(row["fecha_lugar_nacimiento"], "1995-05-20 - Bogotá, Cundinamarca, Colombia")

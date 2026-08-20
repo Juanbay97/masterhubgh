@@ -17,6 +17,7 @@ All tests are RED until the corresponding GREEN task lands (see tasks.md Phase 3
 """
 
 import base64
+import logging
 from io import BytesIO
 from unittest.mock import patch
 
@@ -25,6 +26,7 @@ import openpyxl
 from frappe.tests.utils import FrappeTestCase
 
 from hubgh.hubgh.seleccion_cruce_service import (
+	AUDIT_LOGGER_NAME,
 	CRUCE_COLUMNS,
 	export_cruce_xlsx,
 	list_cruce_candidates,
@@ -178,7 +180,7 @@ class TestExportCruceXlsxZeroMatches(FrappeTestCase):
 		self.assertEqual(ws.max_row, 1)  # only the header row
 		self.assertEqual([c.value for c in ws[1]], [col.label for col in CRUCE_COLUMNS])
 
-		mock_logger.assert_called_once_with("hubgh.seleccion_cruce")
+		mock_logger.assert_called_once_with("hubgh.seleccion_cruce", allow_site=True)
 		info_call = mock_logger.return_value.info.call_args
 		self.assertIsNotNone(info_call, "export_cruce_xlsx must audit-log even with count == 0")
 		logged = info_call.args[0]
@@ -187,6 +189,37 @@ class TestExportCruceXlsxZeroMatches(FrappeTestCase):
 		self.assertIn("timestamp", logged)
 
 
+class TestExportCruceXlsxAuditLogRealHandler(FrappeTestCase):
+	"""Remediation (verify finding): frappe.logger() defaults to effective
+	level ERROR outside dev server, so a bare .info() call is silently dropped
+	in production. Uses the REAL logger (not mocked) with a capture handler."""
+
+	def test_audit_logger_forced_to_info_and_real_handler_receives_record(self):
+		captured = []
+
+		class _CaptureHandler(logging.Handler):
+			def emit(self, record):
+				captured.append(record)
+
+		logger = frappe.logger(AUDIT_LOGGER_NAME, allow_site=True)
+		capture_handler = _CaptureHandler()
+		logger.addHandler(capture_handler)
+		try:
+			with (
+				patch("hubgh.hubgh.seleccion_cruce_service.user_has_any_role", return_value=True),
+				patch("hubgh.hubgh.seleccion_cruce_service.frappe.get_all", return_value=[]),
+			):
+				export_cruce_xlsx()
+		finally:
+			logger.removeHandler(capture_handler)
+
+		self.assertEqual(logger.level, logging.INFO)
+		info_records = [r for r in captured if r.levelno == logging.INFO]
+		self.assertEqual(len(info_records), 1, "real logger handler must receive the audit record")
+		logged = info_records[0].msg
+		self.assertEqual(logged["count"], 0)
+		self.assertIn("user", logged)
+		self.assertIn("timestamp", logged)
 # ---------------------------------------------------------------------------
 # 3.3.5 — golden export: header row matches the 49-column template exactly
 # ---------------------------------------------------------------------------
