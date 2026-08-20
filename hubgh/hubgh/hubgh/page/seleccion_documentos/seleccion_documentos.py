@@ -42,6 +42,17 @@ SELECTION_REQUIRED_DOC_DEFAULTS = {
 MEDICAL_CONCEPTS = {"Favorable", "Desfavorable", "Aplazado"}
 MEDICAL_ALERT_THRESHOLD_DAYS = 3
 
+# Progreso por defecto cuando un candidato no aparece en el bulk (sin Document Type
+# requerido resuelto todavía). Compartido por list_candidates y list_post_handoff_candidates.
+_ZERO_PROGRESS = {
+	"percent": 0,
+	"required_ok": 0,
+	"required_total": 0,
+	"is_complete": False,
+	"missing": [],
+	"sagrilaft_ok": False,
+}
+
 
 def _normalize_text(value):
 	text = str(value or "").strip().lower()
@@ -100,6 +111,33 @@ def _candidate_apellidos_fallback(row):
 	primer = (row.get("primer_apellido") if isinstance(row, dict) else getattr(row, "primer_apellido", None)) or ""
 	segundo = (row.get("segundo_apellido") if isinstance(row, dict) else getattr(row, "segundo_apellido", None)) or ""
 	return " ".join([p.strip() for p in [primer, segundo] if p and str(p).strip()]).strip()
+
+
+def _project_candidate_row(row, progress, pdv_name_map, is_manager):
+	"""Proyecta una fila cruda de Candidato + su progreso a la forma de payload de
+	bandeja. Extraído de `list_candidates` (PR3, 3.4.4) para reutilizarlo tal cual en
+	`list_post_handoff_candidates`, sin duplicar el mapeo campo a campo."""
+	return {
+		"name": row.name,
+		"full_name": f"{row.nombres or ''} {_candidate_apellidos_fallback(row) or ''}".strip(),
+		"numero_documento": row.numero_documento,
+		"pdv_destino": row.pdv_destino,
+		"pdv_destino_nombre": pdv_name_map.get(row.pdv_destino, row.pdv_destino or ""),
+		"cargo_postulado": row.cargo_postulado,
+		"creation": row.creation,
+		"estado_proceso": row.estado_proceso,
+		"concepto_medico": row.concepto_medico,
+		"fecha_envio_examen_medico": row.fecha_envio_examen_medico,
+		"sagrilaft_ok": progress.get("sagrilaft_ok", False),
+		"avance_porcentaje": progress.get("percent", 0),
+		"documentos_ok": progress.get("required_ok", 0),
+		"documentos_total": progress.get("required_total", 0),
+		"completo": progress.get("is_complete", False),
+		"missing": progress.get("missing", []),
+		"can_manage": is_manager,
+		"solo_afiliacion": int(row.solo_afiliacion or 0),
+		"fecha_tentativa_ingreso": row.fecha_tentativa_ingreso,
+	}
 
 
 def _candidate_pdv_name_map(rows):
@@ -326,39 +364,63 @@ def list_candidates(search=None):
 	# and candidate_detail only; it must NOT be called in the list path.
 	bulk = get_candidates_progress_bulk([r.name for r in active_rows])
 
-	_zero_progress = {
-		"percent": 0,
-		"required_ok": 0,
-		"required_total": 0,
-		"is_complete": False,
-		"missing": [],
-		"sagrilaft_ok": False,
-	}
-
 	data = []
 	for row in active_rows:
-		progress = bulk.get(row.name, _zero_progress)
-		data.append({
-			"name": row.name,
-			"full_name": f"{row.nombres or ''} {_candidate_apellidos_fallback(row) or ''}".strip(),
-			"numero_documento": row.numero_documento,
-			"pdv_destino": row.pdv_destino,
-			"pdv_destino_nombre": pdv_name_map.get(row.pdv_destino, row.pdv_destino or ""),
-			"cargo_postulado": row.cargo_postulado,
-			"creation": row.creation,
-			"estado_proceso": row.estado_proceso,
-			"concepto_medico": row.concepto_medico,
-			"fecha_envio_examen_medico": row.fecha_envio_examen_medico,
-			"sagrilaft_ok": progress.get("sagrilaft_ok", False),
-			"avance_porcentaje": progress.get("percent", 0),
-			"documentos_ok": progress.get("required_ok", 0),
-			"documentos_total": progress.get("required_total", 0),
-			"completo": progress.get("is_complete", False),
-			"missing": progress.get("missing", []),
-			"can_manage": is_manager,
-			"solo_afiliacion": int(row.solo_afiliacion or 0),
-			"fecha_tentativa_ingreso": row.fecha_tentativa_ingreso,
-		})
+		progress = bulk.get(row.name, _ZERO_PROGRESS)
+		data.append(_project_candidate_row(row, progress, pdv_name_map, is_manager))
+	return data
+
+
+@frappe.whitelist()
+def list_post_handoff_candidates():
+	"""Bandeja "Enviados con pendientes": candidatos ya enviados a afiliación/contratación
+	(En afiliación, Listo para contratar o Contratado) cuyo progreso permission-independent
+	(`get_candidates_progress_bulk`) todavía NO está completo — sin importar `solo_afiliacion`
+	(corrección del orquestador que reemplaza la regla `solo_afiliacion=1` de la spec original).
+	Rechazado siempre excluido. `can_manage` siempre False: la única acción ofrecida es
+	subir documentos, reutilizando el flujo de subida ya autorizado (sin nuevo endpoint)."""
+	_validate_selection_access()
+
+	rows = frappe.get_all(
+		"Candidato",
+		fields=[
+			"name",
+			"nombres",
+			"apellidos",
+			"primer_apellido",
+			"segundo_apellido",
+			"numero_documento",
+			"pdv_destino",
+			"cargo_postulado",
+			"creation",
+			"estado_proceso",
+			"concepto_medico",
+			"fecha_envio_examen_medico",
+			"solo_afiliacion",
+			"persona",
+			"fecha_tentativa_ingreso",
+		],
+		order_by="creation desc",
+	)
+
+	candidate_rows = [
+		row
+		for row in rows
+		if is_candidate_status(row.estado_proceso, STATE_AFILIACION, STATE_LISTO_CONTRATAR, "Contratado")
+		and not is_candidate_status(row.estado_proceso, "Rechazado")
+	]
+	if not candidate_rows:
+		return []
+
+	pdv_name_map = _candidate_pdv_name_map(candidate_rows)
+	bulk = get_candidates_progress_bulk([r.name for r in candidate_rows])
+
+	data = []
+	for row in candidate_rows:
+		progress = bulk.get(row.name, _ZERO_PROGRESS)
+		if progress.get("is_complete", False):
+			continue
+		data.append(_project_candidate_row(row, progress, pdv_name_map, is_manager=False))
 	return data
 
 
