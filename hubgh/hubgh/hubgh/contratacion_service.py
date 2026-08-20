@@ -17,6 +17,7 @@ from hubgh.hubgh.candidate_states import (
 from hubgh.hubgh.people_ops_handoffs import validate_handoff_contract
 from hubgh.hubgh.payroll_employee_compat import normalize_tipo_jornada
 from hubgh.hubgh.role_matrix import user_has_any_role
+from hubgh.hubgh.seleccion_cruce_service import resolve_shared_field, validate_hr_or_selection_read_access
 from hubgh.hubgh.siesa_reference_matrix import ensure_reference_catalog, normalize_code_for_doctype
 from hubgh.hubgh.display_labels import (
 	get_punto_display_name,
@@ -907,7 +908,8 @@ def mark_affiliation_complete(candidate):
 
 @frappe.whitelist()
 def affiliation_contract_snapshot(candidate):
-	validate_hr_access()
+	# Solo lectura: HR-READ (HR-EXT + RRLL) puede consultar el snapshot, no solo HR admin.
+	validate_hr_or_selection_read_access()
 	if not candidate or not frappe.db.exists("Candidato", candidate):
 		frappe.throw("Candidato inválido")
 
@@ -1009,6 +1011,25 @@ def affiliation_contract_snapshot(candidate):
 				"ccf_siesa": ccf_siesa,
 				"ccf_siesa_nombre": resolve_catalog_display_name("Entidad CCF Siesa", ccf_siesa),
 				"arl_codigo_siesa": arl_codigo_siesa,
+			},
+			# demograficos/dotacion: SOLO lectura desde Candidato — no hay campos nuevos en
+			# Datos Contratacion. estado_civil/nivel_educativo_siesa existen en ambos y usan
+			# el mismo resolutor compartido que build_cruce_row (sin duplicar lógica).
+			"demograficos": {
+				"telefono_fijo": candidato.get("telefono_fijo") or "",
+				"grupo_sanguineo": candidato.get("grupo_sanguineo") or "",
+				"contacto_emergencia_nombre": candidato.get("contacto_emergencia_nombre") or "",
+				"contacto_emergencia_telefono": candidato.get("contacto_emergencia_telefono") or "",
+				"tiene_alergias": int(candidato.get("tiene_alergias") or 0),
+				"descripcion_alergias": candidato.get("descripcion_alergias") or "",
+				"estado_civil": resolve_shared_field(datos, candidato, "estado_civil"),
+				"nivel_educativo_siesa": resolve_shared_field(datos, candidato, "nivel_educativo_siesa"),
+			},
+			"dotacion": {
+				"talla_camisa": candidato.get("talla_camisa") or "",
+				"talla_pantalon": candidato.get("talla_pantalon") or "",
+				"numero_zapatos": candidato.get("numero_zapatos") or "",
+				"talla_delantal": candidato.get("talla_delantal") or "",
 			},
 		},
 	}
