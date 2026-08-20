@@ -26,6 +26,7 @@ from hubgh.hubgh.seleccion_cruce_service import (
 	ESTADO_CIVIL_ONEHOT,
 	NIVEL_EDUCATIVO_ONEHOT,
 	_has_cruce_read_access,
+	_nivel_educativo_onehot,
 	_normalize_match_text,
 	build_cruce_row,
 	compute_edad,
@@ -115,7 +116,10 @@ class TestNivelEducativoDriftGuard(FrappeTestCase):
 				"catalog rows; the frozen 7-tuple is still asserted independently above."
 			)
 
-		known_unmapped = {"PREESCOLAR", "SIN DEFINIR", "OTROS"}
+		# TÉCNICO LABORAL is an intentional, user-approved gap (binding decision): it is
+		# NOT an explicit "bachiller técnico" designation, so it does not map to
+		# BACHILLER TECNICO — pinned explicitly in TestNivelEducativoOnehotMapping below.
+		known_unmapped = {"PREESCOLAR", "SIN DEFINIR", "OTROS", "TÉCNICO LABORAL"}
 		unexpected = []
 		for row in rows:
 			normalized = _normalize_match_text(row["description"])
@@ -127,6 +131,45 @@ class TestNivelEducativoDriftGuard(FrappeTestCase):
 				unexpected.append(row["description"])
 
 		self.assertEqual(unexpected, [], f"Unexpected unmapped Nivel Educativo Siesa rows: {unexpected}")
+
+
+class TestNivelEducativoOnehotMapping(FrappeTestCase):
+	"""Pinned mapping outcomes per the user-approved bachiller rule (binding decision):
+
+	"todo bachiller" -> BACHILLER CLASICO by default; BACHILLER TECNICO stays empty
+	unless the catalog explicitly says "bachiller técnico". "TÉCNICO LABORAL" is NOT
+	an explicit bachiller-técnico designation and must NOT map to BACHILLER TECNICO.
+	"""
+
+	def _mapped_key(self, description):
+		with patch(
+			"hubgh.hubgh.seleccion_cruce_service.resolve_catalog_display_name",
+			return_value=description,
+		):
+			row = _nivel_educativo_onehot("ANY-CODE")
+		marked = [key for key, value in row.items() if value == "X"]
+		self.assertLessEqual(len(marked), 1, f"more than one column marked for '{description}': {marked}")
+		return marked[0] if marked else None
+
+	def test_bachillerato_maps_to_bachiller_clasico(self):
+		self.assertEqual(self._mapped_key("BACHILLERATO"), "nivel_educativo__bachiller_clasico")
+
+	def test_basica_secundaria_maps_to_bachiller_clasico(self):
+		self.assertEqual(
+			self._mapped_key("BÁSICA SECUNDARIA (6° - 9°)"), "nivel_educativo__bachiller_clasico"
+		)
+
+	def test_explicit_bachiller_tecnico_maps_to_bachiller_tecnico_column(self):
+		self.assertEqual(
+			self._mapped_key("BACHILLER TÉCNICO"), "nivel_educativo__bachiller_tecnico"
+		)
+
+	def test_tecnico_laboral_does_not_map_to_bachiller_tecnico(self):
+		"""Pinned outcome: 'TÉCNICO LABORAL' matches none of the 7 frozen buckets
+		(not an explicit bachiller-técnico designation, and not 'tecnica/tecnico
+		profesional' either) — the whole nivel-educativo group stays blank."""
+		mapped = self._mapped_key("TÉCNICO LABORAL")
+		self.assertIsNone(mapped, "TÉCNICO LABORAL must not resolve to any nivel_educativo column")
 
 
 class TestComputeEdad(FrappeTestCase):

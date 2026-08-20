@@ -97,15 +97,18 @@ ESTADO_CIVIL_ONEHOT = (
 # Mapa congelado (7-tupla) nivel educativo → columna one-hot, por coincidencia de
 # palabra clave normalizada contra la `description` del catálogo Nivel Educativo Siesa.
 #
-# NOTA (supuesto de negocio, requiere confirmación de producto): el catálogo oficial
-# no distingue explícitamente "bachiller clásico" vs "bachiller técnico"; se asume
-# BÁSICA SECUNDARIA/MEDIA → BACHILLER CLASICO y TÉCNICO LABORAL → BACHILLER TECNICO
-# siguiendo la taxonomía educativa colombiana estándar. PREESCOLAR/SIN DEFINIR/OTROS
-# quedan intencionalmente sin columna (grupo en blanco).
+# REGLA APROBADA POR NEGOCIO (decisión vinculante del usuario, ya no un supuesto):
+# "todo bachiller" → BACHILLER CLASICO por defecto; BACHILLER TECNICO queda vacío
+# a menos que el catálogo diga EXPLÍCITAMENTE "bachiller técnico". "TÉCNICO LABORAL"
+# NO es una designación explícita de bachiller-técnico, por lo tanto NO mapea a
+# BACHILLER TECNICO (ver `_nivel_educativo_onehot`: el match de BACHILLER TECNICO
+# corre con prioridad/antes que el catch-all genérico de "bachiller" para que una
+# descripción explícita de bachiller técnico no caiga en CLASICO). PREESCOLAR/SIN
+# DEFINIR/OTROS quedan intencionalmente sin columna (grupo en blanco).
 NIVEL_EDUCATIVO_ONEHOT = (
 	("PRIMARIA", "nivel_educativo__primaria", ("primaria",)),
-	("BACHILLER CLASICO", "nivel_educativo__bachiller_clasico", ("secundaria", "media", "bachiller clasico")),
-	("BACHILLER TECNICO", "nivel_educativo__bachiller_tecnico", ("tecnico laboral", "bachiller tecnico")),
+	("BACHILLER CLASICO", "nivel_educativo__bachiller_clasico", ("secundaria", "media", "bachiller clasico", "bachiller")),
+	("BACHILLER TECNICO", "nivel_educativo__bachiller_tecnico", ("bachiller tecnico",)),
 	("TECNICO", "nivel_educativo__tecnico", ("tecnica profesional", "tecnico profesional")),
 	("TECNOLOGO", "nivel_educativo__tecnologo", ("tecnologica", "tecnologo")),
 	("UNIVERSITARIO", "nivel_educativo__universitario", ("universitaria", "universitario")),
@@ -199,7 +202,21 @@ def _nivel_educativo_onehot(nivel_educativo_siesa):
 	normalized = _normalize_match_text(description)
 	if not normalized:
 		return blank
+
+	# BACHILLER TECNICO se evalúa PRIMERO y por separado: es un caso explícito y más
+	# específico que el catch-all genérico "bachiller" de BACHILLER CLASICO. Si se
+	# revisara en el orden de la tupla (CLASICO antes que TECNICO), una descripción
+	# como "BACHILLER TÉCNICO" caería incorrectamente en CLASICO por el match genérico.
+	bachiller_tecnico_keywords = next(
+		kw for label, _key, kw in NIVEL_EDUCATIVO_ONEHOT if label == "BACHILLER TECNICO"
+	)
+	if any(keyword in normalized for keyword in bachiller_tecnico_keywords):
+		blank["nivel_educativo__bachiller_tecnico"] = "X"
+		return blank
+
 	for _label, key, keywords in NIVEL_EDUCATIVO_ONEHOT:
+		if key == "nivel_educativo__bachiller_tecnico":
+			continue
 		if any(keyword in normalized for keyword in keywords):
 			blank[key] = "X"
 			break
