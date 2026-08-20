@@ -4,16 +4,27 @@ Fuente única de verdad para el orden/etiquetas de las 49 columnas del cruce
 (bandeja + export Excel, PR3) y para la resolución de cada campo por
 candidato. También expone el gate de lectura HR-READ reutilizado por el
 snapshot de afiliación/contratación (`contratacion_service.affiliation_contract_snapshot`).
+
+PR3 agrega los endpoints whitelisted de bandeja (`list_cruce_candidates`) y
+export Excel (`export_cruce_xlsx`), ambos gateados por `validate_hr_or_selection_read_access`
+ANTES de cualquier lectura a base de datos.
 """
 
+import base64
 import unicodedata
 from collections import namedtuple
 from datetime import date
+from io import BytesIO
 
 import frappe
 from frappe.utils import getdate
 
-from hubgh.hubgh.display_labels import resolve_candidate_location_labels, resolve_catalog_display_name
+from hubgh.hubgh.candidate_states import is_candidate_status
+from hubgh.hubgh.display_labels import (
+	get_punto_name_map,
+	resolve_candidate_location_labels,
+	resolve_catalog_display_name,
+)
 from hubgh.hubgh.role_matrix import user_has_any_role
 
 
@@ -302,3 +313,141 @@ def build_cruce_row(candidato, datos=None):
 	row.update(_size_onehot("talla_pantalon", _get(candidato, "talla_pantalon")))
 	row.update(_size_onehot("talla_delantal", _get(candidato, "talla_delantal")))
 	return row
+
+
+# ---------------------------------------------------------------------------
+# Bandeja del cruce (PR3) — listado + export Excel
+# ---------------------------------------------------------------------------
+
+
+def _base_cruce_filters(pdv=None, fecha_desde=None, fecha_hasta=None, search=None):
+	filters = {}
+	if pdv:
+		filters["pdv_destino"] = pdv
+	if fecha_desde and fecha_hasta:
+		filters["fecha_tentativa_ingreso"] = ["between", [fecha_desde, fecha_hasta]]
+	elif fecha_desde:
+		filters["fecha_tentativa_ingreso"] = [">=", fecha_desde]
+	elif fecha_hasta:
+		filters["fecha_tentativa_ingreso"] = ["<=", fecha_hasta]
+	if search:
+		filters["numero_documento"] = ["like", f"%{search}%"]
+	return filters
+
+
+def _query_cruce_candidatos(estado=None, pdv=None, fecha_desde=None, fecha_hasta=None, search=None):
+	"""Query compartida por `list_cruce_candidates` y `export_cruce_xlsx`.
+
+	SIEMPRE excluye Rechazado, sin importar los filtros recibidos (incluso si
+	`estado` pide explícitamente "Rechazado", el resultado queda vacío para ese caso).
+	"""
+	filters = _base_cruce_filters(pdv=pdv, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta, search=search)
+	rows = frappe.get_all("Candidato", filters=filters, fields=["*"], order_by="creation desc")
+	rows = [row for row in rows if not is_candidate_status(row.get("estado_proceso"), "Rechazado")]
+	if estado:
+		rows = [row for row in rows if is_candidate_status(row.get("estado_proceso"), estado)]
+	return rows
+
+
+def _attach_datos_contratacion(candidatos):
+	"""Mapa `candidato -> Datos Contratacion` (dict) para los candidatos dados."""
+	names = [row.get("name") for row in candidatos if row.get("name")]
+	if not names:
+		return {}
+	rows = frappe.get_all("Datos Contratacion", filters={"candidato": ["in", names]}, fields=["*"])
+	return {row.get("candidato"): row for row in rows}
+
+
+@frappe.whitelist()
+def list_cruce_candidates(estado=None, pdv=None, fecha_desde=None, fecha_hasta=None, search=None):
+	"""Bandeja de lectura del cruce de selección (HR-READ, solo lectura).
+
+	Filtra por estado_proceso/pdv_destino/rango de fecha_tentativa_ingreso/búsqueda
+	por número de documento. SIEMPRE excluye Rechazado. Resultado vacío -> lista vacía,
+	sin error.
+	"""
+	validate_hr_or_selection_read_access()
+	rows = _query_cruce_candidatos(
+		estado=estado, pdv=pdv, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta, search=search
+	)
+	pdv_name_map = get_punto_name_map([row.get("pdv_destino") for row in rows])
+	return [
+		{
+			"name": row.get("name"),
+			"full_name": _resolve_full_name(row, None),
+			"numero_documento": row.get("numero_documento") or "",
+			"pdv_destino": row.get("pdv_destino"),
+			"pdv_destino_nombre": pdv_name_map.get(row.get("pdv_destino"), row.get("pdv_destino") or ""),
+			"cargo_postulado": row.get("cargo_postulado"),
+			"estado_proceso": row.get("estado_proceso"),
+			"fecha_tentativa_ingreso": row.get("fecha_tentativa_ingreso"),
+			"creation": row.get("creation"),
+		}
+		for row in rows
+	]
+
+
+@frappe.whitelist()
+def export_cruce_xlsx(filters=None):
+	"""Exporta el cruce de selección a Excel: 49 columnas fijas (`CRUCE_COLUMNS`).
+
+	Gate HR-READ ANTES de cualquier lectura DB. Auditado (usuario, timestamp,
+	cantidad de candidatos) en cada llamada, incluso cuando `count == 0`
+	(se retorna un workbook solo-encabezados y de todas formas se audita).
+
+	Returns:
+		{"filename": "...", "content_b64": "<base64>", "count": N}
+	"""
+	validate_hr_or_selection_read_access()
+
+	import openpyxl
+	from openpyxl.styles import Alignment, Font, PatternFill
+
+	filters = frappe.parse_json(filters) if filters else {}
+	rows = _query_cruce_candidatos(
+		estado=filters.get("estado"),
+		pdv=filters.get("pdv"),
+		fecha_desde=filters.get("fecha_desde"),
+		fecha_hasta=filters.get("fecha_hasta"),
+		search=filters.get("search"),
+	)
+	datos_by_candidato = _attach_datos_contratacion(rows)
+
+	wb = openpyxl.Workbook()
+	ws = wb.active
+	ws.title = "Cruce Selección"
+
+	headers = [column.label for column in CRUCE_COLUMNS]
+	ws.append(headers)
+
+	header_fill = PatternFill(start_color="1D4ED8", end_color="1D4ED8", fill_type="solid")
+	header_font = Font(bold=True, color="FFFFFF")
+	for col_idx in range(1, len(headers) + 1):
+		cell = ws.cell(row=1, column=col_idx)
+		cell.fill = header_fill
+		cell.font = header_font
+		cell.alignment = Alignment(horizontal="center", vertical="center")
+
+	for row in rows:
+		built = build_cruce_row(row, datos_by_candidato.get(row.get("name")))
+		ws.append([built.get(column.key, "") for column in CRUCE_COLUMNS])
+
+	for idx in range(1, len(headers) + 1):
+		ws.column_dimensions[ws.cell(row=1, column=idx).column_letter].width = 16
+
+	output = BytesIO()
+	wb.save(output)
+	count = len(rows)
+
+	frappe.logger("hubgh.seleccion_cruce").info({
+		"user": frappe.session.user,
+		"timestamp": frappe.utils.now(),
+		"count": count,
+		"filters": filters,
+	})
+
+	return {
+		"filename": f"cruce_seleccion_{frappe.utils.nowdate()}.xlsx",
+		"content_b64": base64.b64encode(output.getvalue()).decode("ascii"),
+		"count": count,
+	}
