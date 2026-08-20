@@ -74,7 +74,7 @@ frappe.pages["seleccion_cruce_contratacion"].on_page_load = function(wrapper) {
 				<div>
 					<div class='hubgh-board-kickers'><span class='hubgh-board-kicker'>Selección</span><span class='hubgh-board-kicker'>Cruce</span></div>
 					<h3 class='hubgh-board-title'>Cruce de selección para contratación</h3>
-					<p class='hubgh-board-copy'>Consultá el cruce operativo por estado, PDV y fecha, y exportá el archivo Excel con las 49 columnas del template.</p>
+					<p class='hubgh-board-copy'>Consulta el cruce operativo por estado, PDV y fecha, y exporta el archivo Excel con las 49 columnas del template.</p>
 				</div>
 				<div class='hubgh-board-meta'><span class='hubgh-meta-pill result-pill'>0 registros</span></div>
 			</div>
