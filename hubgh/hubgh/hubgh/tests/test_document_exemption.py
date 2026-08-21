@@ -23,6 +23,7 @@ Binding overrides pinned here:
   code comment warning against merging that gate with the exemption predicate.
 """
 
+import contextlib
 import uuid
 from unittest import TestCase
 from unittest.mock import patch
@@ -40,13 +41,48 @@ from hubgh.hubgh.page.seleccion_documentos import seleccion_documentos
 
 HR_EXT_ROLES = ["HR Selection", "Gestión Humana", "GH - Bandeja General", "Gerente GH"]
 
+# Module-level registry of everything this module's fixtures create, so
+# tearDownModule() can remove it deterministically regardless of how many
+# times the module is re-run within the same hour. Populated by the _seed_*
+# helpers below; consumed once, at the very end, by tearDownModule().
+_CREATED_CANDIDATOS = []
+_CREATED_DOCUMENT_TYPES = []
+_CREATED_USERS = []
+
+
+@contextlib.contextmanager
+def _bypass_user_creation_throttle():
+	"""Test-only bypass for frappe.core.doctype.user.user.throttle_user_creation,
+	which frappe.throw()s once more than `throttle_user_limit` (default 60)
+	User docs were created in the last 60 minutes — a real, previously-hit
+	failure mode for this module (it seeds one real User per Candidato, since
+	Candidato.before_insert's "existing user" fast path requires a
+	pre-created, uniquely-emailed User).
+
+	throttle_user_creation() itself returns early when frappe.flags.in_import
+	is truthy — the exact bypass this codebase's own bulk-import code already
+	relies on (hubgh/hubgh/utils.py:179-180). Using the same flag here makes
+	this fixture immune to the ambient hourly quota regardless of how many
+	Users any other test/process created in the same window; it does not
+	depend on — and must never depend on — clearing or waiting out that
+	quota."""
+	flags = frappe.flags
+	previous = getattr(flags, "in_import", False)
+	flags.in_import = True
+	try:
+		yield
+	finally:
+		flags.in_import = previous
+
 
 def _ensure_user(email, roles):
 	if not frappe.db.exists("User", email):
-		frappe.get_doc({
-			"doctype": "User", "email": email, "first_name": email.split("@")[0],
-			"enabled": 1, "send_welcome_email": 0,
-		}).insert(ignore_permissions=True)
+		with _bypass_user_creation_throttle():
+			frappe.get_doc({
+				"doctype": "User", "email": email, "first_name": email.split("@")[0],
+				"enabled": 1, "send_welcome_email": 0,
+			}).insert(ignore_permissions=True)
+		_CREATED_USERS.append(email)
 	frappe.db.delete("Has Role", {"parent": email})
 	for role in roles:
 		if frappe.db.exists("Role", role):
@@ -69,18 +105,21 @@ def _seed_document_type(prefix, is_active=1, is_required_for_hiring=1, applies_t
 			"allows_multiple": allows_multiple,
 			"requires_approval": requires_approval,
 		}).insert(ignore_permissions=True)
+	_CREATED_DOCUMENT_TYPES.append(name)
 	return name
 
 
 def _seed_candidato(estado_proceso="En Proceso"):
 	cedula = f"DEX{uuid.uuid4().hex[:8].upper()}"
 	user_email = f"{cedula.lower()}@example.com"
-	user_doc = frappe.get_doc({
-		"doctype": "User", "email": user_email, "first_name": "ExemptionTest",
-		"enabled": 1, "send_welcome_email": 0, "user_type": "Website User",
-		"roles": [{"role": "Candidato"}],
-	})
-	user_doc.insert(ignore_permissions=True)
+	with _bypass_user_creation_throttle():
+		user_doc = frappe.get_doc({
+			"doctype": "User", "email": user_email, "first_name": "ExemptionTest",
+			"enabled": 1, "send_welcome_email": 0, "user_type": "Website User",
+			"roles": [{"role": "Candidato"}],
+		})
+		user_doc.insert(ignore_permissions=True)
+	_CREATED_USERS.append(user_doc.name)
 
 	doc = frappe.new_doc("Candidato")
 	doc.tipo_documento = "Cedula"
@@ -95,6 +134,7 @@ def _seed_candidato(estado_proceso="En Proceso"):
 	doc.estado_proceso = "En Proceso"
 	doc.insert(ignore_permissions=True)
 	frappe.db.commit()
+	_CREATED_CANDIDATOS.append(doc.name)
 	if estado_proceso != "En Proceso":
 		# Workflow validation on Candidato.insert only allows the default
 		# initial transition. Direct frappe.db.set_value bypasses that
@@ -425,3 +465,47 @@ class TestSendToLaborRelationsSagrilaftGate(FrappeTestCase):
 
 		with self.assertRaisesRegex(frappe.ValidationError, "falta documento SAGRILAFT"):
 			seleccion_documentos.send_to_labor_relations(candidate)
+
+
+def tearDownModule():
+	"""Self-cleaning teardown — this module's fixtures call frappe.db.commit()
+	(needed so frappe.set_user() role-switching sees committed Has Role rows;
+	same pattern as test_document_type_read_permission.py), which means the
+	usual FrappeTestCase per-test rollback does NOT apply here and every
+	Candidato/User/Document Type this module created would otherwise persist
+	in hubgh.local permanently across runs. Without this, repeated runs (CI,
+	verify phase, a colleague's machine) accumulate orphan Users until
+	frappe's throttle_user_creation() starts throwing "Throttled" for
+	completely unrelated work — exactly the failure this teardown exists to
+	prevent. Deletes only names this module itself tracked creating, in FK
+	order, then commits.
+	"""
+	if _CREATED_CANDIDATOS:
+		pd_names = frappe.get_all(
+			"Person Document",
+			filters={"candidate": ["in", _CREATED_CANDIDATOS]},
+			pluck="name",
+		)
+		for name in pd_names:
+			frappe.delete_doc("Person Document", name, force=1, ignore_permissions=True)
+		for name in _CREATED_CANDIDATOS:
+			if frappe.db.exists("Candidato", name):
+				frappe.delete_doc("Candidato", name, force=1, ignore_permissions=True)
+
+	if _CREATED_DOCUMENT_TYPES:
+		pd_names = frappe.get_all(
+			"Person Document",
+			filters={"document_type": ["in", _CREATED_DOCUMENT_TYPES]},
+			pluck="name",
+		)
+		for name in pd_names:
+			frappe.delete_doc("Person Document", name, force=1, ignore_permissions=True)
+		for name in _CREATED_DOCUMENT_TYPES:
+			if frappe.db.exists("Document Type", name):
+				frappe.delete_doc("Document Type", name, force=1, ignore_permissions=True)
+
+	for name in _CREATED_USERS:
+		if frappe.db.exists("User", name):
+			frappe.delete_doc("User", name, force=1, ignore_permissions=True)
+
+	frappe.db.commit()
