@@ -14,10 +14,12 @@ from hubgh.hubgh.display_labels import get_punto_name_map, resolve_candidate_loc
 from hubgh.hubgh.document_service import (
 	build_candidate_documents_zip_bytes,
 	ensure_candidate_required_documents,
+	exempt_person_document,
 	get_person_document_rows,
 	get_candidate_progress,
 	get_candidates_progress_bulk,
 	hire_candidate,
+	revoke_person_document_exemption,
 	send_candidate_to_labor_relations,
 	upload_person_document,
 	user_has_any_role,
@@ -520,6 +522,41 @@ def upload_candidate_document(candidate, document_type, file_url, notes=None):
 	if getattr(frappe.local, "message_log", None):
 		frappe.local.message_log = []
 	return {"name": doc.name, "status": doc.status}
+
+
+def _validate_exemption_access():
+	"""Role gate for grant/revoke — the 4 selection-access roles only.
+
+	Deliberately narrower than _validate_selection_access(candidate): that
+	helper also lets a Candidato user act on their own record, which must
+	never be allowed to self-exempt a document.
+	"""
+	if frappe.session.user == "Administrator":
+		return
+	if not _has_selection_access(frappe.session.user):
+		frappe.throw("No autorizado")
+
+
+@frappe.whitelist()
+def exempt_candidate_document(candidate, document_type, motivo):
+	_validate_exemption_access()
+	_validate_candidate_document_type(document_type)
+	motivo = (motivo or "").strip()
+	if not motivo:
+		frappe.throw("El motivo de exención es obligatorio.")
+	estado_proceso = frappe.db.get_value("Candidato", candidate, "estado_proceso")
+	if estado_proceso == "Rechazado":
+		frappe.throw("No se puede exonerar documentos de un candidato Rechazado.")
+	doc = exempt_person_document("Candidato", candidate, document_type, motivo)
+	return {"name": doc.name, "status": doc.status, "document_type": document_type}
+
+
+@frappe.whitelist()
+def revoke_candidate_document_exemption(candidate, document_type, motivo=None):
+	_validate_exemption_access()
+	_validate_candidate_document_type(document_type)
+	doc = revoke_person_document_exemption("Candidato", candidate, document_type, motivo)
+	return {"name": doc.name, "status": doc.status, "document_type": document_type}
 
 
 @frappe.whitelist()
