@@ -811,14 +811,27 @@ def _compute_candidate_progress(required, vigentes_by_type):
 			"missing": [],
 			"percent": 100,
 			"is_complete": True,
+			"exempted": [],
 		}
 
 	ok = 0
 	missing = []
+	exempted = []
 	for req in required:
 		req_name = _row_get(req, "name")
 		req_requires_approval = _row_get(req, "requires_approval", 0)
 		related_docs = vigentes_by_type.get(req_name) or []
+
+		# Exento short-circuits everything below, including requires_approval:
+		# exemption waives the requirement outright, so demanding approval of
+		# a waiver is incoherent. Evaluated over related_docs (not
+		# valid_related_docs, which filters on file) because Exento rows
+		# never carry a file.
+		if any(_row_get(d, "status") == "Exento" for d in related_docs):
+			ok += 1
+			exempted.append(req_name)
+			continue
+
 		valid_related_docs = [d for d in related_docs if _row_get(d, "file")]
 		statuses = [_row_get(d, "status") for d in valid_related_docs]
 		if req_requires_approval:
@@ -838,6 +851,7 @@ def _compute_candidate_progress(required, vigentes_by_type):
 		"missing": missing,
 		"percent": percent,
 		"is_complete": ok == len(required),
+		"exempted": exempted,
 	}
 
 
@@ -865,6 +879,7 @@ def get_candidate_progress(candidate):
 			"missing": [],
 			"percent": 100,
 			"is_complete": True,
+			"exempted": [],
 		}
 
 	dossier = _build_person_dossier("Candidato", candidate)
@@ -1080,7 +1095,13 @@ def get_candidates_progress_bulk(candidate_names):
 		vigentes_by_type = _build_vigentes_by_type(rows, prefetched_rules)
 		progress = _compute_candidate_progress(required, vigentes_by_type)
 
-		# SAGRILAFT: any vigente row for a SAGRILAFT-type that has a file and is Subido/Aprobado
+		# SAGRILAFT: any vigente row for a SAGRILAFT-type that has a file and is Subido/Aprobado.
+		# INTENTIONALLY independent of the Exento predicate above — SAGRILAFT is
+		# a hard compliance gate (send_to_labor_relations pre-check) that
+		# exemption must NOT satisfy. Do not merge this loop with the
+		# exemption-aware `_compute_candidate_progress` predicate; a candidate
+		# may show progress/is_complete via an exempted SAGRILAFT row while
+		# sagrilaft_ok correctly stays False.
 		sagrilaft_ok = False
 		for dt_name, vrows in vigentes_by_type.items():
 			if dt_name in sagrilaft_names:
@@ -1159,6 +1180,79 @@ def upload_person_document(person_type, person, document_type, file_url, notes=N
 
 	if person_type == "Candidato":
 		set_candidate_status_from_progress(person)
+
+	return doc
+
+
+def _insert_exemption_comment(doc, content):
+	"""Explicit Comment doc insert — the codebase's audit-trail convention
+	(pattern api/correcciones.py:219-233), never doc.add_comment()."""
+	reference_doctype = doc.person_doctype or _person_doctype_for(doc.person_type)
+	reference_name = doc.candidate if doc.person_type == "Candidato" else (doc.employee or doc.person)
+	return frappe.get_doc({
+		"doctype": "Comment",
+		"comment_type": "Info",
+		"reference_doctype": reference_doctype,
+		"reference_name": reference_name or doc.person,
+		"content": content,
+	}).insert(ignore_permissions=True)
+
+
+def exempt_person_document(person_type, person, document_type, motivo):
+	"""Grant a per-document exemption.
+
+	ADR-1: deliberately never calls set_candidate_status_from_progress —
+	that function only regresses candidates outside its protected state set
+	(e.g. it would flip a Rechazado candidate back to "En documentación").
+	Exemption has no forward status to gain via that call, so it is skipped
+	entirely.
+	"""
+	motivo = (motivo or "").strip()
+	if not motivo:
+		frappe.throw(_("El motivo de exención es obligatorio."))
+
+	doc = ensure_person_document(person_type, person, document_type)
+
+	if doc.status == "Exento":
+		frappe.throw(_("El documento ya está exonerado."))
+	if doc.file or doc.status in {"Subido", "Aprobado"}:
+		frappe.throw(_("El documento ya tiene un archivo cargado; no se puede exonerar."))
+
+	doc.status = "Exento"
+	doc.exencion_motivo = motivo
+	doc.exonerado_por = frappe.session.user
+	doc.exonerado_en = now()
+	doc.save(ignore_permissions=True)
+
+	_insert_exemption_comment(
+		doc,
+		f"[EXENCIÓN] Documento '{document_type}' exonerado por {frappe.session.user}. Motivo: {motivo}.",
+	)
+
+	return doc
+
+
+def revoke_person_document_exemption(person_type, person, document_type, motivo=None):
+	"""Revoke a per-document exemption, returning the row to Pendiente.
+
+	ADR-3: audit fields (exencion_motivo/exonerado_por/exonerado_en) are kept,
+	never cleared — the Comment trail plus these stale-but-inert fields are
+	the only evidence a document was ever exempted. Every reader keys on
+	`status`, so leaving them set is harmless.
+	"""
+	doc = ensure_person_document(person_type, person, document_type)
+
+	if doc.status != "Exento":
+		frappe.throw(_("El documento no está exonerado."))
+
+	doc.status = "Pendiente"
+	doc.save(ignore_permissions=True)
+
+	content = f"[REVOCACIÓN EXENCIÓN] Documento '{document_type}' revocado por {frappe.session.user}."
+	motivo = (motivo or "").strip()
+	if motivo:
+		content += f" Motivo: {motivo}."
+	_insert_exemption_comment(doc, content)
 
 	return doc
 
