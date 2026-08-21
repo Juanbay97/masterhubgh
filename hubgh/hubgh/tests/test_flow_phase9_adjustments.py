@@ -2588,6 +2588,50 @@ class TestCandidatesProgressBulk(FrappeTestCase):
 			self.assertEqual(bulk_result["CAND-A"].get(key), single_result.get(key),
 				f"Mismatch for key {key!r}")
 
+	def test_bulk_single_candidate_parity_with_exempted_doc(self):
+		"""PR B (task B3.12): get_candidate_progress and get_candidates_progress_bulk
+		must agree on exempted/missing/is_complete when a required doc is Exento."""
+		from hubgh.hubgh.document_service import (
+			get_candidates_progress_bulk,
+			get_candidate_progress,
+		)
+
+		required = [self._make_doc_type_row("Cedula"), self._make_doc_type_row("EPS")]
+		cand_rows = [self._make_cand_row("CAND-EXEMPT", numero_documento="1002")]
+		pd_rows = [
+			self._make_person_doc_row("CAND-EXEMPT", "Cedula", status="Exento", file=None),
+			self._make_person_doc_row("CAND-EXEMPT", "EPS", status="Subido"),
+		]
+
+		def fake_get_all(doctype, *args, **kwargs):
+			if doctype == "Document Type":
+				return required
+			if doctype == "Person Document":
+				return pd_rows
+			if doctype == "Candidato":
+				return cand_rows
+			if doctype == "Ficha Empleado":
+				return []
+			return []
+
+		def fake_rules(doc_type):
+			return {"document_type": doc_type, "allows_multiple": 0, "requires_approval": 0}
+
+		with patch("hubgh.hubgh.document_service.frappe.get_all", side_effect=fake_get_all), \
+				patch("hubgh.hubgh.document_service._get_document_type_rules", side_effect=fake_rules), \
+				patch("hubgh.hubgh.document_service.frappe.db.get_value", return_value=None), \
+				patch("hubgh.hubgh.document_service.frappe.db.exists", return_value=True):
+			bulk_result = get_candidates_progress_bulk(["CAND-EXEMPT"])
+			single_result = get_candidate_progress("CAND-EXEMPT")
+
+		self.assertIn("CAND-EXEMPT", bulk_result)
+		for key in ("percent", "required_ok", "required_total", "is_complete", "missing", "exempted"):
+			self.assertEqual(bulk_result["CAND-EXEMPT"].get(key), single_result.get(key),
+				f"Mismatch for key {key!r}")
+		self.assertEqual(single_result["exempted"], ["Cedula"])
+		self.assertEqual(single_result["missing"], [])
+		self.assertTrue(single_result["is_complete"])
+
 	def test_bulk_n_candidates_parity(self):
 		"""For 3 candidates (incl. one with legacy numero_documento row), bulk matches single-path."""
 		from hubgh.hubgh.document_service import (
