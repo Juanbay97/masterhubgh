@@ -30,13 +30,6 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		yesNoBadge: ok => (ok ? "<span class='indicator-pill green'>Completo</span>" : "<span class='indicator-pill orange'>Pendiente</span>"),
 	};
 
-	const REQUIRED_SELECTION_DOCS = [
-		"Carta Oferta",
-		"SAGRILAFT",
-		"Autorización de Descuento",
-		"Autorización de Ingreso",
-	];
-
 	ui.injectBaseStyles();
 	ui.injectScopedStyles("seleccion-documentos", `
 		.sel-docs-badges { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 8px; }
@@ -75,8 +68,26 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		</div>
 	`).appendTo(page.body);
 	const $root = $("<div class='hubgh-board-shell'></div>").appendTo(page.body);
-	let state = { rows: [], postHandoffRows: [], search: "", status: "all", view: "board" };
+	let state = { rows: [], postHandoffRows: [], search: "", status: "all", view: "board", uploadDocTypes: [], uploadDocTypesLoaded: false };
 	const esc = ui.esc;
+
+	// ADR-4: fetch the active document-type catalog once and cache it on state so
+	// every upload entry point (tray row, tray primary action, detail dialog, tab)
+	// shares the same source instead of re-fetching or falling back to a hardcoded list.
+	const ensureUploadDocTypes = () => {
+		if (state.uploadDocTypesLoaded) return Promise.resolve(state.uploadDocTypes);
+		return frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.list_upload_document_types")
+			.then(r => {
+				state.uploadDocTypes = r.message || [];
+				state.uploadDocTypesLoaded = true;
+				return state.uploadDocTypes;
+			})
+			.catch(() => {
+				state.uploadDocTypes = [];
+				state.uploadDocTypesLoaded = false;
+				return null;
+			});
+	};
 
 	const setActiveTab = view => {
 		$tabsWrap.find(".tab-board")
@@ -192,20 +203,57 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		picker.trigger("click");
 	};
 
-	const openSelectionDocsUploadDialog = (candidate, docTypes = []) => {
-		const normalized = (docTypes || []).map(row => ({
-			name: row?.name || "",
-			label: row?.label || row?.name || "",
-			required_for_hiring: Number(row?.required_for_hiring || 0),
-		})).filter(row => row.name);
-		const source = normalized.length
-			? normalized
-			: REQUIRED_SELECTION_DOCS.map(name => ({ name, label: name, required_for_hiring: 0 }));
-		const options = source
-			.map(row => row.name)
-			.join("\n");
-		openSimpleDialog("Subir documento de selección", [{ fieldname: "document_type", label: "Documento", fieldtype: "Select", options, reqd: 1 }], "Subir", values => {
-			quickUpload(candidate, values.document_type);
+	const openUploadCatalogErrorDialog = () => {
+		const dialog = new frappe.ui.Dialog({
+			title: "Subir documento de selección",
+			fields: [{ fieldtype: "HTML", fieldname: "content" }],
+			primary_action_label: "Subir",
+			primary_action: () => {},
+		});
+		dialog.fields_dict.content.$wrapper.html(`
+			<div class='sel-docs-note' style='border-color:#fecaca;background:#fef2f2;color:#991b1b;'>
+				No se pudo cargar el catálogo de documentos. Recarga la página.
+			</div>
+		`);
+		dialog.disable_primary_action();
+		dialog.show();
+		cleanupModal(dialog);
+	};
+
+	const openSelectionDocsUploadDialog = (candidate, missing = []) => {
+		ensureUploadDocTypes().then(catalog => {
+			if (!catalog || !catalog.length) {
+				openUploadCatalogErrorDialog();
+				return;
+			}
+			const missingList = (missing || []).filter(Boolean);
+			const missingSet = new Set(missingList);
+			const catalogNames = new Set(catalog.map(row => row.name));
+			// Missing-first ordering (ADR-4): missing docs still offered by the catalog come
+			// first and default-select; legacy missing names absent from the active catalog
+			// would fail backend validation, so they are dropped from the Select but kept
+			// visible in the warning copy below.
+			const missingInCatalog = missingList.filter(name => catalogNames.has(name));
+			const rest = catalog.filter(row => !missingSet.has(row.name)).map(row => row.name);
+			const options = [...missingInCatalog, ...rest].join("\n");
+			const dialogFields = [];
+			if (missingList.length) {
+				dialogFields.push({
+					fieldtype: "HTML",
+					options: `<div class='sel-docs-note' style='border-color:#fbbf24;background:#fffbeb;color:#92400e;margin-bottom:8px;'>Documentos faltantes: <b>${esc(missingList.join(", "))}</b></div>`,
+				});
+			}
+			dialogFields.push({
+				fieldname: "document_type",
+				label: "Documento",
+				fieldtype: "Select",
+				options,
+				default: missingInCatalog[0] || undefined,
+				reqd: 1,
+			});
+			openSimpleDialog("Subir documento de selección", dialogFields, "Subir", values => {
+				quickUpload(candidate, values.document_type);
+			});
 		});
 	};
 
@@ -214,21 +262,18 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 			.then(r => {
 				const data = r.message || {};
 				const progress = data.progress || {};
-				const uploadDocTypes = data.upload_doc_types || [];
 				const completionTone = progress.is_complete ? "green" : "orange";
 				const completionLabel = progress.is_complete ? "Documentación completa" : "Documentación incompleta";
 				const candidateData = data.candidate || {};
-				const statusByDoc = (data.selection_doc_status || []).reduce((acc, row) => {
-					acc[row.document_type] = row;
-					return acc;
-				}, {});
 
-				const requiredDocsHtml = REQUIRED_SELECTION_DOCS.map(docType => {
-					const rowStatus = statusByDoc[docType] || { uploaded_ok: false, required: docType === "SAGRILAFT" ? 1 : 0 };
+				// ADR-5: rendered directly from the server-sourced selection_doc_status
+				// (get_selection_operational_document_names()), not the old 4-name JS
+				// constant that silently hid "Examen Médico" (the 5th operational doc).
+				const requiredDocsHtml = (data.selection_doc_status || []).map(rowStatus => {
 					const requiredTag = rowStatus.required ? "<span class='indicator-pill red'>Requerido</span>" : "<span class='indicator-pill blue'>Opcional</span>";
 					return `
 						<div class='sel-req-doc'>
-							<div class='sel-req-doc-title'>${esc(docType)}</div>
+							<div class='sel-req-doc-title'>${esc(rowStatus.document_type)}</div>
 							<div>${requiredTag} ${ui.yesNoBadge(!!rowStatus.uploaded_ok)}</div>
 						</div>
 					`;
@@ -309,7 +354,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 					const url = "/api/method/hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.download_candidate_documents_zip?candidate=" + encodeURIComponent(candidate);
 					window.open(url, "_blank");
 				});
-				dialog.fields_dict.content.$wrapper.find(".btn-upload-selection-doc").on("click", () => openSelectionDocsUploadDialog(candidate, uploadDocTypes));
+				dialog.fields_dict.content.$wrapper.find(".btn-upload-selection-doc").on("click", () => openSelectionDocsUploadDialog(candidate, progress.missing || []));
 				dialog.fields_dict.content.$wrapper.find(".action-delete-pdoc").on("click", function() {
 					const pdocName = $(this).data("pd");
 					const dtype = $(this).data("dtype") || "";
@@ -510,12 +555,20 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 				});
 			});
 		});
-		$root.find(".action-upload-selection").off("click").on("click", function() { openSelectionDocsUploadDialog($(this).data("c")); });
+		$root.find(".action-upload-selection").off("click").on("click", function() {
+			const candidate = $(this).data("c");
+			// jQuery's .data() auto-casts numeric-looking data-c values (e.g. a
+			// candidate name that equals its numero_documento) to a Number, so
+			// String() both sides to keep this lookup working for numeric names.
+			const row = (state.rows || []).find(r => String(r.name) === String(candidate)) || {};
+			openSelectionDocsUploadDialog(candidate, row.missing || []);
+		});
 		$root.find(".action-primary").off("click").on("click", function() {
 			const candidate = $(this).data("c");
 			const action = $(this).data("action");
 			if (action === "upload") {
-				openSelectionDocsUploadDialog(candidate);
+				const row = (state.rows || []).find(r => String(r.name) === String(candidate)) || {};
+				openSelectionDocsUploadDialog(candidate, row.missing || []);
 				return;
 			}
 			$root.find(`.${action === "medical" ? "action-medical" : "action-send"}[data-c='${candidate}']`).first().trigger("click");
@@ -729,6 +782,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 	};
 
 	const loadBoard = () => {
+		ensureUploadDocTypes();
 		frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.list_candidates", { search: null }).then(r => {
 			state.rows = r.message || [];
 			const filteredRows = getFilteredRows();
@@ -832,11 +886,14 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		`);
 
 		$root.find(".action-post-handoff-upload").off("click").on("click", function() {
-			openSelectionDocsUploadDialog($(this).data("c"));
+			const candidate = $(this).data("c");
+			const row = (state.postHandoffRows || []).find(r => String(r.name) === String(candidate)) || {};
+			openSelectionDocsUploadDialog(candidate, row.missing || []);
 		});
 	};
 
 	const loadPostHandoff = () => {
+		ensureUploadDocTypes();
 		frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.list_post_handoff_candidates").then(r => {
 			state.postHandoffRows = r.message || [];
 			renderPostHandoffTable(state.postHandoffRows);
