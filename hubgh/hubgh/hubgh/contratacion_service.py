@@ -6,7 +6,7 @@ from pathlib import Path
 import frappe
 from frappe.utils import getdate, now_datetime
 
-from hubgh.hubgh.document_service import get_person_document_rows
+from hubgh.hubgh.document_service import get_person_document_rows, get_candidates_progress_bulk
 from hubgh.hubgh.candidate_states import (
 	STATE_AFILIACION,
 	STATE_LISTO_CONTRATAR,
@@ -1063,15 +1063,29 @@ def contract_candidates(search=None):
 	) if candidate_names else []
 	incomplete_map = {d.candidato: int(d.documentacion_incompleta or 0) for d in datos_rows}
 
-	return [{
-		"name": r.name,
-		"full_name": f"{r.nombres or ''} {r.apellidos or ''}".strip(),
-		"numero_documento": r.numero_documento,
-		"pdv_destino": r.pdv_destino,
-		"cargo_postulado": r.cargo_postulado,
-		"fecha_tentativa_ingreso": r.fecha_tentativa_ingreso,
-		"documentacion_incompleta": incomplete_map.get(r.name, 0),
-	} for r in rows]
+	# Single bulk call — N-independent query count, same pattern as
+	# seleccion_documentos.list_candidates / list_post_handoff_candidates.
+	# Routes through get_candidates_progress_bulk only: get_candidate_progress
+	# (singular) has no @frappe.whitelist() and stays un-whitelisted by design
+	# (binding override #2) — the RRLL board must never call it.
+	progress_bulk = get_candidates_progress_bulk(candidate_names)
+
+	result = []
+	for r in rows:
+		progress = progress_bulk.get(r.name) or {}
+		result.append({
+			"name": r.name,
+			"full_name": f"{r.nombres or ''} {r.apellidos or ''}".strip(),
+			"numero_documento": r.numero_documento,
+			"pdv_destino": r.pdv_destino,
+			"cargo_postulado": r.cargo_postulado,
+			"fecha_tentativa_ingreso": r.fecha_tentativa_ingreso,
+			"documentacion_incompleta": incomplete_map.get(r.name, 0),
+			"missing": progress.get("missing", []),
+			"exempted": progress.get("exempted", []),
+			"percent": progress.get("percent", 0),
+		})
+	return result
 
 
 @frappe.whitelist()

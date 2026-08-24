@@ -21,6 +21,9 @@
   "uploaded_on",
   "approved_by",
   "approved_on",
+  "exencion_motivo",
+  "exonerado_por",
+  "exonerado_en",
   "notes",
   "document_access"
  ],
@@ -75,7 +78,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pendiente\nSubido\nAprobado\nRechazado",
+   "options": "Pendiente\nSubido\nAprobado\nRechazado\nExento",
    "reqd": 1
   },
   {
@@ -118,6 +121,24 @@
    "fieldname": "approved_on",
    "fieldtype": "Datetime",
    "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "exencion_motivo",
+   "fieldtype": "Small Text",
+   "label": "Motivo de Exención"
+  },
+  {
+   "fieldname": "exonerado_por",
+   "fieldtype": "Link",
+   "label": "Exonerado Por",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "exonerado_en",
+   "fieldtype": "Datetime",
+   "label": "Exonerado En",
    "read_only": 1
   },
   {

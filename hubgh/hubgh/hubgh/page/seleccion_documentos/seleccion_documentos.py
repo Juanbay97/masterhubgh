@@ -14,10 +14,14 @@ from hubgh.hubgh.display_labels import get_punto_name_map, resolve_candidate_loc
 from hubgh.hubgh.document_service import (
 	build_candidate_documents_zip_bytes,
 	ensure_candidate_required_documents,
+	exempt_person_document,
 	get_person_document_rows,
 	get_candidate_progress,
+	get_candidates_exemption_details_bulk,
 	get_candidates_progress_bulk,
+	get_required_candidate_document_types,
 	hire_candidate,
+	revoke_person_document_exemption,
 	send_candidate_to_labor_relations,
 	upload_person_document,
 	user_has_any_role,
@@ -113,10 +117,23 @@ def _candidate_apellidos_fallback(row):
 	return " ".join([p.strip() for p in [primer, segundo] if p and str(p).strip()]).strip()
 
 
-def _project_candidate_row(row, progress, pdv_name_map, is_manager):
+def _project_candidate_row(row, progress, pdv_name_map, is_manager, exempted_details=None, only_exempted=False):
 	"""Proyecta una fila cruda de Candidato + su progreso a la forma de payload de
 	bandeja. Extraído de `list_candidates` (PR3, 3.4.4) para reutilizarlo tal cual en
-	`list_post_handoff_candidates`, sin duplicar el mapeo campo a campo."""
+	`list_post_handoff_candidates`, sin duplicar el mapeo campo a campo.
+
+	`exempted_details` (revoke-gap fix): optional list of
+	{"document_type", "exencion_motivo"} dicts — additive to `exempted` (names
+	only). Only `list_post_handoff_candidates` populates this (the tab needs a
+	per-document "Revocar" affordance with the motivo visible); `list_candidates`
+	leaves it as an empty list since the main board has no revoke UI.
+
+	`only_exempted` (revoke-gap fix): True when this candidate's progress is
+	complete ONLY because every remaining requirement was exempted (never
+	because `list_candidates` has no equivalent notion — it always passes the
+	default False). Used by `list_post_handoff_candidates` to keep such
+	candidates reachable for revoke instead of silently disappearing from
+	every tab the moment the last exemption is granted."""
 	return {
 		"name": row.name,
 		"full_name": f"{row.nombres or ''} {_candidate_apellidos_fallback(row) or ''}".strip(),
@@ -134,6 +151,9 @@ def _project_candidate_row(row, progress, pdv_name_map, is_manager):
 		"documentos_total": progress.get("required_total", 0),
 		"completo": progress.get("is_complete", False),
 		"missing": progress.get("missing", []),
+		"exempted": progress.get("exempted", []),
+		"exempted_details": exempted_details or [],
+		"only_exempted": bool(only_exempted),
 		"can_manage": is_manager,
 		"solo_afiliacion": int(row.solo_afiliacion or 0),
 		"fecha_tentativa_ingreso": row.fecha_tentativa_ingreso,
@@ -413,14 +433,32 @@ def list_post_handoff_candidates():
 		return []
 
 	pdv_name_map = _candidate_pdv_name_map(candidate_rows)
-	bulk = get_candidates_progress_bulk([r.name for r in candidate_rows])
+	candidate_names = [r.name for r in candidate_rows]
+	bulk = get_candidates_progress_bulk(candidate_names)
+	# Revoke-gap fix: bulk-fetch {document_type, exencion_motivo} per exempted
+	# doc so the tab can render a per-document "Revocar" affordance. One extra
+	# N-independent query group (see get_candidates_exemption_details_bulk),
+	# never a per-candidate read.
+	exemption_details_bulk = get_candidates_exemption_details_bulk(candidate_names)
 
 	data = []
 	for row in candidate_rows:
 		progress = bulk.get(row.name, _ZERO_PROGRESS)
-		if progress.get("is_complete", False):
+		is_complete = progress.get("is_complete", False)
+		has_exemptions = bool(progress.get("exempted"))
+		# A candidate that reached 100% ONLY because every remaining requirement
+		# was exempted must stay visible here — otherwise it becomes unreachable
+		# for revoke everywhere (excluded from the main board by design, and
+		# this tab is the only place a revoke control exists). A genuinely
+		# complete candidate (no exemptions at all) is still excluded, matching
+		# pre-existing behavior.
+		if is_complete and not has_exemptions:
 			continue
-		data.append(_project_candidate_row(row, progress, pdv_name_map, is_manager=False))
+		data.append(_project_candidate_row(
+			row, progress, pdv_name_map, is_manager=False,
+			exempted_details=exemption_details_bulk.get(row.name, []),
+			only_exempted=is_complete and has_exemptions,
+		))
 	return data
 
 
@@ -433,7 +471,11 @@ def candidate_detail(candidate):
 	docs = get_person_document_rows(
 		"Candidato",
 		candidate,
-		fields=["name", "document_type", "status", "file", "uploaded_by", "uploaded_on", "approved_by", "approved_on", "notes"],
+		fields=[
+			"name", "document_type", "status", "file", "uploaded_by", "uploaded_on",
+			"approved_by", "approved_on", "notes",
+			"exencion_motivo", "exonerado_por", "exonerado_en",
+		],
 		order_by="modified desc",
 	)
 	progress = get_candidate_progress(candidate)
@@ -495,6 +537,12 @@ def candidate_detail(candidate):
 		"upload_doc_types": upload_doc_types,
 		"can_delete_document": can_delete_document,
 		"is_pre_contract": is_pre_contract,
+		# Batch C (Phase C3): server-computed gate so the exemption/revoke UI
+		# never has to duplicate the role matrix client-side — same pattern
+		# as can_delete_document above. Mirrors _validate_exemption_access's
+		# role set exactly (narrower than _validate_selection_access, which
+		# also lets a Candidato view their own record).
+		"can_exempt_documents": _has_selection_access(frappe.session.user) or frappe.session.user == "Administrator",
 	}
 
 
@@ -520,6 +568,60 @@ def upload_candidate_document(candidate, document_type, file_url, notes=None):
 	if getattr(frappe.local, "message_log", None):
 		frappe.local.message_log = []
 	return {"name": doc.name, "status": doc.status}
+
+
+def _validate_exemption_access():
+	"""Role gate for grant/revoke — the 4 selection-access roles only.
+
+	Deliberately narrower than _validate_selection_access(candidate): that
+	helper also lets a Candidato user act on their own record, which must
+	never be allowed to self-exempt a document.
+	"""
+	if frappe.session.user == "Administrator":
+		return
+	if not _has_selection_access(frappe.session.user):
+		frappe.throw("No autorizado")
+
+
+@frappe.whitelist()
+def list_exemptable_document_types():
+	"""Required-only Document Type catalog for the exemption picker (gate-failure
+	fix, orchestrator re-run). Deliberately NOT list_upload_document_types: upload
+	legitimately allows any active type, but exempting a non-required document is
+	meaningless (it never counts toward candidate hiring progress). Uses the exact
+	same required-set definition as _compute_candidate_progress so this catalog
+	can never drift from what exempt_candidate_document's gate below allows."""
+	_validate_selection_access()
+	rows = get_required_candidate_document_types()
+	return sorted(
+		[{"name": r["name"], "label": r.get("document_name") or r["name"]} for r in rows],
+		key=lambda row: row["label"],
+	)
+
+
+@frappe.whitelist()
+def exempt_candidate_document(candidate, document_type, motivo):
+	_validate_exemption_access()
+	_validate_candidate_document_type(document_type)
+	required_names = {row["name"] for row in get_required_candidate_document_types()}
+	if document_type not in required_names:
+		frappe.throw("Solo se pueden exonerar documentos requeridos para la contratación.")
+	motivo = (motivo or "").strip()
+	if not motivo:
+		frappe.throw("El motivo de exención es obligatorio.")
+	estado_proceso = frappe.db.get_value("Candidato", candidate, "estado_proceso")
+	if estado_proceso == "Rechazado":
+		frappe.throw("No se puede exonerar documentos de un candidato Rechazado.")
+	doc = exempt_person_document("Candidato", candidate, document_type, motivo)
+	return {"name": doc.name, "status": doc.status, "document_type": document_type}
+
+
+@frappe.whitelist()
+def revoke_candidate_document_exemption(candidate, document_type, motivo=None):
+	_validate_exemption_access()
+	_validate_candidate_document_type(document_type)
+	doc = revoke_person_document_exemption("Candidato", candidate, document_type, motivo)
+	return {"name": doc.name, "status": doc.status, "document_type": document_type}
 
 
 @frappe.whitelist()

@@ -103,6 +103,33 @@ def _is_excluded_from_candidate_hiring_progress(doc_type_row):
 	return name == "contrato"
 
 
+def get_required_candidate_document_types():
+	"""Authoritative required Document Type catalog for candidate hiring
+	progress: is_active=1, is_required_for_hiring=1, applies_to in
+	(Candidato, Ambos), minus the transitional "Contrato" exclusion.
+
+	Single source of truth shared by the exemption eligibility gate
+	(seleccion_documentos.exempt_candidate_document) and the exemption
+	picker's server-exposed catalog, so neither can drift from the exact
+	set _compute_candidate_progress treats as required. Duplicates the
+	same filter as get_candidate_progress/get_candidates_progress_bulk's
+	inline queries by design (matches this module's existing pattern) —
+	extracted here specifically so callers outside this module never have
+	to re-implement the filter themselves.
+	"""
+	required = frappe.get_all(
+		"Document Type",
+		filters={
+			"is_active": 1,
+			"is_required_for_hiring": 1,
+			"applies_to": ["in", ["Candidato", "Ambos"]],
+		},
+		fields=["name", "requires_approval", "document_name", "allows_multiple"],
+		ignore_permissions=True,
+	)
+	return [row for row in required if not _is_excluded_from_candidate_hiring_progress(row)]
+
+
 def _get_document_type_rules(document_type):
 	dt_name = _resolve_document_type_name(document_type)
 
@@ -811,14 +838,27 @@ def _compute_candidate_progress(required, vigentes_by_type):
 			"missing": [],
 			"percent": 100,
 			"is_complete": True,
+			"exempted": [],
 		}
 
 	ok = 0
 	missing = []
+	exempted = []
 	for req in required:
 		req_name = _row_get(req, "name")
 		req_requires_approval = _row_get(req, "requires_approval", 0)
 		related_docs = vigentes_by_type.get(req_name) or []
+
+		# Exento short-circuits everything below, including requires_approval:
+		# exemption waives the requirement outright, so demanding approval of
+		# a waiver is incoherent. Evaluated over related_docs (not
+		# valid_related_docs, which filters on file) because Exento rows
+		# never carry a file.
+		if any(_row_get(d, "status") == "Exento" for d in related_docs):
+			ok += 1
+			exempted.append(req_name)
+			continue
+
 		valid_related_docs = [d for d in related_docs if _row_get(d, "file")]
 		statuses = [_row_get(d, "status") for d in valid_related_docs]
 		if req_requires_approval:
@@ -838,6 +878,7 @@ def _compute_candidate_progress(required, vigentes_by_type):
 		"missing": missing,
 		"percent": percent,
 		"is_complete": ok == len(required),
+		"exempted": exempted,
 	}
 
 
@@ -865,6 +906,7 @@ def get_candidate_progress(candidate):
 			"missing": [],
 			"percent": 100,
 			"is_complete": True,
+			"exempted": [],
 		}
 
 	dossier = _build_person_dossier("Candidato", candidate)
@@ -876,48 +918,25 @@ def get_candidate_progress(candidate):
 	return _compute_candidate_progress(required, vigentes_by_type)
 
 
-def get_candidates_progress_bulk(candidate_names):
-	"""Return a progress dict for each candidate using a fixed number of DB queries.
-
-	The query count is N-independent (bounded by the document-type catalog, not by
-	the number of candidates).
-
-	Query plan:
-	  1. frappe.get_all("Candidato", ...)           — alias pre-pass q1
-	  2. frappe.get_all("Ficha Empleado", ...)       — alias pre-pass q2 (skipped when no persona FKs)
-	  3. frappe.get_all("Person Document", ...)      — bulk fetch q3
-	  4. frappe.get_all("Document Type", ...)        — required list + rules prefetch q4
-	  (SAGRILAFT lookup names resolved from module constant — no extra query)
-
-	No per-doc-type frappe.get_doc("Document Type", ...) calls are issued inside the
-	grouping loop.  Types not present in the prefetched required set fall back to
-	_get_document_type_rules, preserving exact semantics at the cost of one get_doc
-	per unknown type (first occurrence only, then cached via request-scoped cache).
-
-	Args:
-		candidate_names: list of Candidato ``name`` values.
+def _build_candidate_alias_index(candidate_names):
+	"""Alias pre-pass shared by get_candidates_progress_bulk and
+	get_candidates_exemption_details_bulk (2 queries max, N-independent in the
+	number of candidates). Extracted verbatim from get_candidates_progress_bulk's
+	former inline Step 1 so both bulk readers resolve the exact same
+	Candidato/Ficha Empleado/numero_documento/cedula alias set and can never
+	drift from each other.
 
 	Returns:
-		dict mapping each name to its progress record:
-		  {percent, required_ok, required_total, is_complete, missing, sagrilaft_ok}
-		Unknown / missing candidates get a zero-progress default entry.
+		(cand_aliases, alias_index) where cand_aliases maps candidate name ->
+		set of alias strings, and alias_index maps alias string -> set of
+		candidate names that own it.
 	"""
-	if not candidate_names:
-		return {}
-
-	from hubgh.hubgh.selection_document_types import get_selection_document_lookup_names
-
-	# -----------------------------------------------------------------------
-	# Step 1 — Alias pre-pass (2 queries max)
-	# -----------------------------------------------------------------------
 	cand_rows = frappe.get_all(
 		"Candidato",
 		filters={"name": ["in", candidate_names]},
 		fields=["name", "numero_documento", "persona"],
 	)
 
-	# Build per-candidate alias sets and the shared reverse index.
-	# alias_index maps alias_value -> set of candidate names that own it.
 	alias_index = {}
 	cand_aliases = {}  # candidate_name -> set of alias strings
 
@@ -968,6 +987,85 @@ def get_candidates_progress_bulk(candidate_names):
 		if cname not in cand_aliases:
 			cand_aliases[cname] = {cname}
 			alias_index.setdefault(cname, set()).add(cname)
+
+	return cand_aliases, alias_index
+
+
+def get_candidates_exemption_details_bulk(candidate_names):
+	"""Per-candidate list of {"document_type", "exencion_motivo"} for every
+	Exento Person Document row, N-independent (3 queries total regardless of
+	candidate count — same alias-index pattern as get_candidates_progress_bulk).
+
+	Unlike get_candidates_progress_bulk's `exempted` key (names only, additive
+	per ADR-2), this exposes the stored motivo so a UI can render a per-document
+	"Revocar" affordance with the exemption reason visible, without introducing
+	a per-candidate (N+1) read.
+	"""
+	if not candidate_names:
+		return {}
+
+	cand_aliases, alias_index = _build_candidate_alias_index(candidate_names)
+	all_aliases = list({alias for aliases in cand_aliases.values() for alias in aliases})
+
+	result = {cname: [] for cname in candidate_names}
+	if not all_aliases:
+		return result
+
+	pd_rows = frappe.get_all(
+		"Person Document",
+		filters={"person_type": "Candidato", "person": ["in", all_aliases], "status": "Exento"},
+		fields=["person", "candidate", "employee", "document_type", "exencion_motivo"],
+	)
+
+	for row in pd_rows:
+		matched_candidates = set()
+		for fieldname in ("person", "candidate", "employee"):
+			val = str(_row_get(row, fieldname) or "").strip()
+			if val and val in alias_index:
+				matched_candidates |= alias_index[val]
+				break  # avoid double-appending from multiple matching fields
+		for cname in matched_candidates:
+			if cname in result:
+				result[cname].append({
+					"document_type": _row_get(row, "document_type"),
+					"exencion_motivo": _row_get(row, "exencion_motivo"),
+				})
+
+	return result
+
+
+def get_candidates_progress_bulk(candidate_names):
+	"""Return a progress dict for each candidate using a fixed number of DB queries.
+
+	The query count is N-independent (bounded by the document-type catalog, not by
+	the number of candidates).
+
+	Query plan:
+	  1. frappe.get_all("Candidato", ...)           — alias pre-pass q1
+	  2. frappe.get_all("Ficha Empleado", ...)       — alias pre-pass q2 (skipped when no persona FKs)
+	  3. frappe.get_all("Person Document", ...)      — bulk fetch q3
+	  4. frappe.get_all("Document Type", ...)        — required list + rules prefetch q4
+	  (SAGRILAFT lookup names resolved from module constant — no extra query)
+
+	No per-doc-type frappe.get_doc("Document Type", ...) calls are issued inside the
+	grouping loop.  Types not present in the prefetched required set fall back to
+	_get_document_type_rules, preserving exact semantics at the cost of one get_doc
+	per unknown type (first occurrence only, then cached via request-scoped cache).
+
+	Args:
+		candidate_names: list of Candidato ``name`` values.
+
+	Returns:
+		dict mapping each name to its progress record:
+		  {percent, required_ok, required_total, is_complete, missing, sagrilaft_ok}
+		Unknown / missing candidates get a zero-progress default entry.
+	"""
+	if not candidate_names:
+		return {}
+
+	from hubgh.hubgh.selection_document_types import get_selection_document_lookup_names
+
+	cand_aliases, alias_index = _build_candidate_alias_index(candidate_names)
 
 	# -----------------------------------------------------------------------
 	# Step 2 — Bulk Person Document fetch (1 query)
@@ -1080,7 +1178,13 @@ def get_candidates_progress_bulk(candidate_names):
 		vigentes_by_type = _build_vigentes_by_type(rows, prefetched_rules)
 		progress = _compute_candidate_progress(required, vigentes_by_type)
 
-		# SAGRILAFT: any vigente row for a SAGRILAFT-type that has a file and is Subido/Aprobado
+		# SAGRILAFT: any vigente row for a SAGRILAFT-type that has a file and is Subido/Aprobado.
+		# INTENTIONALLY independent of the Exento predicate above — SAGRILAFT is
+		# a hard compliance gate (send_to_labor_relations pre-check) that
+		# exemption must NOT satisfy. Do not merge this loop with the
+		# exemption-aware `_compute_candidate_progress` predicate; a candidate
+		# may show progress/is_complete via an exempted SAGRILAFT row while
+		# sagrilaft_ok correctly stays False.
 		sagrilaft_ok = False
 		for dt_name, vrows in vigentes_by_type.items():
 			if dt_name in sagrilaft_names:
@@ -1159,6 +1263,79 @@ def upload_person_document(person_type, person, document_type, file_url, notes=N
 
 	if person_type == "Candidato":
 		set_candidate_status_from_progress(person)
+
+	return doc
+
+
+def _insert_exemption_comment(doc, content):
+	"""Explicit Comment doc insert — the codebase's audit-trail convention
+	(pattern api/correcciones.py:219-233), never doc.add_comment()."""
+	reference_doctype = doc.person_doctype or _person_doctype_for(doc.person_type)
+	reference_name = doc.candidate if doc.person_type == "Candidato" else (doc.employee or doc.person)
+	return frappe.get_doc({
+		"doctype": "Comment",
+		"comment_type": "Info",
+		"reference_doctype": reference_doctype,
+		"reference_name": reference_name or doc.person,
+		"content": content,
+	}).insert(ignore_permissions=True)
+
+
+def exempt_person_document(person_type, person, document_type, motivo):
+	"""Grant a per-document exemption.
+
+	ADR-1: deliberately never calls set_candidate_status_from_progress —
+	that function only regresses candidates outside its protected state set
+	(e.g. it would flip a Rechazado candidate back to "En documentación").
+	Exemption has no forward status to gain via that call, so it is skipped
+	entirely.
+	"""
+	motivo = (motivo or "").strip()
+	if not motivo:
+		frappe.throw(_("El motivo de exención es obligatorio."))
+
+	doc = ensure_person_document(person_type, person, document_type)
+
+	if doc.status == "Exento":
+		frappe.throw(_("El documento ya está exonerado."))
+	if doc.file or doc.status in {"Subido", "Aprobado"}:
+		frappe.throw(_("El documento ya tiene un archivo cargado; no se puede exonerar."))
+
+	doc.status = "Exento"
+	doc.exencion_motivo = motivo
+	doc.exonerado_por = frappe.session.user
+	doc.exonerado_en = now()
+	doc.save(ignore_permissions=True)
+
+	_insert_exemption_comment(
+		doc,
+		f"[EXENCIÓN] Documento '{document_type}' exonerado por {frappe.session.user}. Motivo: {motivo}.",
+	)
+
+	return doc
+
+
+def revoke_person_document_exemption(person_type, person, document_type, motivo=None):
+	"""Revoke a per-document exemption, returning the row to Pendiente.
+
+	ADR-3: audit fields (exencion_motivo/exonerado_por/exonerado_en) are kept,
+	never cleared — the Comment trail plus these stale-but-inert fields are
+	the only evidence a document was ever exempted. Every reader keys on
+	`status`, so leaving them set is harmless.
+	"""
+	doc = ensure_person_document(person_type, person, document_type)
+
+	if doc.status != "Exento":
+		frappe.throw(_("El documento no está exonerado."))
+
+	doc.status = "Pendiente"
+	doc.save(ignore_permissions=True)
+
+	content = f"[REVOCACIÓN EXENCIÓN] Documento '{document_type}' revocado por {frappe.session.user}."
+	motivo = (motivo or "").strip()
+	if motivo:
+		content += f" Motivo: {motivo}."
+	_insert_exemption_comment(doc, content)
 
 	return doc
 

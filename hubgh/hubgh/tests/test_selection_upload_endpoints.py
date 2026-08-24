@@ -62,13 +62,25 @@ def _install_stubs():
 	document_service.ensure_candidate_required_documents = lambda *args, **kwargs: None
 	document_service.build_candidate_documents_zip = lambda *args, **kwargs: None
 	document_service.build_candidate_documents_zip_bytes = lambda *args, **kwargs: None
-	document_service.get_candidate_progress = lambda *args, **kwargs: {"percent": 0, "required_ok": 0, "required_total": 0, "is_complete": False}
+	document_service.get_candidate_progress = lambda *args, **kwargs: {"percent": 0, "required_ok": 0, "required_total": 0, "is_complete": False, "exempted": []}
 	document_service.get_candidates_progress_bulk = lambda *args, **kwargs: {}
 	document_service.get_person_document_rows = lambda *args, **kwargs: []
 	document_service.hire_candidate = lambda *args, **kwargs: None
 	document_service.send_candidate_to_labor_relations = lambda *args, **kwargs: None
 	document_service.upload_person_document = lambda *args, **kwargs: SimpleNamespace(name="PD-001", status="Subido")
 	document_service.user_has_any_role = lambda *args, **kwargs: True
+	# PR B (Batch B) added exempt_person_document/revoke_person_document_exemption
+	# to seleccion_documentos.py's document_service import block without updating
+	# this test-file-only stub — genuine regression fixed here in Batch C so this
+	# module's import (and the whole test suite in it) does not break.
+	document_service.exempt_person_document = lambda *args, **kwargs: SimpleNamespace(name="PD-001", status="Exento")
+	document_service.revoke_person_document_exemption = lambda *args, **kwargs: SimpleNamespace(name="PD-001", status="Pendiente")
+	# Gate-failure fix (orchestrator re-run, item 2): exempt_candidate_document
+	# now also imports get_required_candidate_document_types.
+	document_service.get_required_candidate_document_types = lambda *args, **kwargs: []
+	# Revoke-gap fix (orchestrator re-run): list_post_handoff_candidates now
+	# also imports get_candidates_exemption_details_bulk.
+	document_service.get_candidates_exemption_details_bulk = lambda *args, **kwargs: {}
 	sys.modules["hubgh.hubgh.document_service"] = document_service
 
 	permissions = types.ModuleType("hubgh.hubgh.permissions")

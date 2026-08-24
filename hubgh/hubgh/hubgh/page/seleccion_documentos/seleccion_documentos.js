@@ -68,7 +68,19 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		</div>
 	`).appendTo(page.body);
 	const $root = $("<div class='hubgh-board-shell'></div>").appendTo(page.body);
-	let state = { rows: [], postHandoffRows: [], search: "", status: "all", view: "board", uploadDocTypes: [], uploadDocTypesLoaded: false };
+	let state = {
+		rows: [], postHandoffRows: [], search: "", status: "all", view: "board",
+		uploadDocTypes: [], uploadDocTypesLoaded: false,
+		// Gate-failure fix (orchestrator re-run, item 1): the exemption picker must
+		// NEVER reuse the upload catalog above — upload legitimately allows any
+		// active type, exemption only makes sense for the required set. Separate
+		// cache, separate endpoint (list_exemptable_document_types).
+		exemptDocTypes: [], exemptDocTypesLoaded: false,
+		// ADR-6: kept separate from search/status above — getFilteredRows reads
+		// state.rows and calls board-only helpers (canSendToRL/isInMedicalExam),
+		// so sharing state would leak the tab's filters into the board and vice versa.
+		postHandoffSearch: "", postHandoffStatus: "all",
+	};
 	const esc = ui.esc;
 
 	// ADR-4: fetch the active document-type catalog once and cache it on state so
@@ -85,6 +97,24 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 			.catch(() => {
 				state.uploadDocTypes = [];
 				state.uploadDocTypesLoaded = false;
+				return null;
+			});
+	};
+
+	// Gate-failure fix (item 1): required-only catalog for the exemption picker.
+	// Deliberately a separate fetch/cache from ensureUploadDocTypes — the upload
+	// dialog legitimately offers any active type, the exemption dialog must not.
+	const ensureExemptDocTypes = () => {
+		if (state.exemptDocTypesLoaded) return Promise.resolve(state.exemptDocTypes);
+		return frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.list_exemptable_document_types")
+			.then(r => {
+				state.exemptDocTypes = r.message || [];
+				state.exemptDocTypesLoaded = true;
+				return state.exemptDocTypes;
+			})
+			.catch(() => {
+				state.exemptDocTypes = [];
+				state.exemptDocTypesLoaded = false;
 				return null;
 			});
 	};
@@ -197,7 +227,11 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 				}))
 				.then(() => {
 					frappe.show_alert({ indicator: "green", message: "Documento cargado" });
-					loadBoard();
+					// Pre-existing bug fixed here: this always reloaded the main board even
+					// when invoked from the post-handoff tab's row action, silently switching
+					// the visible view back to "Bandeja" after an upload. Reload whichever
+					// view is actually active so ADR-6 filters on the tab survive (C4.5).
+					if (state.view === "post_handoff") { loadPostHandoff(); } else { loadBoard(); }
 				});
 		});
 		picker.trigger("click");
@@ -220,22 +254,29 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		cleanupModal(dialog);
 	};
 
+	// ADR-4 ordering, extracted so both the upload picker and the exemption
+	// picker (C3.1) share the exact same missing-first catalog logic instead
+	// of each re-implementing it.
+	const buildMissingFirstDocOptions = (catalog, missing = []) => {
+		const missingList = (missing || []).filter(Boolean);
+		const missingSet = new Set(missingList);
+		const catalogNames = new Set(catalog.map(row => row.name));
+		// Missing-first ordering (ADR-4): missing docs still offered by the catalog come
+		// first and default-select; legacy missing names absent from the active catalog
+		// would fail backend validation, so they are dropped from the Select but kept
+		// visible in the warning copy the caller renders.
+		const missingInCatalog = missingList.filter(name => catalogNames.has(name));
+		const rest = catalog.filter(row => !missingSet.has(row.name)).map(row => row.name);
+		return { optionsStr: [...missingInCatalog, ...rest].join("\n"), missingInCatalog, missingList };
+	};
+
 	const openSelectionDocsUploadDialog = (candidate, missing = []) => {
 		ensureUploadDocTypes().then(catalog => {
 			if (!catalog || !catalog.length) {
 				openUploadCatalogErrorDialog();
 				return;
 			}
-			const missingList = (missing || []).filter(Boolean);
-			const missingSet = new Set(missingList);
-			const catalogNames = new Set(catalog.map(row => row.name));
-			// Missing-first ordering (ADR-4): missing docs still offered by the catalog come
-			// first and default-select; legacy missing names absent from the active catalog
-			// would fail backend validation, so they are dropped from the Select but kept
-			// visible in the warning copy below.
-			const missingInCatalog = missingList.filter(name => catalogNames.has(name));
-			const rest = catalog.filter(row => !missingSet.has(row.name)).map(row => row.name);
-			const options = [...missingInCatalog, ...rest].join("\n");
+			const { optionsStr, missingInCatalog, missingList } = buildMissingFirstDocOptions(catalog, missing);
 			const dialogFields = [];
 			if (missingList.length) {
 				dialogFields.push({
@@ -247,7 +288,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 				fieldname: "document_type",
 				label: "Documento",
 				fieldtype: "Select",
-				options,
+				options: optionsStr,
 				default: missingInCatalog[0] || undefined,
 				reqd: 1,
 			});
@@ -255,6 +296,162 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 				quickUpload(candidate, values.document_type);
 			});
 		});
+	};
+
+	// Gate-failure fix (item 3): a stable, distinguishable, explicitly visible
+	// warning block — .alert.alert-warning plus a dedicated sagrilaft-exempt-warning
+	// class so it is queryable/verifiable independent of styling. Shared markup
+	// for both the fixed-type and picker exemption dialogs.
+	const sagrilaftExemptWarningHtml = () => `
+		<div class='alert alert-warning sagrilaft-exempt-warning' role='alert'>
+			<strong>Atención:</strong> exonerar SAGRILAFT no habilita el envío del candidato a Relaciones Laborales.
+			El documento físico de SAGRILAFT sigue siendo obligatorio para ese envío.
+		</div>
+	`;
+
+	// C3.1 — per-row "Exonerar" entry point (post-handoff tab): a document-type
+	// picker (missing-first) restricted to the REQUIRED catalog only (gate-failure
+	// fix, item 1) — deliberately NOT ensureUploadDocTypes/the upload catalog:
+	// upload legitimately allows any active type, exemption only makes sense for
+	// documents that count toward hiring progress. The SAGRILAFT warning toggles
+	// dynamically since the selected type can change, unlike the fixed-type
+	// dialog used from the candidate detail table (openExemptDocumentDialog below).
+	const openExemptDocumentPickerDialog = (candidate, missing = [], { onSuccess } = {}) => {
+		ensureExemptDocTypes().then(catalog => {
+			if (!catalog || !catalog.length) {
+				openUploadCatalogErrorDialog();
+				return;
+			}
+			const { optionsStr, missingInCatalog, missingList } = buildMissingFirstDocOptions(catalog, missing);
+			const defaultType = missingInCatalog[0] || (catalog[0] && catalog[0].name) || "";
+
+			const fields = [];
+			if (missingList.length) {
+				fields.push({
+					fieldtype: "HTML",
+					options: `<div class='sel-docs-note' style='border-color:#fbbf24;background:#fffbeb;color:#92400e;margin-bottom:8px;'>Documentos faltantes: <b>${esc(missingList.join(", "))}</b></div>`,
+				});
+			}
+			fields.push({
+				fieldname: "document_type",
+				label: "Documento",
+				fieldtype: "Select",
+				options: optionsStr,
+				default: defaultType,
+				reqd: 1,
+				onchange() {
+					const selected = (d.get_value("document_type") || "").toUpperCase();
+					d.fields_dict.sagrilaft_warning.$wrapper.toggle(selected === "SAGRILAFT");
+				},
+			});
+			fields.push({
+				fieldname: "sagrilaft_warning",
+				fieldtype: "HTML",
+				options: sagrilaftExemptWarningHtml(),
+			});
+			fields.push({
+				fieldname: "motivo",
+				label: "Motivo de la exención",
+				fieldtype: "Small Text",
+				reqd: 1,
+				description: "Obligatorio. Queda registrado en la trazabilidad del candidato.",
+			});
+
+			const d = new frappe.ui.Dialog({
+				title: "Exonerar documento",
+				fields,
+				primary_action_label: "Exonerar",
+				primary_action(values) {
+					const motivo = (values.motivo || "").trim();
+					if (!motivo) {
+						frappe.msgprint({ title: "Motivo requerido", message: "Ingresá el motivo de la exención.", indicator: "red" });
+						return;
+					}
+					frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.exempt_candidate_document", {
+						candidate,
+						document_type: values.document_type,
+						motivo,
+					}).then(() => {
+						frappe.show_alert({ indicator: "blue", message: "Documento exonerado" });
+						d.hide();
+						if (typeof onSuccess === "function") onSuccess();
+					}).catch(err => {
+						const msg = (err && (err.message || err.exc || err._server_messages)) || "No fue posible exonerar el documento.";
+						frappe.msgprint(msg);
+					});
+				},
+			});
+			d.show();
+			cleanupModal(d);
+			d.fields_dict.sagrilaft_warning.$wrapper.toggle((defaultType || "").toUpperCase() === "SAGRILAFT");
+		});
+	};
+
+	// C3.2/C3.3 — Grant/revoke exemption dialogs (Batch C). Both reuse the same
+	// dialog machinery as the upload dialog; motivo is server-validated too
+	// (RED-2 in design.md), this reqd:1 is a UX affordance, not the real gate.
+	const openExemptDocumentDialog = (candidate, documentType, { onSuccess } = {}) => {
+		const isSagrilaft = (documentType || "").toUpperCase() === "SAGRILAFT";
+		const sagrilaftWarning = isSagrilaft ? sagrilaftExemptWarningHtml() : "";
+		const dialogFields = [];
+		if (sagrilaftWarning) {
+			dialogFields.push({ fieldtype: "HTML", options: sagrilaftWarning });
+		}
+		dialogFields.push({
+			fieldname: "motivo",
+			label: "Motivo de la exención",
+			fieldtype: "Small Text",
+			reqd: 1,
+			description: "Obligatorio. Queda registrado en la trazabilidad del candidato.",
+		});
+		openSimpleDialog(`Exonerar documento: ${documentType}`, dialogFields, "Exonerar", values => {
+			const motivo = (values.motivo || "").trim();
+			if (!motivo) {
+				frappe.msgprint({ title: "Motivo requerido", message: "Ingresá el motivo de la exención.", indicator: "red" });
+				return;
+			}
+			frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.exempt_candidate_document", {
+				candidate,
+				document_type: documentType,
+				motivo,
+			}).then(() => {
+				frappe.show_alert({ indicator: "blue", message: "Documento exonerado" });
+				if (typeof onSuccess === "function") onSuccess();
+			}).catch(err => {
+				const msg = (err && (err.message || err.exc || err._server_messages)) || "No fue posible exonerar el documento.";
+				frappe.msgprint(msg);
+			});
+		});
+	};
+
+	const openRevokeExemptionDialog = (candidate, documentType, { onSuccess } = {}) => {
+		const d = new frappe.ui.Dialog({
+			title: `Revocar exención: ${documentType}`,
+			fields: [
+				{ fieldtype: "HTML", fieldname: "warning" },
+				{ fieldname: "motivo", label: "Motivo de la revocación (opcional)", fieldtype: "Small Text" },
+			],
+			primary_action_label: "Revocar",
+			primary_action(values) {
+				frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.revoke_candidate_document_exemption", {
+					candidate,
+					document_type: documentType,
+					motivo: (values.motivo || "").trim() || undefined,
+				}).then(() => {
+					frappe.show_alert({ indicator: "orange", message: "Exención revocada" });
+					d.hide();
+					if (typeof onSuccess === "function") onSuccess();
+				}).catch(err => {
+					const msg = (err && (err.message || err.exc || err._server_messages)) || "No fue posible revocar la exención.";
+					frappe.msgprint(msg);
+				});
+			},
+		});
+		d.fields_dict.warning.$wrapper.html(`
+			<div class='sel-docs-note'>El documento vuelve a estado <b>Pendiente</b> y deberá subirse o exonerarse nuevamente.</div>
+		`);
+		d.show();
+		cleanupModal(d);
 	};
 
 	const openDetail = candidate => {
@@ -280,18 +477,40 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 				}).join("");
 
 				const canDeleteDoc = !!data.can_delete_document;
+				// C3.1/C3.4: exemption affordance is gated server-side (can_exempt_documents,
+				// same pattern as can_delete_document) and only offered for the required
+				// catalog (required_for_hiring) — a non-required type can still be exempted
+				// via direct API call (PR B's exempt_candidate_document has no
+				// is_required_for_hiring gate, only an active-type check), but this UI never
+				// offers that action for a non-required document.
+				const canExemptDocs = !!data.can_exempt_documents;
+				const requiredTypeNames = new Set(
+					(data.upload_doc_types || []).filter(t => t.required_for_hiring).map(t => t.name)
+				);
 				const docsHtml = (data.documents || []).map(d => {
 					const deleteBtn = (canDeleteDoc && d.name)
 						? `<button class='btn btn-xs btn-link text-danger action-delete-pdoc' data-pd='${esc(d.name)}' data-dtype='${esc(d.document_type || "")}' data-file='${esc(d.file || "")}' title='Eliminar permanentemente'><i class='fa fa-trash'></i></button>`
 						: "";
+					const isExento = d.status === "Exento";
+					const statusCell = isExento
+						? `<span class='indicator-pill blue exempted-doc-pill' title='${esc(d.exencion_motivo || "")}'>Exonerado</span>`
+						: esc(d.status || "Pendiente");
+					let exemptionBtn = "";
+					if (canExemptDocs) {
+						if (isExento) {
+							exemptionBtn = `<button class='btn btn-xs btn-link text-warning action-revoke-exemption' data-dtype='${esc(d.document_type || "")}' title='Motivo: ${esc(d.exencion_motivo || "")}'>Revocar</button>`;
+						} else if (!d.file && d.status !== "Subido" && d.status !== "Aprobado" && requiredTypeNames.has(d.document_type)) {
+							exemptionBtn = `<button class='btn btn-xs btn-link action-exempt-doc' data-dtype='${esc(d.document_type || "")}'>Exonerar</button>`;
+						}
+					}
 					return `
 					<tr>
 						<td>${esc(d.document_type || "")}</td>
-						<td>${esc(d.status || "Pendiente")}</td>
+						<td>${statusCell}</td>
 						<td>${esc(d.uploaded_by || "")}</td>
 						<td>${frappe.datetime.str_to_user(d.uploaded_on || "") || ""}</td>
 						<td>${d.file ? `<a href='${d.file}' target='_blank'>Ver</a>` : ""}</td>
-						<td>${deleteBtn}</td>
+						<td>${deleteBtn}${exemptionBtn}</td>
 					</tr>
 				`;
 				}).join("");
@@ -360,6 +579,20 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 					const dtype = $(this).data("dtype") || "";
 					const fileUrl = $(this).data("file") || "";
 					openDeletePersonDocumentDialog({ pdocName, documentType: dtype, fileUrl, onSuccess: () => {
+						dialog.hide();
+						openDetail(candidate);
+					}});
+				});
+				dialog.fields_dict.content.$wrapper.find(".action-exempt-doc").on("click", function() {
+					const dtype = $(this).data("dtype") || "";
+					openExemptDocumentDialog(candidate, dtype, { onSuccess: () => {
+						dialog.hide();
+						openDetail(candidate);
+					}});
+				});
+				dialog.fields_dict.content.$wrapper.find(".action-revoke-exemption").on("click", function() {
+					const dtype = $(this).data("dtype") || "";
+					openRevokeExemptionDialog(candidate, dtype, { onSuccess: () => {
 						dialog.hide();
 						openDetail(candidate);
 					}});
@@ -848,19 +1081,113 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 	// está completo. Única acción: subir documentos (reutiliza el flujo de
 	// subida ya autorizado; sin nuevo endpoint).
 	// ------------------------------------------------------------------
-	const renderPostHandoffTable = (rows) => {
-		const htmlRows = (rows || []).map(r => `
+	// ADR-6 — search/status filters own state (postHandoffSearch/postHandoffStatus),
+	// deliberately not shared with the board's state.search/state.status.
+	const getFilteredPostHandoffRows = () => {
+		const q = (state.postHandoffSearch || "").trim().toLowerCase();
+		return (state.postHandoffRows || []).filter(row => {
+			if (q) {
+				const blob = [row.full_name, row.name, row.numero_documento, row.pdv_destino_nombre, row.pdv_destino, row.cargo_postulado, row.estado_proceso].filter(Boolean).join(" ").toLowerCase();
+				if (!blob.includes(q)) return false;
+			}
+			if (state.postHandoffStatus === "en_afiliacion" && row.estado_proceso !== "En afiliación") return false;
+			if (state.postHandoffStatus === "listo_contratar" && row.estado_proceso !== "Listo para contratar") return false;
+			if (state.postHandoffStatus === "contratado" && row.estado_proceso !== "Contratado") return false;
+			// Revoke-gap fix: dedicated filter for candidates kept visible here only
+			// because every remaining requirement was exempted (server's only_exempted).
+			if (state.postHandoffStatus === "solo_exonerados" && !row.only_exempted) return false;
+			return true;
+		});
+	};
+
+	// Extracted from renderPostHandoffTable (ADR-6) so the search/filter handlers
+	// repaint only the tbody, mirroring bindEvents:485-495's card-only repaint —
+	// this preserves input focus and avoids rebuilding the toolbar on every keystroke.
+	// Revoke-gap fix: one pill PER exempted document, each carrying its own
+	// "Revocar" action (reuses openRevokeExemptionDialog — the same dialog the
+	// candidate detail table uses, never duplicated) and the stored motivo as a
+	// title tooltip, matching the detail dialog's pattern.
+	const renderExemptedDetailPills = (row) => {
+		const details = row.exempted_details || [];
+		if (!details.length) return "";
+		return `<div class='post-handoff-exempted-pills' style='margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;'>${details.map(d => `
+			<span class='indicator-pill blue' title='Motivo: ${esc(d.exencion_motivo || "")}'>
+				${esc(d.document_type || "")}
+				<button type='button' class='btn btn-xs btn-link action-post-handoff-revoke' style='padding:0 0 0 4px;color:inherit;text-decoration:underline;' data-c='${esc(row.name)}' data-dtype='${esc(d.document_type || "")}'>Revocar</button>
+			</span>
+		`).join("")}</div>`;
+	};
+
+	const renderPostHandoffRows = $tbody => {
+		const rows = getFilteredPostHandoffRows();
+		const htmlRows = rows.map(r => {
+			const exemptedCount = (r.exempted || []).length;
+			const exemptedSummaryBadge = exemptedCount
+				? `<span class='indicator-pill blue' title='${esc((r.exempted || []).join(", "))}'>Exonerado: ${esc(exemptedCount)}</span>`
+				: "";
+			const onlyExemptedBadge = r.only_exempted
+				? `<span class='indicator-pill orange' title='Completo solo por exención — revocá cualquier exención para volver a pendiente.'>Solo exonerados</span>`
+				: "";
+			return `
 			<tr>
 				<td>${esc(r.full_name)}</td>
 				<td>${esc(r.numero_documento)}</td>
 				<td>${esc(r.pdv_destino_nombre)}</td>
-				<td>${esc(r.estado_proceso)}</td>
+				<td>${esc(r.estado_proceso)} ${onlyExemptedBadge}</td>
 				<td>${esc(r.avance_porcentaje)}%</td>
-				<td style='font-size:12px;color:#6b7280'>${esc((r.missing || []).join(", "))}</td>
-				<td><button class='btn btn-xs btn-primary action-post-handoff-upload' data-c='${esc(r.name)}'>Subir documentos</button></td>
+				<td style='font-size:12px;color:#6b7280'>
+					${esc((r.missing || []).join(", "))}
+					<div>${exemptedSummaryBadge}</div>
+					${renderExemptedDetailPills(r)}
+				</td>
+				<td>
+					<button class='btn btn-xs btn-primary action-post-handoff-upload' data-c='${esc(r.name)}'>Subir documentos</button>
+					<button class='btn btn-xs btn-default action-post-handoff-exempt' data-c='${esc(r.name)}'>Exonerar</button>
+				</td>
 			</tr>
-		`).join("");
+		`;
+		}).join("");
 
+		$tbody.html(htmlRows || "<tr><td colspan='7'>Sin candidatos para este filtro</td></tr>");
+
+		const total = (state.postHandoffRows || []).length;
+		$root.find(".post-handoff-counter").text(`${rows.length} visibles de ${total} (${rows.length}/${total})`);
+
+		$tbody.find(".action-post-handoff-upload").off("click").on("click", function() {
+			const candidate = $(this).data("c");
+			const row = (state.postHandoffRows || []).find(r => String(r.name) === String(candidate)) || {};
+			openSelectionDocsUploadDialog(candidate, row.missing || []);
+		});
+		$tbody.find(".action-post-handoff-exempt").off("click").on("click", function() {
+			const candidate = $(this).data("c");
+			const row = (state.postHandoffRows || []).find(r => String(r.name) === String(candidate)) || {};
+			openExemptDocumentPickerDialog(candidate, row.missing || [], { onSuccess: () => loadPostHandoff() });
+		});
+		$tbody.find(".action-post-handoff-revoke").off("click").on("click", function(evt) {
+			evt.stopPropagation();
+			const candidate = $(this).data("c");
+			const dtype = $(this).data("dtype") || "";
+			openRevokeExemptionDialog(candidate, dtype, { onSuccess: () => loadPostHandoff() });
+		});
+	};
+
+	const bindPostHandoffToolbar = () => {
+		$root.find(".post-handoff-filter-search").off("input").on("input", function() {
+			state.postHandoffSearch = $(this).val() || "";
+			renderPostHandoffRows($root.find(".post-handoff-tbody"));
+		});
+		$root.find(".post-handoff-filter-status").off("change").on("change", function() {
+			state.postHandoffStatus = $(this).val() || "all";
+			renderPostHandoffRows($root.find(".post-handoff-tbody"));
+		});
+		$root.find(".post-handoff-clear-filters").off("click").on("click", () => {
+			state.postHandoffSearch = "";
+			state.postHandoffStatus = "all";
+			renderPostHandoffTable(state.postHandoffRows);
+		});
+	};
+
+	const renderPostHandoffTable = (rows) => {
 		$root.html(`
 			<div class='hubgh-board-hero'>
 				<div class='hubgh-board-hero-head'>
@@ -870,26 +1197,37 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 							<span class='hubgh-board-kicker'>Post-handoff</span>
 						</div>
 						<h3 class='hubgh-board-title'>Enviados con pendientes</h3>
-						<p class='hubgh-board-copy'>Candidatos ya enviados (en afiliación, listos para contratar o contratados) cuya documentación todavía no está completa. Única acción disponible: subir soportes.</p>
+						<p class='hubgh-board-copy'>Candidatos ya enviados (en afiliación, listos para contratar o contratados) cuya documentación todavía no está completa. Acciones disponibles: subir soportes o exonerar un documento requerido.</p>
 					</div>
 					<div class='hubgh-board-meta'><span class='hubgh-meta-pill'>${esc((rows || []).length)} pendientes</span></div>
 				</div>
+			</div>
+			<div class='hubgh-board-toolbar'>
+				<input type='text' class='form-control post-handoff-filter-search' placeholder='Buscar por nombre, documento, PDV, cargo o estado' value='${esc(state.postHandoffSearch || "")}' />
+				<select class='form-control post-handoff-filter-status'>
+					<option value='all' ${state.postHandoffStatus === "all" ? "selected" : ""}>Todos</option>
+					<option value='en_afiliacion' ${state.postHandoffStatus === "en_afiliacion" ? "selected" : ""}>En afiliación</option>
+					<option value='listo_contratar' ${state.postHandoffStatus === "listo_contratar" ? "selected" : ""}>Listo para contratar</option>
+					<option value='contratado' ${state.postHandoffStatus === "contratado" ? "selected" : ""}>Contratado</option>
+					<option value='solo_exonerados' ${state.postHandoffStatus === "solo_exonerados" ? "selected" : ""}>Solo exonerados</option>
+				</select>
+				<div class='sel-docs-toolbar-actions'>
+					<button class='btn btn-sm btn-default post-handoff-clear-filters'>Limpiar filtros</button>
+				</div>
+				<div class='hubgh-board-toolbar-copy post-handoff-counter'></div>
 			</div>
 			<div class='hubgh-table-shell' style='margin-top:12px'>
 				<table class='table table-bordered hubgh-table'>
 					<thead>
 						<tr><th>Candidato</th><th>Documento</th><th>PDV</th><th>Estado</th><th>Avance</th><th>Faltantes</th><th></th></tr>
 					</thead>
-					<tbody>${htmlRows || "<tr><td colspan='7'>Sin candidatos pendientes</td></tr>"}</tbody>
+					<tbody class='post-handoff-tbody'></tbody>
 				</table>
 			</div>
 		`);
 
-		$root.find(".action-post-handoff-upload").off("click").on("click", function() {
-			const candidate = $(this).data("c");
-			const row = (state.postHandoffRows || []).find(r => String(r.name) === String(candidate)) || {};
-			openSelectionDocsUploadDialog(candidate, row.missing || []);
-		});
+		bindPostHandoffToolbar();
+		renderPostHandoffRows($root.find(".post-handoff-tbody"));
 	};
 
 	const loadPostHandoff = () => {
