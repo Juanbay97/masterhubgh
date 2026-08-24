@@ -136,6 +136,7 @@ def _project_candidate_row(row, progress, pdv_name_map, is_manager):
 		"documentos_total": progress.get("required_total", 0),
 		"completo": progress.get("is_complete", False),
 		"missing": progress.get("missing", []),
+		"exempted": progress.get("exempted", []),
 		"can_manage": is_manager,
 		"solo_afiliacion": int(row.solo_afiliacion or 0),
 		"fecha_tentativa_ingreso": row.fecha_tentativa_ingreso,
@@ -435,7 +436,11 @@ def candidate_detail(candidate):
 	docs = get_person_document_rows(
 		"Candidato",
 		candidate,
-		fields=["name", "document_type", "status", "file", "uploaded_by", "uploaded_on", "approved_by", "approved_on", "notes"],
+		fields=[
+			"name", "document_type", "status", "file", "uploaded_by", "uploaded_on",
+			"approved_by", "approved_on", "notes",
+			"exencion_motivo", "exonerado_por", "exonerado_en",
+		],
 		order_by="modified desc",
 	)
 	progress = get_candidate_progress(candidate)
@@ -497,6 +502,12 @@ def candidate_detail(candidate):
 		"upload_doc_types": upload_doc_types,
 		"can_delete_document": can_delete_document,
 		"is_pre_contract": is_pre_contract,
+		# Batch C (Phase C3): server-computed gate so the exemption/revoke UI
+		# never has to duplicate the role matrix client-side — same pattern
+		# as can_delete_document above. Mirrors _validate_exemption_access's
+		# role set exactly (narrower than _validate_selection_access, which
+		# also lets a Candidato view their own record).
+		"can_exempt_documents": _has_selection_access(frappe.session.user) or frappe.session.user == "Administrator",
 	}
 
 
