@@ -11,6 +11,7 @@ _ORIGINAL_MODULES = {
 		"frappe",
 		"frappe.utils",
 		"hubgh.hubgh.candidate_states",
+		"hubgh.hubgh.display_labels",
 		"hubgh.hubgh.document_service",
 		"hubgh.hubgh.permissions",
 		"hubgh.hubgh.selection_document_types",
@@ -47,10 +48,23 @@ def _install_stubs():
 	dimension_permissions.user_can_access_dimension = lambda *args, **kwargs: True
 	sys.modules["hubgh.hubgh.dimension_permissions"] = dimension_permissions
 
+	# Pre-existing import chain (unrelated to this PR): seleccion_documentos.py imports
+	# display_labels, which pulls in hubgh.www.candidato -> hubgh.hubgh.onboarding_security,
+	# which needs a real `frappe._`/site context this isolated unit test does not have.
+	# Stub display_labels directly, same isolation pattern as the other fakes below.
+	display_labels = types.ModuleType("hubgh.hubgh.display_labels")
+	display_labels.get_punto_name_map = lambda *args, **kwargs: {}
+	display_labels.resolve_candidate_location_labels = lambda *args, **kwargs: {}
+	display_labels.resolve_siesa_bank_name = lambda value=None: value
+	sys.modules["hubgh.hubgh.display_labels"] = display_labels
+
 	document_service = types.ModuleType("hubgh.hubgh.document_service")
 	document_service.ensure_candidate_required_documents = lambda *args, **kwargs: None
 	document_service.build_candidate_documents_zip = lambda *args, **kwargs: None
+	document_service.build_candidate_documents_zip_bytes = lambda *args, **kwargs: None
 	document_service.get_candidate_progress = lambda *args, **kwargs: {"percent": 0, "required_ok": 0, "required_total": 0, "is_complete": False}
+	document_service.get_candidates_progress_bulk = lambda *args, **kwargs: {}
+	document_service.get_person_document_rows = lambda *args, **kwargs: []
 	document_service.hire_candidate = lambda *args, **kwargs: None
 	document_service.send_candidate_to_labor_relations = lambda *args, **kwargs: None
 	document_service.upload_person_document = lambda *args, **kwargs: SimpleNamespace(name="PD-001", status="Subido")
@@ -134,6 +148,44 @@ class TestSelectionUploadEndpoints(TestCase):
 
 		self.assertEqual(result, {"name": "PD-002", "status": "Subido", "document_type": "Examen Médico"})
 		self.assertEqual(frappe_module.local.message_log, [])
+
+	def test_list_upload_document_types_matches_validator(self):
+		"""Regression pin for PR A: every type the picker (list_upload_document_types)
+		offers must pass _validate_candidate_document_type, and a type excluded from
+		_active_candidate_document_types (inactive, or applies_to Colaborador) must
+		raise through the validator. No production code changes in this PR."""
+		document_type_rows = [
+			{"name": "SAGRILAFT", "document_name": "SAGRILAFT", "is_required_for_hiring": 1, "is_active": 1, "applies_to": "Candidato"},
+			{"name": "Carta Oferta", "document_name": "Carta Oferta", "is_required_for_hiring": 1, "is_active": 1, "applies_to": "Ambos"},
+			{"name": "Contrato Colaborador", "document_name": "Contrato Colaborador", "is_required_for_hiring": 0, "is_active": 1, "applies_to": "Colaborador"},
+			{"name": "Documento Inactivo", "document_name": "Documento Inactivo", "is_required_for_hiring": 0, "is_active": 0, "applies_to": "Candidato"},
+		]
+
+		def _fake_get_all(doctype, filters=None, fields=None, order_by=None, **kwargs):
+			self.assertEqual(doctype, "Document Type")
+			filters = filters or {}
+			wanted_active = filters.get("is_active", 1)
+			allowed_applies_to = filters.get("applies_to", ["in", ["Candidato", "Ambos"]])[1]
+			return [
+				SimpleNamespace(**row)
+				for row in document_type_rows
+				if row["is_active"] == wanted_active and row["applies_to"] in allowed_applies_to
+			]
+
+		with patch(
+			"hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.frappe.get_all",
+			side_effect=_fake_get_all,
+		):
+			catalog = seleccion_documentos.list_upload_document_types()
+			catalog_names = {row["name"] for row in catalog}
+			self.assertEqual(catalog_names, {"SAGRILAFT", "Carta Oferta"})
+
+			for row in catalog:
+				seleccion_documentos._validate_candidate_document_type(row["name"])
+
+			for excluded_name in ("Contrato Colaborador", "Documento Inactivo"):
+				with self.assertRaises(Exception):
+					seleccion_documentos._validate_candidate_document_type(excluded_name)
 
 	def test_set_medical_concept_favorable_does_not_advance_to_affiliations(self):
 		captured = {}
