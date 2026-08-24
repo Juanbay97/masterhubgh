@@ -20,15 +20,14 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from hubgh.hubgh.disponibilidad_service import (
+	_DAY_LOOKUP,
 	DAY_COLUMNS,
 	DISPONIBILIDAD_COLUMNS,
-	_DAY_LOOKUP,
 	_build_dias_resumen,
 	_format_hora,
 	_normalize_day,
 	build_disponibilidad_row,
 )
-
 
 EXPECTED_LABELS = [
 	"NOMBRE", "CÉDULA", "PUNTO DE VENTA", "VINCULACIÓN", "ESTADO", "FECHA DE INGRESO",
