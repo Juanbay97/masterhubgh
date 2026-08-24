@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"rl-operacion\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Operaci\u00f3n RRLL</span>\",\"col\":12}},{\"id\":\"F-qHzC1p8J\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gesti\u00f3n de afiliaciones\",\"col\":4}},{\"id\":\"nSHREzANlu\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contrataci\u00f3n y formalizaci\u00f3n\",\"col\":4}},{\"id\":\"rptsiesaRL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Reportes SIESA\",\"col\":4}},{\"id\":\"E3yqJ5dDxR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Carpeta documental del empleado\",\"col\":4}},{\"id\":\"rl-registros\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Registros y maestros</span>\",\"col\":12}},{\"id\":\"VeQMBfiOHN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Registro de afiliaciones\",\"col\":4}},{\"id\":\"ix8d4drned\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contratos\",\"col\":4}},{\"id\":\"dcRL1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Datos de contrataci\u00f3n\",\"col\":4}},{\"id\":\"ghnovRRLL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Novedades laborales\",\"col\":4}},{\"id\":\"LarA0EPs-o\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Tipos de documento\",\"col\":4}},{\"id\":\"lQWPPTPV5m\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Candidatos\",\"col\":4}}]",
+ "content": "[{\"id\":\"rl-operacion\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Operaci\u00f3n RRLL</span>\",\"col\":12}},{\"id\":\"F-qHzC1p8J\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gesti\u00f3n de afiliaciones\",\"col\":4}},{\"id\":\"nSHREzANlu\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contrataci\u00f3n y formalizaci\u00f3n\",\"col\":4}},{\"id\":\"rptsiesaRL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Reportes SIESA\",\"col\":4}},{\"id\":\"E3yqJ5dDxR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Carpeta documental del empleado\",\"col\":4}},{\"id\":\"dispoRRLL1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disponibilidad de personal\",\"col\":4}},{\"id\":\"rl-registros\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Registros y maestros</span>\",\"col\":12}},{\"id\":\"VeQMBfiOHN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Registro de afiliaciones\",\"col\":4}},{\"id\":\"ix8d4drned\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contratos\",\"col\":4}},{\"id\":\"dcRL1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Datos de contrataci\u00f3n\",\"col\":4}},{\"id\":\"ghnovRRLL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Novedades laborales\",\"col\":4}},{\"id\":\"LarA0EPs-o\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Tipos de documento\",\"col\":4}},{\"id\":\"lQWPPTPV5m\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Candidatos\",\"col\":4}}]",
  "creation": "2026-02-09 00:00:00",
  "custom_blocks": [],
  "docstatus": 0,
@@ -12,7 +12,7 @@
  "is_hidden": 0,
  "label": "Relaciones Laborales",
  "links": [],
- "modified": "2026-02-16 11:25:24.649547",
+ "modified": "2026-08-24 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Hubgh",
  "name": "Relaciones Laborales",
@@ -67,6 +67,13 @@
    "doc_view": "",
    "label": "Carpeta documental del empleado",
    "link_to": "carpeta_documental_empleado",
+   "type": "Page"
+  },
+  {
+   "color": "Green",
+   "doc_view": "",
+   "label": "Disponibilidad de personal",
+   "link_to": "bandeja_disponibilidad",
    "type": "Page"
   },
   {

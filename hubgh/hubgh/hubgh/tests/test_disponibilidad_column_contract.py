@@ -23,6 +23,7 @@ from hubgh.hubgh.disponibilidad_service import (
 	DAY_COLUMNS,
 	DISPONIBILIDAD_COLUMNS,
 	_DAY_LOOKUP,
+	_build_dias_resumen,
 	_format_hora,
 	_normalize_day,
 	build_disponibilidad_row,
@@ -196,3 +197,48 @@ class TestBuildDisponibilidadRow(FrappeTestCase):
 				"hora_fin": datetime.timedelta(hours=17), "idx": 1}]
 		row = build_disponibilidad_row(self._person(), rows)
 		self.assertEqual(row["miercoles"], "08:00 - 17:00")
+
+
+class TestDiasResumen(FrappeTestCase):
+	"""2.7/ADR-7/AC-14 — compact tray summary, derived strictly from the same
+	`build_disponibilidad_row()` output dict (anti-drift rule): never a second
+	traversal of the raw child rows. Full ranges stay Excel-only."""
+
+	def _person(self, **overrides):
+		base = {
+			"nombre": "Ana Gomez", "cedula": "1001", "punto_de_venta": "PDV 07",
+			"vinculacion": "Contratado", "estado": "Activo", "fecha_ingreso": "2026-03-10",
+		}
+		base.update(overrides)
+		return base
+
+	def test_zero_availability_is_empty_string_never_no_disponible(self):
+		row = build_disponibilidad_row(self._person(), [])
+		self.assertEqual(_build_dias_resumen(row), "")
+
+	def test_five_of_seven_days_reports_initials_and_count(self):
+		"""AC-14: available Monday, Thursday, Friday, Saturday, Sunday -> 5/7."""
+		disp = [
+			{"dia": d, "hora_inicio": datetime.timedelta(hours=8), "hora_fin": datetime.timedelta(hours=17), "idx": 1}
+			for d in ("Lunes", "Jueves", "Viernes", "Sábado", "Domingo")
+		]
+		row = build_disponibilidad_row(self._person(), disp)
+		self.assertEqual(_build_dias_resumen(row), "L J V S D · 5/7")
+
+	def test_initials_correspond_one_to_one_to_non_blank_day_keys(self):
+		disp = [
+			{"dia": "Martes", "hora_inicio": datetime.timedelta(hours=8), "hora_fin": datetime.timedelta(hours=17), "idx": 1},
+			{"dia": "Miércoles", "hora_inicio": datetime.timedelta(hours=8), "hora_fin": datetime.timedelta(hours=17), "idx": 1},
+		]
+		row = build_disponibilidad_row(self._person(), disp)
+		non_blank_keys = {spec.key for spec in DAY_COLUMNS if row[spec.key]}
+		self.assertEqual(non_blank_keys, {"martes", "miercoles"})
+		self.assertEqual(_build_dias_resumen(row), "M X · 2/7")
+
+	def test_all_seven_days_available(self):
+		disp = [
+			{"dia": d.dia, "hora_inicio": datetime.timedelta(hours=8), "hora_fin": datetime.timedelta(hours=17), "idx": 1}
+			for d in DAY_COLUMNS
+		]
+		row = build_disponibilidad_row(self._person(), disp)
+		self.assertEqual(_build_dias_resumen(row), "L M X J V S D · 7/7")

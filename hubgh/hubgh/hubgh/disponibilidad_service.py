@@ -324,6 +324,32 @@ def _build_row_set(fecha_desde=None, fecha_hasta=None, search=None, pdv=None, po
 	return [(person, availability_by_parent.get(name, [])) for person, name in all_entries]
 
 
+# ADR-7: compact tray summary (DÍAS column). "X" for Miércoles avoids the
+# Martes/Miércoles "M" collision (the usual Spanish L M X J V S D calendar
+# convention).
+_DAY_INITIALS = {
+	"lunes": "L",
+	"martes": "M",
+	"miercoles": "X",
+	"jueves": "J",
+	"viernes": "V",
+	"sabado": "S",
+	"domingo": "D",
+}
+
+
+def _build_dias_resumen(row):
+	"""Compact tray summary derived STRICTLY from the same `build_disponibilidad_row()`
+	output dict `row` — never from a second traversal of the raw child rows
+	(ADR-7 anti-drift rule, AC-14). Empty string when there is no availability
+	(never the literal "No disponible", same rule as the day columns themselves)."""
+	present = [spec.key for spec in DAY_COLUMNS if row.get(spec.key)]
+	if not present:
+		return ""
+	initials = " ".join(_DAY_INITIALS[key] for key in present)
+	return f"{initials} · {len(present)}/7"
+
+
 AUDIT_LOGGER_NAME = "hubgh.disponibilidad"
 
 
@@ -340,7 +366,12 @@ def list_disponibilidad(fecha_desde=None, fecha_hasta=None, search=None, pdv=Non
 	Rechazado/Contratado), deduplicados por cédula."""
 	validate_disponibilidad_read_access()
 	rows = _build_row_set(fecha_desde=fecha_desde, fecha_hasta=fecha_hasta, search=search, pdv=pdv, poblacion=poblacion)
-	return [build_disponibilidad_row(person, availability_rows) for person, availability_rows in rows]
+	result = []
+	for person, availability_rows in rows:
+		built = build_disponibilidad_row(person, availability_rows)
+		built["dias_resumen"] = _build_dias_resumen(built)
+		result.append(built)
+	return result
 
 
 @frappe.whitelist()
