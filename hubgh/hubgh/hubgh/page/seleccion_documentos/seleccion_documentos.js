@@ -71,6 +71,11 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 	let state = {
 		rows: [], postHandoffRows: [], search: "", status: "all", view: "board",
 		uploadDocTypes: [], uploadDocTypesLoaded: false,
+		// Gate-failure fix (orchestrator re-run, item 1): the exemption picker must
+		// NEVER reuse the upload catalog above — upload legitimately allows any
+		// active type, exemption only makes sense for the required set. Separate
+		// cache, separate endpoint (list_exemptable_document_types).
+		exemptDocTypes: [], exemptDocTypesLoaded: false,
 		// ADR-6: kept separate from search/status above — getFilteredRows reads
 		// state.rows and calls board-only helpers (canSendToRL/isInMedicalExam),
 		// so sharing state would leak the tab's filters into the board and vice versa.
@@ -92,6 +97,24 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 			.catch(() => {
 				state.uploadDocTypes = [];
 				state.uploadDocTypesLoaded = false;
+				return null;
+			});
+	};
+
+	// Gate-failure fix (item 1): required-only catalog for the exemption picker.
+	// Deliberately a separate fetch/cache from ensureUploadDocTypes — the upload
+	// dialog legitimately offers any active type, the exemption dialog must not.
+	const ensureExemptDocTypes = () => {
+		if (state.exemptDocTypesLoaded) return Promise.resolve(state.exemptDocTypes);
+		return frappe.call("hubgh.hubgh.page.seleccion_documentos.seleccion_documentos.list_exemptable_document_types")
+			.then(r => {
+				state.exemptDocTypes = r.message || [];
+				state.exemptDocTypesLoaded = true;
+				return state.exemptDocTypes;
+			})
+			.catch(() => {
+				state.exemptDocTypes = [];
+				state.exemptDocTypesLoaded = false;
 				return null;
 			});
 	};
@@ -275,13 +298,26 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 		});
 	};
 
+	// Gate-failure fix (item 3): a stable, distinguishable, explicitly visible
+	// warning block — .alert.alert-warning plus a dedicated sagrilaft-exempt-warning
+	// class so it is queryable/verifiable independent of styling. Shared markup
+	// for both the fixed-type and picker exemption dialogs.
+	const sagrilaftExemptWarningHtml = () => `
+		<div class='alert alert-warning sagrilaft-exempt-warning' role='alert'>
+			<strong>Atención:</strong> exonerar SAGRILAFT no habilita el envío del candidato a Relaciones Laborales.
+			El documento físico de SAGRILAFT sigue siendo obligatorio para ese envío.
+		</div>
+	`;
+
 	// C3.1 — per-row "Exonerar" entry point (post-handoff tab): a document-type
-	// picker (missing-first, same catalog helper as the upload dialog) plus a
-	// required motivo. The SAGRILAFT warning toggles dynamically since the
-	// selected type can change, unlike the fixed-type dialog used from the
-	// candidate detail table (openExemptDocumentDialog below).
+	// picker (missing-first) restricted to the REQUIRED catalog only (gate-failure
+	// fix, item 1) — deliberately NOT ensureUploadDocTypes/the upload catalog:
+	// upload legitimately allows any active type, exemption only makes sense for
+	// documents that count toward hiring progress. The SAGRILAFT warning toggles
+	// dynamically since the selected type can change, unlike the fixed-type
+	// dialog used from the candidate detail table (openExemptDocumentDialog below).
 	const openExemptDocumentPickerDialog = (candidate, missing = [], { onSuccess } = {}) => {
-		ensureUploadDocTypes().then(catalog => {
+		ensureExemptDocTypes().then(catalog => {
 			if (!catalog || !catalog.length) {
 				openUploadCatalogErrorDialog();
 				return;
@@ -311,9 +347,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 			fields.push({
 				fieldname: "sagrilaft_warning",
 				fieldtype: "HTML",
-				options: `<div class='sel-docs-note' style='border-color:#fecaca;background:#fef2f2;color:#991b1b;'>
-					<strong>Atención:</strong> exonerar SAGRILAFT no habilita el envío a RRLL — el documento físico sigue siendo obligatorio para ese envío.
-				</div>`,
+				options: sagrilaftExemptWarningHtml(),
 			});
 			fields.push({
 				fieldname: "motivo",
@@ -358,11 +392,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 	// (RED-2 in design.md), this reqd:1 is a UX affordance, not the real gate.
 	const openExemptDocumentDialog = (candidate, documentType, { onSuccess } = {}) => {
 		const isSagrilaft = (documentType || "").toUpperCase() === "SAGRILAFT";
-		const sagrilaftWarning = isSagrilaft
-			? `<div class='sel-docs-note' style='border-color:#fecaca;background:#fef2f2;color:#991b1b;margin-bottom:8px;'>
-				<strong>Atención:</strong> exonerar SAGRILAFT no habilita el envío a RRLL — el documento físico sigue siendo obligatorio para ese envío.
-			</div>`
-			: "";
+		const sagrilaftWarning = isSagrilaft ? sagrilaftExemptWarningHtml() : "";
 		const dialogFields = [];
 		if (sagrilaftWarning) {
 			dialogFields.push({ fieldtype: "HTML", options: sagrilaftWarning });

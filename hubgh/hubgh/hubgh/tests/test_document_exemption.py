@@ -418,6 +418,42 @@ class TestExemptCandidateDocumentEndpoint(FrappeTestCase):
 		self.assertEqual(result["status"], "Exento")
 
 
+class TestExemptCandidateDocumentRequiredGate(FrappeTestCase):
+	"""Gate-failure fix (orchestrator re-run, Batch C item 2): the spec's
+	"Non-required type rejected" scenario (candidate-document-exemption
+	domain) was never implemented — _validate_candidate_document_type only
+	checks is_active + applies_to, never is_required_for_hiring. This was a
+	PR B gap; PR B is unpushed and this branch ships that endpoint, so the
+	fix lands here rather than being deferred."""
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		super().tearDown()
+
+	def test_rejects_non_required_document_type(self):
+		doc_type = _seed_document_type("REQ-C1FIX", is_required_for_hiring=0)
+		candidate = _seed_candidato()
+		pdoc = _seed_person_document(candidate, doc_type, status="Pendiente")
+
+		with patch.object(seleccion_documentos, "exempt_person_document") as mock_exempt:
+			with self.assertRaises(frappe.ValidationError):
+				seleccion_documentos.exempt_candidate_document(candidate, doc_type, "motivo valido")
+
+		mock_exempt.assert_not_called()
+		pdoc.reload()
+		self.assertEqual(pdoc.status, "Pendiente")
+		self.assertIsNone(pdoc.exencion_motivo)
+
+	def test_allows_required_document_type(self):
+		doc_type = _seed_document_type("REQ-C1FIXOK", is_required_for_hiring=1)
+		candidate = _seed_candidato()
+
+		result = seleccion_documentos.exempt_candidate_document(candidate, doc_type, "motivo valido")
+
+		self.assertEqual(result["status"], "Exento")
+		self.assertEqual(result["document_type"], doc_type)
+
+
 class TestRevokeCandidateDocumentExemptionEndpoint(FrappeTestCase):
 
 	def tearDown(self):

@@ -75,6 +75,9 @@ def _install_stubs():
 	# module's import (and the whole test suite in it) does not break.
 	document_service.exempt_person_document = lambda *args, **kwargs: SimpleNamespace(name="PD-001", status="Exento")
 	document_service.revoke_person_document_exemption = lambda *args, **kwargs: SimpleNamespace(name="PD-001", status="Pendiente")
+	# Gate-failure fix (orchestrator re-run, item 2): exempt_candidate_document
+	# now also imports get_required_candidate_document_types.
+	document_service.get_required_candidate_document_types = lambda *args, **kwargs: []
 	sys.modules["hubgh.hubgh.document_service"] = document_service
 
 	permissions = types.ModuleType("hubgh.hubgh.permissions")

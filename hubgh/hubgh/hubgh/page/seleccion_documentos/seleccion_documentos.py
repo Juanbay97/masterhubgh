@@ -18,6 +18,7 @@ from hubgh.hubgh.document_service import (
 	get_person_document_rows,
 	get_candidate_progress,
 	get_candidates_progress_bulk,
+	get_required_candidate_document_types,
 	hire_candidate,
 	revoke_person_document_exemption,
 	send_candidate_to_labor_relations,
@@ -549,9 +550,28 @@ def _validate_exemption_access():
 
 
 @frappe.whitelist()
+def list_exemptable_document_types():
+	"""Required-only Document Type catalog for the exemption picker (gate-failure
+	fix, orchestrator re-run). Deliberately NOT list_upload_document_types: upload
+	legitimately allows any active type, but exempting a non-required document is
+	meaningless (it never counts toward candidate hiring progress). Uses the exact
+	same required-set definition as _compute_candidate_progress so this catalog
+	can never drift from what exempt_candidate_document's gate below allows."""
+	_validate_selection_access()
+	rows = get_required_candidate_document_types()
+	return sorted(
+		[{"name": r["name"], "label": r.get("document_name") or r["name"]} for r in rows],
+		key=lambda row: row["label"],
+	)
+
+
+@frappe.whitelist()
 def exempt_candidate_document(candidate, document_type, motivo):
 	_validate_exemption_access()
 	_validate_candidate_document_type(document_type)
+	required_names = {row["name"] for row in get_required_candidate_document_types()}
+	if document_type not in required_names:
+		frappe.throw("Solo se pueden exonerar documentos requeridos para la contratación.")
 	motivo = (motivo or "").strip()
 	if not motivo:
 		frappe.throw("El motivo de exención es obligatorio.")

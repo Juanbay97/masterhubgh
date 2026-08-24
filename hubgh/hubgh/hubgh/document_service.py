@@ -103,6 +103,33 @@ def _is_excluded_from_candidate_hiring_progress(doc_type_row):
 	return name == "contrato"
 
 
+def get_required_candidate_document_types():
+	"""Authoritative required Document Type catalog for candidate hiring
+	progress: is_active=1, is_required_for_hiring=1, applies_to in
+	(Candidato, Ambos), minus the transitional "Contrato" exclusion.
+
+	Single source of truth shared by the exemption eligibility gate
+	(seleccion_documentos.exempt_candidate_document) and the exemption
+	picker's server-exposed catalog, so neither can drift from the exact
+	set _compute_candidate_progress treats as required. Duplicates the
+	same filter as get_candidate_progress/get_candidates_progress_bulk's
+	inline queries by design (matches this module's existing pattern) —
+	extracted here specifically so callers outside this module never have
+	to re-implement the filter themselves.
+	"""
+	required = frappe.get_all(
+		"Document Type",
+		filters={
+			"is_active": 1,
+			"is_required_for_hiring": 1,
+			"applies_to": ["in", ["Candidato", "Ambos"]],
+		},
+		fields=["name", "requires_approval", "document_name", "allows_multiple"],
+		ignore_permissions=True,
+	)
+	return [row for row in required if not _is_excluded_from_candidate_hiring_progress(row)]
+
+
 def _get_document_type_rules(document_type):
 	dt_name = _resolve_document_type_name(document_type)
 
