@@ -467,6 +467,57 @@ class TestSendToLaborRelationsSagrilaftGate(FrappeTestCase):
 			seleccion_documentos.send_to_labor_relations(candidate)
 
 
+# ---------------------------------------------------------------------------
+# Batch C (Phase C3) — candidate_detail exemption-support surface.
+#
+# ADR-2 assumed "motivo already reaches the UI through candidate_detail.
+# documents", but candidate_detail's get_person_document_rows(fields=[...])
+# call never included exencion_motivo/exonerado_por/exonerado_en — verified
+# by grepping git history for those field names in this file (zero hits).
+# This closes that gap so the grant/revoke dialog (seleccion_documentos.js)
+# can render the stored motivo on an "Exento" row, and gates the exemption
+# affordance visibility via a server-computed can_exempt_documents flag
+# (same pattern as the existing can_delete_document flag) rather than
+# duplicating the role matrix in JS.
+# ---------------------------------------------------------------------------
+
+class TestCandidateDetailExemptionSupport(FrappeTestCase):
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		super().tearDown()
+
+	def test_documents_include_exemption_audit_fields(self):
+		doc_type = _seed_document_type("REQ-C34")
+		candidate = _seed_candidato()
+		seleccion_documentos.exempt_candidate_document(candidate, doc_type, "motivo de prueba C34")
+
+		detail = seleccion_documentos.candidate_detail(candidate)
+		row = next(d for d in detail["documents"] if d["document_type"] == doc_type)
+
+		self.assertEqual(row["status"], "Exento")
+		self.assertEqual(row["exencion_motivo"], "motivo de prueba C34")
+		self.assertEqual(row["exonerado_por"], "Administrator")
+		self.assertIsNotNone(row["exonerado_en"])
+
+	def test_can_exempt_documents_true_for_selection_role(self):
+		candidate = _seed_candidato()
+		detail = seleccion_documentos.candidate_detail(candidate)
+		self.assertTrue(detail["can_exempt_documents"])
+
+	def test_can_exempt_documents_false_for_candidato_self_view(self):
+		candidate = _seed_candidato()
+		candidate_user = frappe.db.get_value("Candidato", candidate, "user")
+
+		frappe.set_user(candidate_user)
+		try:
+			detail = seleccion_documentos.candidate_detail(candidate)
+		finally:
+			frappe.set_user("Administrator")
+
+		self.assertFalse(detail["can_exempt_documents"])
+
+
 def tearDownModule():
 	"""Self-cleaning teardown — this module's fixtures call frappe.db.commit()
 	(needed so frappe.set_user() role-switching sees committed Has Role rows;

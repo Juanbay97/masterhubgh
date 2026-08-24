@@ -233,6 +233,54 @@ class TestIgnorePermissionsParityGuard(FrappeTestCase):
 
 
 # ---------------------------------------------------------------------------
+# Batch C (Phase C3.4/C4) — "exempted" key propagation.
+#
+# _project_candidate_row (shared by list_candidates and this tab) never
+# copied progress["exempted"] into its row payload, even though PR B's
+# _compute_candidate_progress has produced that key since Batch B. Without
+# it, seleccion_documentos.js has no data to render the "Exonerado" pill on
+# this tab's rows.
+# ---------------------------------------------------------------------------
+
+
+class TestListPostHandoffCandidatesExemptedField(FrappeTestCase):
+	def test_row_carries_exempted_list_from_progress(self):
+		row = _make_row("CAND-EXEMPT", "En afiliación", solo_afiliacion=0)
+		with (
+			patch(f"{_SEL_MODULE}._validate_selection_access", return_value=None),
+			patch(f"{_SEL_MODULE}.frappe.get_all", return_value=[row]),
+			patch(f"{_SEL_MODULE}._candidate_pdv_name_map", return_value={}),
+			patch(
+				f"{_SEL_MODULE}.get_candidates_progress_bulk",
+				return_value={
+					"CAND-EXEMPT": {
+						"is_complete": False,
+						"missing": ["SAGRILAFT"],
+						"exempted": ["Cédula"],
+						"percent": 60,
+						"required_ok": 3,
+						"required_total": 5,
+						"sagrilaft_ok": False,
+					}
+				},
+			),
+		):
+			result = list_post_handoff_candidates()
+		self.assertEqual(result[0]["exempted"], ["Cédula"])
+
+	def test_row_defaults_exempted_to_empty_list_when_absent(self):
+		row = _make_row("CAND-NOEXEMPT", "En afiliación", solo_afiliacion=0)
+		with (
+			patch(f"{_SEL_MODULE}._validate_selection_access", return_value=None),
+			patch(f"{_SEL_MODULE}.frappe.get_all", return_value=[row]),
+			patch(f"{_SEL_MODULE}._candidate_pdv_name_map", return_value={}),
+			patch(f"{_SEL_MODULE}.get_candidates_progress_bulk", return_value={"CAND-NOEXEMPT": _progress(False, ["Cédula"])}),
+		):
+			result = list_post_handoff_candidates()
+		self.assertEqual(result[0]["exempted"], [])
+
+
+# ---------------------------------------------------------------------------
 # 3.4.7 — page-role parity with _has_selection_access
 # ---------------------------------------------------------------------------
 
