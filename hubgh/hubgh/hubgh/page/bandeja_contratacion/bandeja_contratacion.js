@@ -190,8 +190,14 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 			const isIncomplete = !!(r.documentacion_incompleta);
 			const missing = r.missing || [];
 			const missingCount = missing.length;
+			const exempted = r.exempted || [];
 			const incompleteBadge = isIncomplete
 				? `<span class='indicator-pill orange incomplete-docs-badge' title='${esc(missing.join(", "))}'>Documentación incompleta: ${esc(missingCount)} faltante${missingCount !== 1 ? "s" : ""}</span>`
+				: "";
+			// Read-only: RRLL never gets an exempt/revoke control here, only visibility
+			// into what Selección already exonerated (spec "RRLL badge, no action").
+			const exemptedBadge = exempted.length
+				? `<span class='indicator-pill blue exempted-docs-badge' title='${esc(exempted.join(", "))}'>Exonerado: ${esc(exempted.length)} documento${exempted.length !== 1 ? "s" : ""}</span>`
 				: "";
 			const missingDocsDetail = (isIncomplete && missingCount > 0)
 				? `<div class='hubgh-submeta' style='color:#92400e;font-size:11px;margin-top:4px;'>Pendientes: ${esc(missing.join(", "))}</div>`
@@ -204,6 +210,7 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 							<div class='hubgh-name'>${esc(r.full_name || "")}</div>
 							<span class='indicator-pill blue'>Listo para formalizar</span>
 							${incompleteBadge}
+							${exemptedBadge}
 						</div>
 						<div class='hubgh-meta'>CC ${esc(r.numero_documento || "-")}</div>
 						<div class='hubgh-submeta'>
@@ -423,46 +430,14 @@ frappe.pages["bandeja_contratacion"].on_page_load = function(wrapper) {
 		renderLoading();
 		frappe.call("hubgh.hubgh.page.bandeja_contratacion.bandeja_contratacion.contract_candidates")
 			.then(r => {
-				const candidates = r.message || [];
-				const incompleteNames = candidates
-					.filter(c => c.documentacion_incompleta)
-					.map(c => c.name);
-
-				if (!incompleteNames.length) {
-					state.rows = candidates;
-					state.status = "ready";
-					render();
-					return;
-				}
-
-				// Fetch live progress only for incomplete candidates to drive the missing-docs badge.
-				// Complete candidates have no missing docs — no extra round-trip needed.
-				const progressCalls = incompleteNames.map(name =>
-					frappe.call(
-						"hubgh.hubgh.page.bandeja_contratacion.bandeja_contratacion.get_candidate_progress",
-						{ candidate: name },
-					).then(resp => ({ name, progress: resp.message || {} })),
-				);
-
-				Promise.all(progressCalls)
-					.then(results => {
-						const progressMap = {};
-						results.forEach(({ name, progress }) => { progressMap[name] = progress; });
-
-						state.rows = candidates.map(c => {
-							if (!c.documentacion_incompleta) return c;
-							const prog = progressMap[c.name] || {};
-							return Object.assign({}, c, { missing: prog.missing || [] });
-						});
-						state.status = "ready";
-						render();
-					})
-					.catch(() => {
-						// Degrade gracefully: show candidates without live missing list.
-						state.rows = candidates;
-						state.status = "ready";
-						render();
-					});
+				// contract_candidates already returns real "missing"/"exempted"/"percent"
+				// per candidate (server-side, via get_candidates_progress_bulk — one bulk
+				// call, N-independent). No extra per-candidate round-trip is needed: the
+				// previous N+1 call to the un-whitelisted get_candidate_progress always
+				// failed and silently degraded to "0 faltantes" for every candidate.
+				state.rows = r.message || [];
+				state.status = "ready";
+				render();
 			})
 			.catch(err => {
 				state.rows = [];
