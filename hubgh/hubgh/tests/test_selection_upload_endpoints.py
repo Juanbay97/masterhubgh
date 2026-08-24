@@ -78,6 +78,9 @@ def _install_stubs():
 	# Gate-failure fix (orchestrator re-run, item 2): exempt_candidate_document
 	# now also imports get_required_candidate_document_types.
 	document_service.get_required_candidate_document_types = lambda *args, **kwargs: []
+	# Revoke-gap fix (orchestrator re-run): list_post_handoff_candidates now
+	# also imports get_candidates_exemption_details_bulk.
+	document_service.get_candidates_exemption_details_bulk = lambda *args, **kwargs: {}
 	sys.modules["hubgh.hubgh.document_service"] = document_service
 
 	permissions = types.ModuleType("hubgh.hubgh.permissions")

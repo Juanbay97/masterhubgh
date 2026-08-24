@@ -1093,6 +1093,9 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 			if (state.postHandoffStatus === "en_afiliacion" && row.estado_proceso !== "En afiliación") return false;
 			if (state.postHandoffStatus === "listo_contratar" && row.estado_proceso !== "Listo para contratar") return false;
 			if (state.postHandoffStatus === "contratado" && row.estado_proceso !== "Contratado") return false;
+			// Revoke-gap fix: dedicated filter for candidates kept visible here only
+			// because every remaining requirement was exempted (server's only_exempted).
+			if (state.postHandoffStatus === "solo_exonerados" && !row.only_exempted) return false;
 			return true;
 		});
 	};
@@ -1100,20 +1103,43 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 	// Extracted from renderPostHandoffTable (ADR-6) so the search/filter handlers
 	// repaint only the tbody, mirroring bindEvents:485-495's card-only repaint —
 	// this preserves input focus and avoids rebuilding the toolbar on every keystroke.
+	// Revoke-gap fix: one pill PER exempted document, each carrying its own
+	// "Revocar" action (reuses openRevokeExemptionDialog — the same dialog the
+	// candidate detail table uses, never duplicated) and the stored motivo as a
+	// title tooltip, matching the detail dialog's pattern.
+	const renderExemptedDetailPills = (row) => {
+		const details = row.exempted_details || [];
+		if (!details.length) return "";
+		return `<div class='post-handoff-exempted-pills' style='margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;'>${details.map(d => `
+			<span class='indicator-pill blue' title='Motivo: ${esc(d.exencion_motivo || "")}'>
+				${esc(d.document_type || "")}
+				<button type='button' class='btn btn-xs btn-link action-post-handoff-revoke' style='padding:0 0 0 4px;color:inherit;text-decoration:underline;' data-c='${esc(row.name)}' data-dtype='${esc(d.document_type || "")}'>Revocar</button>
+			</span>
+		`).join("")}</div>`;
+	};
+
 	const renderPostHandoffRows = $tbody => {
 		const rows = getFilteredPostHandoffRows();
 		const htmlRows = rows.map(r => {
-			const exemptedBadge = (r.exempted || []).length
-				? `<div><span class='indicator-pill blue' title='${esc(r.exempted.join(", "))}'>Exonerado: ${esc(r.exempted.length)}</span></div>`
+			const exemptedCount = (r.exempted || []).length;
+			const exemptedSummaryBadge = exemptedCount
+				? `<span class='indicator-pill blue' title='${esc((r.exempted || []).join(", "))}'>Exonerado: ${esc(exemptedCount)}</span>`
+				: "";
+			const onlyExemptedBadge = r.only_exempted
+				? `<span class='indicator-pill orange' title='Completo solo por exención — revocá cualquier exención para volver a pendiente.'>Solo exonerados</span>`
 				: "";
 			return `
 			<tr>
 				<td>${esc(r.full_name)}</td>
 				<td>${esc(r.numero_documento)}</td>
 				<td>${esc(r.pdv_destino_nombre)}</td>
-				<td>${esc(r.estado_proceso)}</td>
+				<td>${esc(r.estado_proceso)} ${onlyExemptedBadge}</td>
 				<td>${esc(r.avance_porcentaje)}%</td>
-				<td style='font-size:12px;color:#6b7280'>${esc((r.missing || []).join(", "))}${exemptedBadge}</td>
+				<td style='font-size:12px;color:#6b7280'>
+					${esc((r.missing || []).join(", "))}
+					<div>${exemptedSummaryBadge}</div>
+					${renderExemptedDetailPills(r)}
+				</td>
 				<td>
 					<button class='btn btn-xs btn-primary action-post-handoff-upload' data-c='${esc(r.name)}'>Subir documentos</button>
 					<button class='btn btn-xs btn-default action-post-handoff-exempt' data-c='${esc(r.name)}'>Exonerar</button>
@@ -1136,6 +1162,12 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 			const candidate = $(this).data("c");
 			const row = (state.postHandoffRows || []).find(r => String(r.name) === String(candidate)) || {};
 			openExemptDocumentPickerDialog(candidate, row.missing || [], { onSuccess: () => loadPostHandoff() });
+		});
+		$tbody.find(".action-post-handoff-revoke").off("click").on("click", function(evt) {
+			evt.stopPropagation();
+			const candidate = $(this).data("c");
+			const dtype = $(this).data("dtype") || "";
+			openRevokeExemptionDialog(candidate, dtype, { onSuccess: () => loadPostHandoff() });
 		});
 	};
 
@@ -1177,6 +1209,7 @@ frappe.pages["seleccion_documentos"].on_page_load = function(wrapper) {
 					<option value='en_afiliacion' ${state.postHandoffStatus === "en_afiliacion" ? "selected" : ""}>En afiliación</option>
 					<option value='listo_contratar' ${state.postHandoffStatus === "listo_contratar" ? "selected" : ""}>Listo para contratar</option>
 					<option value='contratado' ${state.postHandoffStatus === "contratado" ? "selected" : ""}>Contratado</option>
+					<option value='solo_exonerados' ${state.postHandoffStatus === "solo_exonerados" ? "selected" : ""}>Solo exonerados</option>
 				</select>
 				<div class='sel-docs-toolbar-actions'>
 					<button class='btn btn-sm btn-default post-handoff-clear-filters'>Limpiar filtros</button>

@@ -17,6 +17,7 @@ from hubgh.hubgh.document_service import (
 	exempt_person_document,
 	get_person_document_rows,
 	get_candidate_progress,
+	get_candidates_exemption_details_bulk,
 	get_candidates_progress_bulk,
 	get_required_candidate_document_types,
 	hire_candidate,
@@ -116,10 +117,23 @@ def _candidate_apellidos_fallback(row):
 	return " ".join([p.strip() for p in [primer, segundo] if p and str(p).strip()]).strip()
 
 
-def _project_candidate_row(row, progress, pdv_name_map, is_manager):
+def _project_candidate_row(row, progress, pdv_name_map, is_manager, exempted_details=None, only_exempted=False):
 	"""Proyecta una fila cruda de Candidato + su progreso a la forma de payload de
 	bandeja. Extraído de `list_candidates` (PR3, 3.4.4) para reutilizarlo tal cual en
-	`list_post_handoff_candidates`, sin duplicar el mapeo campo a campo."""
+	`list_post_handoff_candidates`, sin duplicar el mapeo campo a campo.
+
+	`exempted_details` (revoke-gap fix): optional list of
+	{"document_type", "exencion_motivo"} dicts — additive to `exempted` (names
+	only). Only `list_post_handoff_candidates` populates this (the tab needs a
+	per-document "Revocar" affordance with the motivo visible); `list_candidates`
+	leaves it as an empty list since the main board has no revoke UI.
+
+	`only_exempted` (revoke-gap fix): True when this candidate's progress is
+	complete ONLY because every remaining requirement was exempted (never
+	because `list_candidates` has no equivalent notion — it always passes the
+	default False). Used by `list_post_handoff_candidates` to keep such
+	candidates reachable for revoke instead of silently disappearing from
+	every tab the moment the last exemption is granted."""
 	return {
 		"name": row.name,
 		"full_name": f"{row.nombres or ''} {_candidate_apellidos_fallback(row) or ''}".strip(),
@@ -138,6 +152,8 @@ def _project_candidate_row(row, progress, pdv_name_map, is_manager):
 		"completo": progress.get("is_complete", False),
 		"missing": progress.get("missing", []),
 		"exempted": progress.get("exempted", []),
+		"exempted_details": exempted_details or [],
+		"only_exempted": bool(only_exempted),
 		"can_manage": is_manager,
 		"solo_afiliacion": int(row.solo_afiliacion or 0),
 		"fecha_tentativa_ingreso": row.fecha_tentativa_ingreso,
@@ -417,14 +433,32 @@ def list_post_handoff_candidates():
 		return []
 
 	pdv_name_map = _candidate_pdv_name_map(candidate_rows)
-	bulk = get_candidates_progress_bulk([r.name for r in candidate_rows])
+	candidate_names = [r.name for r in candidate_rows]
+	bulk = get_candidates_progress_bulk(candidate_names)
+	# Revoke-gap fix: bulk-fetch {document_type, exencion_motivo} per exempted
+	# doc so the tab can render a per-document "Revocar" affordance. One extra
+	# N-independent query group (see get_candidates_exemption_details_bulk),
+	# never a per-candidate read.
+	exemption_details_bulk = get_candidates_exemption_details_bulk(candidate_names)
 
 	data = []
 	for row in candidate_rows:
 		progress = bulk.get(row.name, _ZERO_PROGRESS)
-		if progress.get("is_complete", False):
+		is_complete = progress.get("is_complete", False)
+		has_exemptions = bool(progress.get("exempted"))
+		# A candidate that reached 100% ONLY because every remaining requirement
+		# was exempted must stay visible here — otherwise it becomes unreachable
+		# for revoke everywhere (excluded from the main board by design, and
+		# this tab is the only place a revoke control exists). A genuinely
+		# complete candidate (no exemptions at all) is still excluded, matching
+		# pre-existing behavior.
+		if is_complete and not has_exemptions:
 			continue
-		data.append(_project_candidate_row(row, progress, pdv_name_map, is_manager=False))
+		data.append(_project_candidate_row(
+			row, progress, pdv_name_map, is_manager=False,
+			exempted_details=exemption_details_bulk.get(row.name, []),
+			only_exempted=is_complete and has_exemptions,
+		))
 	return data
 
 

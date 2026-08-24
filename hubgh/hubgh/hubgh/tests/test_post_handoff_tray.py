@@ -281,6 +281,101 @@ class TestListPostHandoffCandidatesExemptedField(FrappeTestCase):
 
 
 # ---------------------------------------------------------------------------
+# Revoke-gap fix (orchestrator re-run): the post-handoff tab had no revoke
+# path at all, because it never carried per-exempted-doc detail (document_type
+# + exencion_motivo) — only bare names via "exempted". These tests pin the
+# new "exempted_details" payload key and the "only_exempted" reachability
+# flag that keeps a fully-exempted candidate from becoming unreachable.
+# ---------------------------------------------------------------------------
+
+
+class TestListPostHandoffCandidatesExemptedDetails(FrappeTestCase):
+	def test_row_carries_exempted_details_with_motivo(self):
+		row = _make_row("CAND-EXDETAIL", "En afiliación", solo_afiliacion=0)
+		progress = {**_progress(False, ["SAGRILAFT"]), "exempted": ["Cédula"]}
+		details = {"CAND-EXDETAIL": [{"document_type": "Cédula", "exencion_motivo": "Entregada en físico en el punto"}]}
+
+		with (
+			patch(f"{_SEL_MODULE}._validate_selection_access", return_value=None),
+			patch(f"{_SEL_MODULE}.frappe.get_all", return_value=[row]),
+			patch(f"{_SEL_MODULE}._candidate_pdv_name_map", return_value={}),
+			patch(f"{_SEL_MODULE}.get_candidates_progress_bulk", return_value={"CAND-EXDETAIL": progress}),
+			patch(f"{_SEL_MODULE}.get_candidates_exemption_details_bulk", return_value=details) as mock_details,
+		):
+			result = list_post_handoff_candidates()
+
+		self.assertEqual(
+			result[0]["exempted_details"],
+			[{"document_type": "Cédula", "exencion_motivo": "Entregada en físico en el punto"}],
+		)
+		mock_details.assert_called_once()
+
+	def test_row_defaults_exempted_details_to_empty_list(self):
+		row = _make_row("CAND-NODETAIL", "En afiliación", solo_afiliacion=0)
+		with (
+			patch(f"{_SEL_MODULE}._validate_selection_access", return_value=None),
+			patch(f"{_SEL_MODULE}.frappe.get_all", return_value=[row]),
+			patch(f"{_SEL_MODULE}._candidate_pdv_name_map", return_value={}),
+			patch(f"{_SEL_MODULE}.get_candidates_progress_bulk", return_value={"CAND-NODETAIL": _progress(False, ["Cédula"])}),
+			patch(f"{_SEL_MODULE}.get_candidates_exemption_details_bulk", return_value={}),
+		):
+			result = list_post_handoff_candidates()
+		self.assertEqual(result[0]["exempted_details"], [])
+
+
+class TestListPostHandoffCandidatesOnlyExemptedReachability(FrappeTestCase):
+	"""Fully exempted candidates must stay visible in the tab (only_exempted=True)
+	so revoke remains reachable — a candidate must never become unreachable by
+	being exempted into completeness. A genuinely complete candidate (no
+	exemptions at all) is still excluded, matching pre-existing behavior."""
+
+	def test_fully_exempted_candidate_stays_visible_and_flagged(self):
+		row = _make_row("CAND-ALLEXEMPT", "En afiliación", solo_afiliacion=0)
+		progress = {**_progress(True, []), "exempted": ["Cédula", "SAGRILAFT"]}
+
+		with (
+			patch(f"{_SEL_MODULE}._validate_selection_access", return_value=None),
+			patch(f"{_SEL_MODULE}.frappe.get_all", return_value=[row]),
+			patch(f"{_SEL_MODULE}._candidate_pdv_name_map", return_value={}),
+			patch(f"{_SEL_MODULE}.get_candidates_progress_bulk", return_value={"CAND-ALLEXEMPT": progress}),
+			patch(f"{_SEL_MODULE}.get_candidates_exemption_details_bulk", return_value={"CAND-ALLEXEMPT": []}),
+		):
+			result = list_post_handoff_candidates()
+
+		names = [r["name"] for r in result]
+		self.assertIn("CAND-ALLEXEMPT", names, "A candidate complete only via exemption must stay reachable for revoke")
+		self.assertTrue(result[0]["only_exempted"])
+
+	def test_genuinely_complete_candidate_without_exemptions_still_excluded(self):
+		row = _make_row("CAND-REALCOMPLETE", "En afiliación", solo_afiliacion=0)
+
+		with (
+			patch(f"{_SEL_MODULE}._validate_selection_access", return_value=None),
+			patch(f"{_SEL_MODULE}.frappe.get_all", return_value=[row]),
+			patch(f"{_SEL_MODULE}._candidate_pdv_name_map", return_value={}),
+			patch(f"{_SEL_MODULE}.get_candidates_progress_bulk", return_value={"CAND-REALCOMPLETE": _progress(True, [])}),
+			patch(f"{_SEL_MODULE}.get_candidates_exemption_details_bulk", return_value={"CAND-REALCOMPLETE": []}),
+		):
+			result = list_post_handoff_candidates()
+
+		self.assertEqual(result, [])
+
+	def test_incomplete_candidate_reports_only_exempted_false(self):
+		row = _make_row("CAND-STILLPENDING", "En afiliación", solo_afiliacion=0)
+
+		with (
+			patch(f"{_SEL_MODULE}._validate_selection_access", return_value=None),
+			patch(f"{_SEL_MODULE}.frappe.get_all", return_value=[row]),
+			patch(f"{_SEL_MODULE}._candidate_pdv_name_map", return_value={}),
+			patch(f"{_SEL_MODULE}.get_candidates_progress_bulk", return_value={"CAND-STILLPENDING": _progress(False, ["Cédula"])}),
+			patch(f"{_SEL_MODULE}.get_candidates_exemption_details_bulk", return_value={"CAND-STILLPENDING": []}),
+		):
+			result = list_post_handoff_candidates()
+
+		self.assertFalse(result[0]["only_exempted"])
+
+
+# ---------------------------------------------------------------------------
 # 3.4.7 — page-role parity with _has_selection_access
 # ---------------------------------------------------------------------------
 
