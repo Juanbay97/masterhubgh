@@ -1,7 +1,26 @@
 import frappe
 from frappe.model.document import Document
 
+from hubgh.hubgh.doctype.datos_contratacion.datos_contratacion import _has_bank_account
 from hubgh.hubgh.people_ops_lifecycle import finalize_hiring
+
+
+# Contract bank field -> field name used by Candidato and Datos Contratacion.
+BANK_FIELD_SOURCES = {
+	"cuenta_bancaria": "numero_cuenta_bancaria",
+	"banco_siesa": "banco_siesa",
+	"tipo_cuenta_bancaria": "tipo_cuenta_bancaria",
+}
+BANK_FIELD_LABELS = {
+	"cuenta_bancaria": "Cuenta bancaria",
+	"banco_siesa": "Banco",
+	"tipo_cuenta_bancaria": "Tipo de cuenta",
+}
+BANK_SOURCE_FIELDS = [*BANK_FIELD_SOURCES.values(), "tiene_cuenta_bancaria"]
+
+
+def _is_blank(value):
+	return value is None or (isinstance(value, str) and not value.strip())
 
 
 class Contrato(Document):
@@ -10,6 +29,9 @@ class Contrato(Document):
 		self._ensure_numero_contrato()
 		self._sync_candidate_snapshot()
 		self._validate_dates()
+
+	def before_submit(self):
+		self._validate_bank_data_before_submit()
 
 	def _ensure_numero_contrato(self):
 		try:
@@ -53,6 +75,7 @@ class Contrato(Document):
 			self.tipo_cuenta_bancaria = cand.tipo_cuenta_bancaria
 		if not self.banco_siesa:
 			self.banco_siesa = cand.banco_siesa
+		self._fill_bank_fields_from_datos_contratacion()
 
 		if not self.entidad_eps_siesa:
 			self.entidad_eps_siesa = cand.eps_siesa
@@ -63,9 +86,59 @@ class Contrato(Document):
 		if not self.entidad_ccf_siesa:
 			self.entidad_ccf_siesa = cand.ccf_siesa
 
+	def _fill_bank_fields_from_datos_contratacion(self):
+		"""Fallback for bank data captured on Datos Contratacion but not yet on the Candidato."""
+		if all(not _is_blank(getattr(self, field, None)) for field in BANK_FIELD_SOURCES):
+			return
+		datos = self._get_datos_contratacion_bank_data()
+		if not datos:
+			return
+		for contract_field, source_field in BANK_FIELD_SOURCES.items():
+			if _is_blank(getattr(self, contract_field, None)) and not _is_blank(datos.get(source_field)):
+				setattr(self, contract_field, datos.get(source_field))
+
+	def _get_datos_contratacion_bank_data(self):
+		if not self.candidato:
+			return None
+		return frappe.db.get_value(
+			"Datos Contratacion",
+			{"candidato": self.candidato},
+			BANK_SOURCE_FIELDS,
+			as_dict=True,
+		)
+
 	def _validate_dates(self):
 		if self.fecha_fin_contrato and self.fecha_ingreso and self.fecha_fin_contrato < self.fecha_ingreso:
 			frappe.throw("La fecha fin no puede ser menor a la fecha de ingreso.")
+
+	def _validate_bank_data_before_submit(self):
+		"""Refuse to submit a contract with blank bank fields when the person is expected to have an account.
+
+		Bank fields are not allow_on_submit, so a contract submitted without them can never be
+		exported to SIESA (incident: candidate 1032391786 / CONT--10516).
+		"""
+		missing = [label for field, label in BANK_FIELD_LABELS.items() if _is_blank(getattr(self, field, None))]
+		if not missing or not self._expects_bank_account():
+			return
+		frappe.throw(
+			"No es posible enviar el contrato: faltan los datos bancarios ({campos}). "
+			"Complete la información bancaria en el Candidato o en Datos Contratación "
+			"antes de enviar el contrato.".format(campos=", ".join(missing))
+		)
+
+	def _expects_bank_account(self):
+		"""True when the Contrato, Candidato or Datos Contratacion indicate the person has a bank account."""
+		sources = [
+			{source_field: getattr(self, contract_field, None) for contract_field, source_field in BANK_FIELD_SOURCES.items()}
+		]
+		if self.candidato:
+			candidate = frappe.db.get_value("Candidato", self.candidato, BANK_SOURCE_FIELDS, as_dict=True)
+			if candidate:
+				sources.append(candidate)
+			datos = self._get_datos_contratacion_bank_data()
+			if datos:
+				sources.append(datos)
+		return any(_has_bank_account(source) for source in sources)
 
 	def on_submit(self):
 		result = finalize_hiring(self)

@@ -438,6 +438,61 @@ def _tipo_cuenta_bancaria_ind(value):
 	}.get(_str(value), "")
 
 
+# Contract bank field -> field name used by Datos Contratacion, Candidato and Ficha Empleado.
+CONTRACT_BANK_FIELD_SOURCES = {
+	"cuenta_bancaria": "numero_cuenta_bancaria",
+	"banco_siesa": "banco_siesa",
+	"tipo_cuenta_bancaria": "tipo_cuenta_bancaria",
+}
+ACCOUNT_NUMBER_SEPARATORS = " -."
+
+
+def _normalize_account_number(value):
+	"""Strip separators (spaces, hyphens, dots) from the account number for the export cell."""
+	return "".join(ch for ch in _str(value) if ch not in ACCOUNT_NUMBER_SEPARATORS)
+
+
+def _resolve_contract_bank_values(contrato, data, candidato):
+	"""Resolve bank values: Contrato -> Datos Contratacion -> Candidato."""
+	return {
+		contract_field: _first(
+			getattr(contrato, contract_field, None),
+			getattr(data, source_field, None),
+			getattr(candidato, source_field, None),
+		)
+		for contract_field, source_field in CONTRACT_BANK_FIELD_SOURCES.items()
+	}
+
+
+def _heal_contract_bank_data(contrato, bank_values):
+	"""Persist resolved bank values on a Contrato whose bank fields were left blank at submit."""
+	updates = {
+		field: value
+		for field, value in bank_values.items()
+		if _is_blank(getattr(contrato, field, None)) and not _is_blank(value)
+	}
+	if not updates:
+		return
+	frappe.db.set_value("Contrato", contrato.name, updates, update_modified=False)
+	for field, value in updates.items():
+		setattr(contrato, field, value)
+
+
+def _heal_employee_bank_data(employee, bank_values):
+	"""Fill blank bank fields of the linked Ficha Empleado with the resolved values."""
+	if _is_blank(employee) or not frappe.db.exists("Ficha Empleado", employee):
+		return
+	employee_fields = list(CONTRACT_BANK_FIELD_SOURCES.values())
+	current = frappe.db.get_value("Ficha Empleado", employee, employee_fields, as_dict=True) or {}
+	updates = {}
+	for contract_field, employee_field in CONTRACT_BANK_FIELD_SOURCES.items():
+		value = bank_values.get(contract_field)
+		if _is_blank(current.get(employee_field)) and not _is_blank(value):
+			updates[employee_field] = value
+	if updates:
+		frappe.db.set_value("Ficha Empleado", employee, updates, update_modified=False)
+
+
 def _resolve_retirement_export_context(contrato):
 	if not contrato or (getattr(contrato, "estado_contrato", "") or "") != "Retirado":
 		return {"fecha_retiro": "", "id_motivo_retiro": "", "ind_estado": "0"}
@@ -559,7 +614,10 @@ def _build_contract_context(data):
 
 	id_co = _str(frappe.db.get_value("Punto de Venta", contrato.pdv_destino, "codigo") or contrato.pdv_destino)
 	id_cargo = _str(frappe.db.get_value("Cargo", contrato.cargo, "codigo") or contrato.cargo)
-	id_banco_empleado, notas_banco = _resolve_id_banco_empleado(contrato.banco_siesa)
+	bank_values = _resolve_contract_bank_values(contrato, data, candidato)
+	_heal_contract_bank_data(contrato, bank_values)
+	_heal_employee_bank_data(getattr(contrato, "empleado", None), bank_values)
+	id_banco_empleado, notas_banco = _resolve_id_banco_empleado(bank_values["banco_siesa"])
 	retirement_ctx = _resolve_retirement_export_context(contrato)
 
 	tipo_contrato = _str(contrato.tipo_contrato)
@@ -616,7 +674,7 @@ def _build_contract_context(data):
 		"dias_vacaciones": "0",
 		"consecutivo_contrato": "1",
 		"personas_cargo": str(int(_first(getattr(candidato, "personas_a_cargo", None), 0) or 0)),
-		"cuenta_bancaria": _str(contrato.cuenta_bancaria),
+		"cuenta_bancaria": _normalize_account_number(bank_values["cuenta_bancaria"]),
 		"ind_forma_pago": "2",
 		"ind_regimen_laboral": "3" if es_lectiva else "1",
 		"ind_auxilio_transporte": _str(_first(data.aplica_auxilio_transporte, "3")) or "3",
@@ -632,7 +690,7 @@ def _build_contract_context(data):
 		"ind_subtipo_cotizante": "0",
 		"ind_extranjero_pension": "1" if es_extranjero else "0",
 		"ind_continuidad": "0",
-		"ind_tipo_cuenta": _tipo_cuenta_bancaria_ind(contrato.tipo_cuenta_bancaria),
+		"ind_tipo_cuenta": _tipo_cuenta_bancaria_ind(bank_values["tipo_cuenta_bancaria"]),
 		"ind_clase_contrato": "0",
 		"ind_termino_contrato": "1" if (es_fijo or not _is_blank(contrato.fecha_fin_contrato)) else "0",
 		"ind_estado": retirement_ctx["ind_estado"],
